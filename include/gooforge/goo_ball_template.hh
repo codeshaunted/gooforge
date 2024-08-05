@@ -29,6 +29,7 @@ struct GooBallTemplate {
 	uint64_t max_strands;
 	std::string body_image_id;
 	std::string strand_image_id;
+	float strandThickness;
 
 	static GooBallTemplate deserializeFromFile(std::string_view path);
 };

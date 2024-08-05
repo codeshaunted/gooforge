@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
     gooforge::ResourceManager::getInstance()->loadManifest("_atlas.image.atlas");
 
     simdjson::ondemand::parser parser;
-    simdjson::padded_string json = simdjson::padded_string::load("C:/Program Files/World of Goo 2/game/res/levels/C03_Hot_Slinky.wog2");
+    simdjson::padded_string json = simdjson::padded_string::load("C:/Program Files/World of Goo 2/game/res/levels/C01_Squiddys_Bog.wog2");
     simdjson::ondemand::document level = parser.iterate(json);
 
     for (auto balldata : level.find_field("balls")) {

@@ -31,6 +31,7 @@ GooBallTemplate GooBallTemplate::deserializeFromFile(std::string_view path) {
 	ball_template.width = ball.find_field("width").get_double().take_value();
 	ball_template.height = ball.find_field("height").get_double().take_value();
 	ball_template.max_strands = ball.find_field("maxStrands").get_uint64().take_value();
+	ball_template.strandThickness = ball.find_field("strandThickness").get_double().take_value();
 	ball_template.strand_image_id = ball.find_field("strandImageId").find_field("imageId").get_string().take_value();
 	// this is somewhat sketchy as it relies upon the body being the first ball part... TODO: fix
 	auto body_image = ball.find_field("ballParts").at(0).find_field("images").at(0);

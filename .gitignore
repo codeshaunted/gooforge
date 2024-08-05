@@ -34,6 +34,8 @@
 # Visual Studio
 .vs/
 .vscode/
+CMakeSettings.json
+enc_temp_folder/
 
 # Build
 out/

@@ -82,9 +82,11 @@ void GooStrand::draw(sf::RenderWindow* window) {
 	// Set the scale based on the distance
 	float base_scale = 0.5 * this->ball_template->width;
 	float base_height_in_units = (bounds.height / GOOFORGE_PIXELS_PER_UNIT);
-	float scale = distance / base_height_in_units;
+	float base_width_in_units = (bounds.width / GOOFORGE_PIXELS_PER_UNIT);
+	float height_scale = distance / base_height_in_units;
+	float width_scale = this->ball_template->strandThickness / base_width_in_units;
 
-	sprite.setScale(sf::Vector2f(base_scale, scale)); // Set x scale to match the distance, y scale is 1.0f for now
+	sprite.setScale(sf::Vector2f(width_scale, height_scale)); // Set x scale to match the distance, y scale is 1.0f for now
 
 	Vector2f screen_position = this->position.scale(GOOFORGE_PIXELS_PER_UNIT);
 	sprite.setPosition(sf::Vector2f(screen_position.x, -1.0 * screen_position.y));
