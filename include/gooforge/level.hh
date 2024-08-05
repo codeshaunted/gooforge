@@ -1,6 +1,6 @@
 // codeshaunted - gooforge
-// include/gooforge/entity.hh
-// contains Entity declarations
+// include/gooforge/level.hh
+// contains Level declarations
 // Copyright 2024 codeshaunted
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,23 +15,20 @@
 // See the License for the specific language governing permissionsand
 // limitations under the License.
 
-#ifndef GOOFORGE_ENTITY_HH
-#define GOOFORGE_ENTITY_HH
+#ifndef GOOFORGE_LEVEL_HH
+#define GOOFORGE_LEVEL_HH
 
-#include "SFML/Graphics.hpp"
+#include "simdjson.h"
 
-#include "positionable.hh"
+#include "goo_ball.hh"
+#include "vector.hh"
 
 namespace gooforge {
 
-class Entity : public Positionable {
-	public:
-		virtual void update() {}
-		virtual void draw(sf::RenderWindow* window) {}
-
-	friend class EntityManager;
+struct Level {
+	std::vector<Ball> balls;
 };
 
 } // namespace gooforge
 
-#endif // GOOFORGE_ENTITY_HH
+#endif // GOOFORGE_LEVEL_HH

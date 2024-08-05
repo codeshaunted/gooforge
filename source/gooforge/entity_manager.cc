@@ -29,6 +29,7 @@ EntityManager* EntityManager::getInstance() {
 
 void EntityManager::add(Entity* entity) {
     this->entities.push_back(entity);
+    this->entities_dirty = true;
 }
 
 void EntityManager::update() {
@@ -38,6 +39,14 @@ void EntityManager::update() {
 }
 
 void EntityManager::draw(sf::RenderWindow* window) {
+    if (this->entities_dirty) {
+        std::sort(this->entities.begin(), this->entities.end(), [](const Entity* a, const Entity* b) {
+            return a->z_index < b->z_index;
+        });
+
+        this->entities_dirty = false;
+    }
+
     for (auto entity : this->entities) {
         entity->draw(window);
     }

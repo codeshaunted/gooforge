@@ -23,6 +23,7 @@
 #include "SFML/Graphics.hpp"
 
 #include "entity.hh"
+#include "goo_ball_template.hh"
 
 namespace gooforge {
 
@@ -65,12 +66,50 @@ enum class GooBallType {
 	UTIL_ATTACH_WALKABLE
 };
 
+struct GooBallState {
+	// .wog2 fields
+	GooBallType typeEnum;
+	int uid;
+	Vector2f pos;
+	float angle;
+	bool discovered;
+	bool floatingWhileAsleep;
+	bool interactive;
+	bool wakeWithLiquid;
+	bool exitPipeAlert;
+	bool affectsAutoBounds;
+	float launcherLifespanMin;
+	float launcherLifespanMax;
+	float launcherForceFactor;
+	bool launcherCanUseBalls;
+	float launcherKnockbackFactor;
+	int launcherMaxActive;
+	int launcherBallTypeToGenerate;
+	float thrustForce;
+	float maxVelocity;
+	float stiffness;
+	bool filled;
+	float detonationRadius;
+	float detonationForce;
+
+	static GooBallState deserialize(simdjson::ondemand::value json);
+};
+
+
 class GooBall : public Entity {
 	public:
+		GooBall(GooBallState state);
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 	private:
+		static void loadGooBallTemplates(std::string_view path);
 		static std::unordered_map<std::string, GooBallType> ball_name_to_type;
+		static std::unordered_map<GooBallType, GooBallTemplate> ball_templates;
+		static std::unordered_map<unsigned int, GooBall*> balls;
+		GooBallState state;
+		GooBallTemplate* ball_template = nullptr;
+
+	friend class GooStrand;
 };
 
 } // namespace gooforge

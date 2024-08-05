@@ -22,6 +22,7 @@ set(GOOFORGE_SOURCE_FILES
 	"${CMAKE_CURRENT_SOURCE_DIR}/boy_image.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/entity_manager.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/goo_ball.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/goo_strand.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/goo_ball_template.cc")
 
 set(GOOFORGE_INCLUDE_DIRECTORIES

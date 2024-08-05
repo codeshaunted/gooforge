@@ -24,6 +24,8 @@ GooBallTemplate GooBallTemplate::deserializeFromFile(std::string_view path) {
 	simdjson::padded_string json = simdjson::padded_string::load(path);
 	simdjson::ondemand::document ball = parser.iterate(json);
 
+	// TODO: JSON error handling
+
 	GooBallTemplate ball_template;
 	ball_template.name = ball.find_field("name").get_string().take_value();
 	ball_template.width = ball.find_field("width").get_double().take_value();
@@ -31,8 +33,11 @@ GooBallTemplate GooBallTemplate::deserializeFromFile(std::string_view path) {
 	ball_template.max_strands = ball.find_field("maxStrands").get_uint64().take_value();
 	ball_template.strand_image_id = ball.find_field("strandImageId").find_field("imageId").get_string().take_value();
 	// this is somewhat sketchy as it relies upon the body being the first ball part... TODO: fix
-	ball_template.body_image_id = ball.find_field("ballParts").at(0).find_field("images").at(0).find_field("imageId").get_string().take_value();
-
+	auto body_image = ball.find_field("ballParts").at(0).find_field("images").at(0);
+	if (body_image.error() == simdjson::error_code::SUCCESS) {
+		ball_template.body_image_id = body_image.find_field("imageId").find_field("imageId").get_string().take_value();
+	}
+	
 	return ball_template;
 }
 

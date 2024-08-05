@@ -1,62 +1,88 @@
-// codeshaunted - gooforge
-// source/gooforge/main.cc
-// contains entry point
-// Copyright 2024 codeshaunted
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org / licenses / LICENSE - 2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissionsand
-// limitations under the License.
-
 #include "SFML/Graphics.hpp"
+#include "simdjson.h"
 
+#include "constants.hh"
 #include "entity_manager.hh"
 #include "goo_ball.hh"
+#include "goo_strand.hh"
 #include "resource_manager.hh"
 
 #include <iostream>
-
-#define GOOFORGE_PIXELS_PER_UNIT 113.385826772 // roughly 2160/19.05, calculated manually
-#define GOOFORGE_FRAMERATE_LIMIT 60
 
 int main(int argc, char* argv[]) {
     sf::RenderWindow window(sf::VideoMode(1920, 1080), "gooforge");
     window.setFramerateLimit(GOOFORGE_FRAMERATE_LIMIT);
 
+    // Create a view for the window
+    sf::View view(sf::FloatRect(0, 0, 1920, 1080));
+    window.setView(view);
+
+    // Zoom and pan variables
+    float zoomLevel = 1.0f;
+    sf::Vector2f panOffset(0.0f, 0.0f);
+    const float zoomFactor = 0.1f; // How much zoom changes with each step
+
     gooforge::ResourceManager::getInstance()->loadManifest("_atlas.image.atlas");
 
-    auto resource = gooforge::ResourceManager::getInstance()->getSpriteResource("IMAGE_BALL_COMMON_BODY");
-    //auto resource2 = 
+    simdjson::ondemand::parser parser;
+    simdjson::padded_string json = simdjson::padded_string::load("C:/Program Files/World of Goo 2/game/res/levels/C03_Hot_Slinky.wog2");
+    simdjson::ondemand::document level = parser.iterate(json);
 
-    // Create an SFML Sprite to display the texture
-    //sf::Sprite sprite(*(*resource)->get());
-    //sprite.scale(sf::Vector2f(0.5 * 0.300000011920929, 0.5 * 0.300000011920929));
-    //sf::Sprite sprite2(*(*resource2)->get());
-    //sprite2.scale(sf::Vector2f(0.5 * 0.300000011920929, 0.5 * 0.300000011920929));
-    
-    gooforge::EntityManager::getInstance()->add(new gooforge::GooBall());
-    
+    for (auto balldata : level.find_field("balls")) {
+        auto ballstate = gooforge::GooBallState::deserialize(balldata.value());
+        gooforge::GooBall* gooball = new gooforge::GooBall(ballstate);
+        gooforge::EntityManager::getInstance()->add(gooball);
+    }
+
+    for (auto stranddata : level.find_field("strands")) {
+        auto strandstate = gooforge::GooStrandState::deserialize(stranddata.value());
+        gooforge::GooStrand* goostrand = new gooforge::GooStrand(strandstate);
+        gooforge::EntityManager::getInstance()->add(goostrand);
+    }
+
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window.close();
             }
+            // Handle panning and zooming
+            if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::Up) {
+                    panOffset.y -= 30.0f;
+                }
+                if (event.key.code == sf::Keyboard::Down) {
+                    panOffset.y += 30.0f;
+                }
+                if (event.key.code == sf::Keyboard::Left) {
+                    panOffset.x -= 30.0f;
+                }
+                if (event.key.code == sf::Keyboard::Right) {
+                    panOffset.x += 30.0f;
+                }
+                if (event.key.code == sf::Keyboard::Z) {
+                    zoomLevel *= (1.0f + zoomFactor);
+                }
+                if (event.key.code == sf::Keyboard::X) {
+                    zoomLevel *= (1.0f - zoomFactor);
+                }
+            }
         }
 
+        gooforge::EntityManager::getInstance()->update();
 
+        // Update the view
+        view.setCenter(view.getCenter() + panOffset);
+        view.setSize(1920 / zoomLevel, 1080 / zoomLevel);
+        window.setView(view);
+
+        // Clear and draw
         window.clear(sf::Color::White);
-
         gooforge::EntityManager::getInstance()->draw(&window);
-
         window.display();
+
+        // Reset panOffset to prevent continuous panning
+        panOffset = sf::Vector2f(0.0f, 0.0f);
     }
 
     return 0;

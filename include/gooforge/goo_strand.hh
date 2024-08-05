@@ -1,6 +1,6 @@
 // codeshaunted - gooforge
-// include/gooforge/entity.hh
-// contains Entity declarations
+// include/gooforge/goo_strand.hh
+// contains GooStrand declarations
 // Copyright 2024 codeshaunted
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,23 +15,39 @@
 // See the License for the specific language governing permissionsand
 // limitations under the License.
 
-#ifndef GOOFORGE_ENTITY_HH
-#define GOOFORGE_ENTITY_HH
+#ifndef GOOFORGE_GOO_STRAND_HH
+#define GOOFORGE_GOO_STRAND_HH
 
 #include "SFML/Graphics.hpp"
 
-#include "positionable.hh"
+#include "entity.hh"
+#include "goo_ball.hh"
 
 namespace gooforge {
 
-class Entity : public Positionable {
-	public:
-		virtual void update() {}
-		virtual void draw(sf::RenderWindow* window) {}
+struct GooStrandState {
+	// .wog2 fields
+	unsigned int ball1UID;
+	unsigned int ball2UID;
+	GooBallType type;
+	bool filled;
 
-	friend class EntityManager;
+	static GooStrandState deserialize(simdjson::ondemand::value json);
+};
+
+
+class GooStrand : public Entity {
+	public:
+		GooStrand(GooStrandState state);
+		void update() override;
+		void draw(sf::RenderWindow* window) override;
+	private:
+		GooBall* ball1;
+		GooBall* ball2;
+		GooStrandState state;
+		GooBallTemplate* ball_template = nullptr;
 };
 
 } // namespace gooforge
 
-#endif // GOOFORGE_ENTITY_HH
+#endif // GOOFORGE_GOO_STRAND_HH

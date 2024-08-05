@@ -24,9 +24,9 @@ namespace gooforge {
 
 struct GooBallTemplate {
 	std::string name;
-	float width;
-	float height;
-	int max_strands;
+	double width;
+	double height;
+	uint64_t max_strands;
 	std::string body_image_id;
 	std::string strand_image_id;
 

@@ -18,12 +18,14 @@
 #ifndef GOOFORGE_POSITIONABLE_HH
 #define GOOFORGE_POSITIONABLE_HH
 
-#include <stdexcept>
+#include "vector.hh"
 
 namespace gooforge {
 
 class Positionable {
-
+	protected:
+		Vector2f position;
+		int z_index;
 };
 
 } // namespace gooforge

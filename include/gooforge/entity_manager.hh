@@ -35,6 +35,7 @@ class EntityManager {
 	private:
 		static EntityManager* instance;
 		std::vector<Entity*> entities;
+		bool entities_dirty = false;
 };
 
 } // namespace gooforge
