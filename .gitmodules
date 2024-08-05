@@ -1,3 +1,9 @@
 [submodule "third_party/SFML"]
 	path = third_party/SFML
 	url = https://github.com/SFML/SFML
+[submodule "third_party/zstd"]
+	path = third_party/zstd
+	url = https://github.com/facebook/zstd
+[submodule "third_party/simdjson"]
+	path = third_party/simdjson
+	url = https://github.com/simdjson/simdjson
