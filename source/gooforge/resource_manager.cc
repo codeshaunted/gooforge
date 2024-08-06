@@ -19,6 +19,8 @@
 
 #include <fstream>
 
+#include "spdlog/spdlog.h"
+
 #include "boy_image.hh"
 #include "buffer_stream.hh"
 
@@ -36,7 +38,7 @@ void Resource::unload() {
     }
 }
 
-std::expected<sf::Sprite, Error> SpriteResource::get() {
+std::expected<sf::Sprite, LegacyError> SpriteResource::get() {
     if (this->atlas_sprite) {
         const sf::Texture* texture = this->atlas_sprite->get()->getTexture();
 
@@ -71,16 +73,18 @@ ResourceManager::~ResourceManager() {
 ResourceManager* ResourceManager::getInstance() {
     if (!ResourceManager::instance) {
         ResourceManager::instance = new ResourceManager();
+        spdlog::info("Resource manager successfully initialized");
     }
 
     return ResourceManager::instance;
 }
 
-std::expected<void, Error> ResourceManager::loadManifest(std::string_view path) {
+std::expected<void, LegacyError> ResourceManager::loadManifest(std::string_view path) {
     if (path.ends_with(".atlas")) {
         std::ifstream file(path.data(), std::ios::binary | std::ios::ate);
         if (!file) {
-            return std::unexpected(Error::FAILED_TO_OPEN_FILE);
+            spdlog::error("Failed to open atlas manifest file at path = '{}'", path);
+            return std::unexpected(LegacyError::FAILED_TO_OPEN_FILE);
         }
 
         size_t size = file.tellg();
@@ -118,22 +122,26 @@ std::expected<void, Error> ResourceManager::loadManifest(std::string_view path) 
             this->resources.insert({id, sprite_resource});
         }
 
-        return std::expected<void, Error>{};
+        spdlog::info("Successfully loaded atlas manifest from path = '{}'", path);
+
+        return std::expected<void, LegacyError>{};
     }
 
-    return std::unexpected(Error::FAILED_TO_OPEN_FILE);
+    return std::unexpected(LegacyError::FAILED_TO_OPEN_FILE);
 }
 
-std::expected<SpriteResource*, Error> ResourceManager::getSpriteResource(std::string_view id) {
+std::expected<SpriteResource*, LegacyError> ResourceManager::getSpriteResource(std::string_view id) {
     std::string id_string(id);
     if (!this->resources.contains(id_string)) {
-        return std::unexpected(Error::RESOURCE_NOT_FOUND);
+        spdlog::error("Failed to find resource with id = '{}'", id_string);
+        return std::unexpected(LegacyError::RESOURCE_NOT_FOUND);
     }
 
     SpriteResource* resource = static_cast<SpriteResource*>(this->resources.at(id_string));
 
     if (resource->type != ResourceType::SPRITE) {
-        return std::unexpected(Error::RESOURCE_NOT_FOUND);
+        spdlog::error("Resource with id = '{}' was found, but it is not a sprite resource as requested", id_string);
+        return std::unexpected(LegacyError::RESOURCE_NOT_FOUND);
     }
 
     return resource;

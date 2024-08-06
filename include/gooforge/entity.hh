@@ -28,8 +28,6 @@ class Entity : public Positionable {
 	public:
 		virtual void update() {}
 		virtual void draw(sf::RenderWindow* window) {}
-
-	friend class EntityManager;
 };
 
 } // namespace gooforge

@@ -49,7 +49,7 @@ class SpriteResource : public Resource {
     public:
         SpriteResource(std::string_view path) : Resource(ResourceType::SPRITE, path), atlas_sprite(nullptr) {}
         SpriteResource(SpriteResource* atlas_sprite, sf::IntRect atlas_rect) : Resource(ResourceType::SPRITE, ""), atlas_sprite(atlas_sprite), atlas_rect(atlas_rect) {}
-        std::expected<sf::Sprite, Error> get();
+        std::expected<sf::Sprite, LegacyError> get();
     private:
         SpriteResource* atlas_sprite;
         sf::IntRect atlas_rect;
@@ -59,8 +59,8 @@ class ResourceManager {
     public:
         ~ResourceManager();
         static ResourceManager* getInstance();
-        std::expected<void, Error> loadManifest(std::string_view path);
-        std::expected<SpriteResource*, Error> getSpriteResource(std::string_view id);
+        std::expected<void, LegacyError> loadManifest(std::string_view path);
+        std::expected<SpriteResource*, LegacyError> getSpriteResource(std::string_view id);
     private:
         static ResourceManager* instance;
         std::unordered_map<std::string, Resource*> resources;

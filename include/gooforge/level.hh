@@ -18,15 +18,65 @@
 #ifndef GOOFORGE_LEVEL_HH
 #define GOOFORGE_LEVEL_HH
 
+#include <expected>
+
 #include "simdjson.h"
 
+#include "error.hh"
 #include "goo_ball.hh"
+#include "goo_strand.hh"
 #include "vector.hh"
 
 namespace gooforge {
 
-struct Level {
-	std::vector<Ball> balls;
+struct LevelInfo {
+	int version;
+	int type;
+	bool forceFadeEOL;
+	int skin;
+	std::string uuid;
+	std::string title;
+	int startingUID;
+	int island;
+	int environmentId;
+	std::string backgroundId;
+	Vector2f gravity;
+	Vector2f boundsTopRight;
+	Vector2f boundsBottomLeft;
+	Vector2f initialCameraPos;
+	float initialCameraZoom;
+	bool cameraAutoBounds;
+	float ballsRateRequired;
+	std::string musicId;
+	std::string ambienceId;
+	float liquidScale;
+	float pretickSeconds;
+	float conduitSuckVolume;
+	float fireSfxVolume;
+	std::vector<GooBallInfo> balls;
+	std::vector<GooStrandInfo> strands;
+	//std::vector<TerrainGroupInfo> terrainGroups; // TODO: implement
+	//std::vector<ItemInstanceInfo> items; // TODO: implement
+	//std::vector<PinInfo> pins; // TODO: implement
+	//std::vector<InitialKeyframeInfo> initialCameraKeyframes; // TODO: implement
+	//std::vector<TerrainBallInfo> terrainBalls; // TODO: implement
+	// std::vector<std::string> levelEnvironmentEffects; // TODO: implement
+	bool enableTimeBugs;
+	int timebugMoves;
+
+	static std::expected<LevelInfo, std::shared_ptr<JSONDeserializeError>> deserialize(simdjson::ondemand::value json);
+};
+
+class Level {
+	public:
+		Level(LevelInfo info);
+		~Level();
+		void update();
+		void draw(sf::RenderWindow* window);
+	private:
+		LevelInfo info;
+		std::vector<Entity*> entities;
+		bool entities_dirty = false;
 };
 
 } // namespace gooforge

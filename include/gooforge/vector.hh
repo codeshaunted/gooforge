@@ -18,20 +18,26 @@
 #ifndef GOOFORGE_VECTOR_HH
 #define GOOFORGE_VECTOR_HH
 
+#include <expected>
+
+#include "simdjson.h"
+
+#include "error.hh"
+
 namespace gooforge {
 
 template<typename T, size_t N>
 class Vector {
-public:
-    Vector();
-    Vector(std::initializer_list<T> data);
-    T& get(size_t i);
-    T& operator[](size_t i);
-    T length();
-    T dot(Vector<T, N>& other);
-    Vector<T, N> scale(T scalar);
-protected:
-    T data[N];
+    public:
+        Vector();
+        Vector(std::initializer_list<T> data);
+        T& get(size_t i);
+        T& operator[](size_t i);
+        T length();
+        T dot(Vector<T, N>& other);
+        Vector<T, N> scale(T scalar);
+    protected:
+        T data[N];
 };
 
 template<typename T, size_t N>
@@ -109,13 +115,13 @@ Vector<T, N> Vector<T, N>::scale(T scalar) {
 
 template<typename T>
 class Vector2 : public Vector<T, 2> {
-public:
-    T& x = Vector<T, 2>::data[0];
-    T& y = Vector<T, 2>::data[1];
-    Vector2() : Vector<T, 2>() {}
-    Vector2(T _x, T _y) : Vector<T, 2>({ _x, _y }) {}
-    Vector2(const Vector<T, 2>& other) : Vector<T, 2>(other) {}
-    Vector2<T>& operator=(const Vector2<T>& other);
+    public:
+        T& x = Vector<T, 2>::data[0];
+        T& y = Vector<T, 2>::data[1];
+        Vector2() : Vector<T, 2>() {}
+        Vector2(T _x, T _y) : Vector<T, 2>({ _x, _y }) {}
+        Vector2(const Vector<T, 2>& other) : Vector<T, 2>(other) {}
+        Vector2<T>& operator=(const Vector2<T>& other);
 };
 
 template<typename T>
@@ -127,8 +133,14 @@ Vector2<T>& Vector2<T>::operator=(const Vector2<T>& other) {
     return *this;
 }
 
+class Vector2f : public Vector2<float> {
+    public:
+        Vector2f() : Vector2<float>() {}
+        Vector2f(const Vector<float, 2>& other) : Vector2<float>(other) {}
+        static std::expected<Vector2f, std::shared_ptr<JSONDeserializeError>> deserialize(simdjson::ondemand::value json);
+};
+
 typedef Vector2<int> Vector2i;
-typedef Vector2<float> Vector2f;
 
 } // namespace gooforge
 

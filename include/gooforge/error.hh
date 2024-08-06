@@ -18,13 +18,33 @@
 #ifndef GOOFORGE_ERROR_HH
 #define GOOFORGE_ERROR_HH
 
-#include <stdexcept>
+#include "simdjson.h"
 
 namespace gooforge {
 
-enum class Error {
-    FAILED_TO_OPEN_FILE,
+enum class ErrorType {
+    JSON_DESERIALIZE = 0,
+};
+
+struct Error {
+    Error(ErrorType type) : type(type) {}
+    ErrorType type;
+};
+
+struct JSONDeserializeError : public Error {
+    JSONDeserializeError(std::string field, simdjson::error_code code) : Error(ErrorType::JSON_DESERIALIZE), field(field), code(code) {}
+    JSONDeserializeError(std::string field, size_t array_index, simdjson::error_code code) : Error(ErrorType::JSON_DESERIALIZE), field(field + "[" + std::to_string(array_index) + "]"), code(code) {}
+    void prependField(std::string field);
+    void prependFieldAndArrayIndex(std::string field, size_t index);
+    std::string field;
+    simdjson::error_code code;
+};
+
+enum class LegacyError {
+    FAILED_TO_OPEN_FILE = 0,
     RESOURCE_NOT_FOUND,
+    FAILED_TO_DESERIALIZE_LEVEL,
+    FAILED_TO_DESERIALIZE_VECTOR2
 };
 
 } // namespace gooforge

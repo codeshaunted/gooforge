@@ -24,42 +24,42 @@
 
 namespace gooforge {
 
-GooStrandState GooStrandState::deserialize(simdjson::ondemand::value json) {
-	GooStrandState state;
-	state.ball1UID = json.find_field("ball1UID").get_uint64().take_value();
-	state.ball2UID = json.find_field("ball2UID").get_uint64().take_value();
-	state.type = GooBallType(json.find_field("type").get_int64().take_value());
-	state.filled = json.find_field("filled").get_bool().take_value();
+GooStrandInfo GooStrandInfo::deserialize(simdjson::ondemand::value json) {
+	GooStrandInfo info;
+	info.ball1UID = json.find_field("ball1UID").get_uint64().take_value();
+	info.ball2UID = json.find_field("ball2UID").get_uint64().take_value();
+	info.type = GooBallType(json.find_field("type").get_int64().take_value());
+	info.filled = json.find_field("filled").get_bool().take_value();
 
-	return state;
+	return info;
 }
 
-GooStrand::GooStrand(GooStrandState state) {
-	this->state = state;
-	this->z_index = 0;
+GooStrand::GooStrand(GooStrandInfo info) {
+	this->info = info;
+	this->layer = 0;
 
 	if (!this->ball_template) {
 		if (GooBall::ball_templates.empty()) { // empty could signify a failed load, TODO: fix
 			GooBall::loadGooBallTemplates("C:/Program Files/World of Goo 2/game/res/balls");
 		}
 
-		if (!GooBall::ball_templates.contains(this->state.type)) {
-			throw std::runtime_error("GooStrand::GooStrand GooBallTemplate for GooBallType = " + std::to_string(static_cast<int>(this->state.type)) + " has not been loaded");
+		if (!GooBall::ball_templates.contains(this->info.type)) {
+			throw std::runtime_error("GooStrand::GooStrand GooBallTemplate for GooBallType = " + std::to_string(static_cast<int>(this->info.type)) + " has not been loaded");
 		}
 
-		this->ball_template = &GooBall::ball_templates.at(this->state.type);
+		this->ball_template = &GooBall::ball_templates.at(this->info.type);
 	}
 
-	if (!GooBall::balls.contains(this->state.ball1UID)) {
-		throw std::runtime_error("GooStrand::GooStrand GooBall with uid = " + std::to_string(static_cast<int>(this->state.ball1UID)) + " has not been loaded");
+	if (!GooBall::balls.contains(this->info.ball1UID)) {
+		throw std::runtime_error("GooStrand::GooStrand GooBall with uid = " + std::to_string(static_cast<int>(this->info.ball1UID)) + " has not been loaded");
 	}
 
-	if (!GooBall::balls.contains(this->state.ball2UID)) {
-		throw std::runtime_error("GooStrand::GooStrand GooBall with uid = " + std::to_string(static_cast<int>(this->state.ball1UID)) + " has not been loaded");
+	if (!GooBall::balls.contains(this->info.ball2UID)) {
+		throw std::runtime_error("GooStrand::GooStrand GooBall with uid = " + std::to_string(static_cast<int>(this->info.ball1UID)) + " has not been loaded");
 	}
 
-	this->ball1 = GooBall::balls.at(this->state.ball1UID);
-	this->ball2 = GooBall::balls.at(this->state.ball2UID);
+	this->ball1 = GooBall::balls.at(this->info.ball1UID);
+	this->ball2 = GooBall::balls.at(this->info.ball2UID);
 }
 
 void GooStrand::update() {
@@ -67,6 +67,7 @@ void GooStrand::update() {
 	this->position.y = (this->ball1->position.y + this->ball2->position.y) / 2.0;
 }
 
+// TODO: make this less awful
 void GooStrand::draw(sf::RenderWindow* window) {
 	sf::Sprite sprite = *(*ResourceManager::getInstance()->getSpriteResource(this->ball_template->strand_image_id))->get();
 

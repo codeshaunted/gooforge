@@ -66,7 +66,7 @@ enum class GooBallType {
 	UTIL_ATTACH_WALKABLE
 };
 
-struct GooBallState {
+struct GooBallInfo {
 	// .wog2 fields
 	GooBallType typeEnum;
 	int uid;
@@ -92,13 +92,13 @@ struct GooBallState {
 	float detonationRadius;
 	float detonationForce;
 
-	static GooBallState deserialize(simdjson::ondemand::value json);
+	static std::expected<GooBallInfo, std::shared_ptr<JSONDeserializeError>> deserialize(simdjson::ondemand::value json);
 };
 
 
 class GooBall : public Entity {
 	public:
-		GooBall(GooBallState state);
+		GooBall(GooBallInfo info);
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 	private:
@@ -106,7 +106,7 @@ class GooBall : public Entity {
 		static std::unordered_map<std::string, GooBallType> ball_name_to_type;
 		static std::unordered_map<GooBallType, GooBallTemplate> ball_templates;
 		static std::unordered_map<unsigned int, GooBall*> balls;
-		GooBallState state;
+		GooBallInfo info;
 		GooBallTemplate* ball_template = nullptr;
 
 	friend class GooStrand;

@@ -24,60 +24,176 @@
 
 namespace gooforge {
 
-GooBallState GooBallState::deserialize(simdjson::ondemand::value json) {
-	GooBallState state;
-	state.typeEnum = GooBallType(json.find_field("typeEnum").get_int64().take_value());
-	state.uid = json.find_field("uid").get_int64().take_value();
-	auto pos = json.find_field("pos");
-	state.pos.x = pos.find_field("x").get_double().take_value();
-	state.pos.y = pos.find_field("y").get_double().take_value();
-	state.angle = json.find_field("angle").get_double().take_value();
-	state.discovered = json.find_field("discovered").get_bool().take_value();
-	state.floatingWhileAsleep = json.find_field("floatingWhileAsleep").get_bool().take_value();
-	state.interactive = json.find_field("interactive").get_bool().take_value();
-	state.wakeWithLiquid = json.find_field("wakeWithLiquid").get_bool().take_value();
-	state.exitPipeAlert = json.find_field("exitPipeAlert").get_bool().take_value();
-	state.affectsAutoBounds = json.find_field("affectsAutoBounds").get_bool().take_value();
-	state.launcherLifespanMin = json.find_field("launcherLifespanMin").get_double().take_value();
-	state.launcherLifespanMax = json.find_field("launcherLifespanMax").get_double().take_value();
-	state.launcherForceFactor = json.find_field("launcherForceFactor").get_double().take_value();
-	state.launcherCanUseBalls = json.find_field("launcherCanUseBalls").get_bool().take_value();
-	state.launcherKnockbackFactor = json.find_field("launcherKnockbackFactor").get_double().take_value();
-	state.launcherMaxActive = json.find_field("launcherMaxActive").get_int64().take_value();
-	state.launcherBallTypeToGenerate = json.find_field("launcherBallTypeToGenerate").get_int64().take_value();
-	state.thrustForce = json.find_field("thrustForce").get_double().take_value();
-	state.maxVelocity = json.find_field("maxVelocity").get_double().take_value();
-	state.stiffness = json.find_field("stiffness").get_double().take_value();
-	state.filled = json.find_field("filled").get_bool().take_value();
-	state.detonationRadius = json.find_field("detonationRadius").get_double().take_value();
-	state.detonationForce = json.find_field("detonationForce").get_double().take_value();
+std::expected<GooBallInfo, std::shared_ptr<JSONDeserializeError>> GooBallInfo::deserialize(simdjson::ondemand::value json) {
+	GooBallInfo info;
 
-	return state;
+	auto typeEnum = json.find_field("typeEnum").get_int64();
+	if (simdjson::error_code error = typeEnum.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("typeEnum", error));
+	}
+	info.typeEnum = GooBallType(typeEnum.value());
+
+	auto uid = json.find_field("uid").get_int64();
+	if (simdjson::error_code error = uid.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("uid", error));
+	}
+	info.uid = uid.value();
+
+	auto pos = Vector2f::deserialize(json.find_field("pos"));
+	if (!pos) {
+		auto error = pos.error();
+		error->prependField("pos");
+		return std::unexpected(error);
+	}
+	info.pos = pos.value();
+
+	auto angle = json.find_field("angle").get_double();
+	if (simdjson::error_code error = angle.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("angle", error));
+	}
+	info.angle = angle.value();
+
+	auto discovered = json.find_field("discovered").get_bool();
+	if (simdjson::error_code error = discovered.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("discovered", error));
+	}
+	info.discovered = discovered.value();
+
+	auto floatingWhileAsleep = json.find_field("floatingWhileAsleep").get_bool();
+	if (simdjson::error_code error = floatingWhileAsleep.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("floatingWhileAsleep", error));
+	}
+	info.floatingWhileAsleep = floatingWhileAsleep.value();
+
+	auto interactive = json.find_field("interactive").get_bool();
+	if (simdjson::error_code error = interactive.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("interactive", error));
+	}
+	info.interactive = interactive.value();
+
+	auto wakeWithLiquid = json.find_field("wakeWithLiquid").get_bool();
+	if (simdjson::error_code error = wakeWithLiquid.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("wakeWithLiquid", error));
+	}
+	info.wakeWithLiquid = wakeWithLiquid.value();
+
+	auto exitPipeAlert = json.find_field("exitPipeAlert").get_bool();
+	if (simdjson::error_code error = exitPipeAlert.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("exitPipeAlert", error));
+	}
+	info.exitPipeAlert = exitPipeAlert.value();
+
+	auto affectsAutoBounds = json.find_field("affectsAutoBounds").get_bool();
+	if (simdjson::error_code error = affectsAutoBounds.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("affectsAutoBounds", error));
+	}
+	info.affectsAutoBounds = affectsAutoBounds.value();
+
+	auto launcherLifespanMin = json.find_field("launcherLifespanMin").get_double();
+	if (simdjson::error_code error = launcherLifespanMin.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("launcherLifespanMin", error));
+	}
+	info.launcherLifespanMin = launcherLifespanMin.value();
+
+	auto launcherLifespanMax = json.find_field("launcherLifespanMax").get_double();
+	if (simdjson::error_code error = launcherLifespanMax.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("launcherLifespanMax", error));
+	}
+	info.launcherLifespanMax = launcherLifespanMax.value();
+
+	auto launcherForceFactor = json.find_field("launcherForceFactor").get_double();
+	if (simdjson::error_code error = launcherForceFactor.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("launcherForceFactor", error));
+	}
+	info.launcherForceFactor = launcherForceFactor.value();
+
+	auto launcherCanUseBalls = json.find_field("launcherCanUseBalls").get_bool();
+	if (simdjson::error_code error = launcherCanUseBalls.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("launcherCanUseBalls", error));
+	}
+	info.launcherCanUseBalls = launcherCanUseBalls.value();
+
+	auto launcherKnockbackFactor = json.find_field("launcherKnockbackFactor").get_double();
+	if (simdjson::error_code error = launcherKnockbackFactor.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("launcherKnockbackFactor", error));
+	}
+	info.launcherKnockbackFactor = launcherKnockbackFactor.value();
+
+	auto launcherMaxActive = json.find_field("launcherMaxActive").get_int64();
+	if (simdjson::error_code error = launcherMaxActive.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("launcherMaxActive", error));
+	}
+	info.launcherMaxActive = launcherMaxActive.value();
+
+	auto launcherBallTypeToGenerate = json.find_field("launcherBallTypeToGenerate").get_int64();
+	if (simdjson::error_code error = launcherBallTypeToGenerate.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("launcherBallTypeToGenerate", error));
+	}
+	info.launcherBallTypeToGenerate = launcherBallTypeToGenerate.value();
+
+	auto thrustForce = json.find_field("thrustForce").get_double();
+	if (simdjson::error_code error = thrustForce.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("thrustForce", error));
+	}
+	info.thrustForce = thrustForce.value();
+
+	auto maxVelocity = json.find_field("maxVelocity").get_double();
+	if (simdjson::error_code error = maxVelocity.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("maxVelocity", error));
+	}
+	info.maxVelocity = maxVelocity.value();
+
+	auto stiffness = json.find_field("stiffness").get_double();
+	if (simdjson::error_code error = stiffness.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("stiffness", error));
+	}
+	info.stiffness = stiffness.value();
+
+	auto filled = json.find_field("filled").get_bool();
+	if (simdjson::error_code error = filled.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("filled", error));
+	}
+	info.filled = filled.value();
+
+	auto detonationRadius = json.find_field("detonationRadius").get_double();
+	if (simdjson::error_code error = detonationRadius.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("detonationRadius", error));
+	}
+	info.detonationRadius = detonationRadius.value();
+
+	auto detonationForce = json.find_field("detonationForce").get_double();
+	if (simdjson::error_code error = detonationForce.error()) {
+		return std::unexpected(std::make_shared<JSONDeserializeError>("detonationForce", error));
+	}
+	info.detonationForce = detonationForce.value();
+
+	return info;
 }
 
-GooBall::GooBall(GooBallState state) {
-	this->state = state;
-	this->z_index = 1;
+GooBall::GooBall(GooBallInfo info) {
+	this->info = info;
+	this->layer = 1;
 
 	if (!this->ball_template) {
 		if (GooBall::ball_templates.empty()) { // empty could signify a failed load, TODO: fix
 			GooBall::loadGooBallTemplates("C:/Program Files/World of Goo 2/game/res/balls");
 		}
 
-		if (!GooBall::ball_templates.contains(this->state.typeEnum)) {
-			throw std::runtime_error("GooBall::GooBall GooBallTemplate for GooBallType = " + std::to_string(static_cast<int>(this->state.typeEnum)) + " has not been loaded");
+		if (!GooBall::ball_templates.contains(this->info.typeEnum)) {
+			throw std::runtime_error("GooBall::GooBall GooBallTemplate for GooBallType = " + std::to_string(static_cast<int>(this->info.typeEnum)) + " has not been loaded");
 		}
 
-		this->ball_template = &GooBall::ball_templates.at(this->state.typeEnum);
+		this->ball_template = &GooBall::ball_templates.at(this->info.typeEnum);
 	}
 
-	GooBall::balls.insert({ this->state.uid, this });
+	GooBall::balls.insert({ this->info.uid, this });
 }
 
 void GooBall::update() {
-	this->position = this->state.pos;
+	this->position = this->info.pos;
 }
 
+// TODO: make this less awful
 void GooBall::draw(sf::RenderWindow* window) {
 	sf::Sprite sprite = *(*ResourceManager::getInstance()->getSpriteResource(this->ball_template->body_image_id))->get();
 
@@ -85,7 +201,8 @@ void GooBall::draw(sf::RenderWindow* window) {
 	sf::FloatRect bounds = sprite.getLocalBounds();
 	sprite.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
 
-	float scale = 0.5 * this->ball_template->width;
+	// we don't actually randomize the variance because this is an editor
+	float scale = 0.5 * this->ball_template->width * (1.0 + this->ball_template->sizeVariance) * this->ball_template->bodyScale;
 	sprite.setScale(sf::Vector2f(scale, scale));
 	Vector2f screen_position = this->position.scale(GOOFORGE_PIXELS_PER_UNIT);
 	sprite.setPosition(sf::Vector2f(screen_position.x, -1.0 * screen_position.y));

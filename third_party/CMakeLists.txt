@@ -15,12 +15,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# imgui-sfml
+set(IMGUI_SFML_FIND_SFML FALSE)
+set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/third_party/imgui")
+add_subdirectory("imgui-sfml")
+
+# nativefiledialog-extended
+add_subdirectory("nativefiledialog-extended")
+
+# pugixml
+add_subdirectory("pugixml")
+
 # simdjson
 add_subdirectory("simdjson")
 
 # SFML
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory("SFML")
+
+# SFML
+add_subdirectory("spdlog")
 
 # zstd
 set(ZSTD_BUILD_PROGRAMS OFF)

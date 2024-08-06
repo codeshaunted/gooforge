@@ -7,3 +7,18 @@
 [submodule "third_party/simdjson"]
 	path = third_party/simdjson
 	url = https://github.com/simdjson/simdjson
+[submodule "third_party/pugixml"]
+	path = third_party/pugixml
+	url = https://github.com/zeux/pugixml
+[submodule "third_party/spdlog"]
+	path = third_party/spdlog
+	url = https://github.com/gabime/spdlog
+[submodule "third_party/imgui-sfml"]
+	path = third_party/imgui-sfml
+	url = https://github.com/SFML/imgui-sfml
+[submodule "third_party/imgui"]
+	path = third_party/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "third_party/nativefiledialog-extended"]
+	path = third_party/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended

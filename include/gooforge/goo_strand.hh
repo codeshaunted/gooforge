@@ -25,26 +25,25 @@
 
 namespace gooforge {
 
-struct GooStrandState {
-	// .wog2 fields
+struct GooStrandInfo {
 	unsigned int ball1UID;
 	unsigned int ball2UID;
 	GooBallType type;
 	bool filled;
 
-	static GooStrandState deserialize(simdjson::ondemand::value json);
+	static GooStrandInfo deserialize(simdjson::ondemand::value json);
 };
 
 
 class GooStrand : public Entity {
 	public:
-		GooStrand(GooStrandState state);
+		GooStrand(GooStrandInfo state);
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 	private:
 		GooBall* ball1;
 		GooBall* ball2;
-		GooStrandState state;
+		GooStrandInfo info;
 		GooBallTemplate* ball_template = nullptr;
 };
 

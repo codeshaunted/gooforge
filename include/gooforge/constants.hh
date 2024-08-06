@@ -21,7 +21,7 @@
 namespace gooforge {
 
 #define GOOFORGE_PIXELS_PER_UNIT 113.385826772 // roughly 2160/19.05, calculated manually
-#define GOOFORGE_FRAMERATE_LIMIT 60
+#define GOOFORGE_FRAMERATE_LIMIT 144
 
 } // namespace gooforge
 

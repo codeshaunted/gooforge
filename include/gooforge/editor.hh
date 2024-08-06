@@ -1,6 +1,6 @@
 // codeshaunted - gooforge
-// include/gooforge/entity_manager.hh
-// contains EntityManager declarations
+// include/gooforge/editor.hh
+// contains Editor declarations
 // Copyright 2024 codeshaunted
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,29 +15,33 @@
 // See the License for the specific language governing permissionsand
 // limitations under the License.
 
-#ifndef GOOFORGE_ENTITY_MANAGER_HH
-#define GOOFORGE_ENTITY_MANAGER_HH
+#ifndef GOOFORGE_EDITOR_HH
+#define GOOFORGE_EDITOR_HH
 
-#include <vector>
+#include <filesystem>
 
 #include "SFML/Graphics.hpp"
 
-#include "entity.hh"
+#include "error.hh"
+#include "level.hh"
 
 namespace gooforge {
 
-class EntityManager {
+class Editor {
 	public:
-		static EntityManager* getInstance();
-		void add(Entity* entity);
-		void update();
-		void draw(sf::RenderWindow* window);
+		void initialize();
+		void update(sf::Clock delta_clock);
+		void draw();
+		void showSelectWOG2DirectoryDialog();
+		void showErrorDialog(LegacyError error);
 	private:
-		static EntityManager* instance;
-		std::vector<Entity*> entities;
-		bool entities_dirty = false;
+		sf::RenderWindow window;
+		std::filesystem::path wog2_path;
+		std::optional<std::shared_ptr<Error>> error = std::nullopt;
+		bool error_logged = false;
+		Level* level;
 };
 
 } // namespace gooforge
 
-#endif // GOOFORGE_ENTITY_MANAGER_HH
+#endif // GOOFORGE_EDITOR_HH

@@ -22,10 +22,10 @@
 
 namespace gooforge {
 
-class Positionable {
-	protected:
+struct Positionable {
+	public:
 		Vector2f position;
-		int z_index;
+		int layer;
 };
 
 } // namespace gooforge

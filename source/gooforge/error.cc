@@ -1,6 +1,6 @@
 // codeshaunted - gooforge
-// include/gooforge/goo_ball_template.hh
-// contains GooBall declarations
+// source/gooforge/error.cc
+// contains Error definitions
 // Copyright 2024 codeshaunted
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,27 +15,16 @@
 // See the License for the specific language governing permissionsand
 // limitations under the License.
 
-#ifndef GOOFORGE_GOO_BALL_TEMPLATE_HH
-#define GOOFORGE_GOO_BALL_TEMPLATE_HH
-
-#include "simdjson.h"
+#include "error.hh"
 
 namespace gooforge {
 
-struct GooBallTemplate {
-	std::string name;
-	double width;
-	double height;
-	double sizeVariance;
-	uint64_t max_strands;
-	std::string body_image_id;
-	double bodyScale;
-	std::string strand_image_id;
-	float strandThickness;
+void JSONDeserializeError::prependField(std::string field) {
+	this->field = field + "." + this->field;
+}
 
-	static GooBallTemplate deserializeFromFile(std::string_view path);
-};
+void JSONDeserializeError::prependFieldAndArrayIndex(std::string field, size_t index) {
+	this->field = field + "[" + std::to_string(index) + "]." + this->field;
+}
 
 } // namespace gooforge
-
-#endif // GOOFORGE_GOO_BALL_TEMPLATE_HH

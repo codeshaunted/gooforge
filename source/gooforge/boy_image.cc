@@ -19,16 +19,18 @@
 
 #include <fstream>
 
+#include "spdlog/spdlog.h"
 #include "zstd.h"
 
 #include "buffer_stream.hh"
 
 namespace gooforge {
 
-std::expected<sf::Image*, Error> BoyImage::loadFromFile(std::string_view path) {
+std::expected<sf::Image*, LegacyError> BoyImage::loadFromFile(std::string_view path) {
     std::ifstream file(path.data(), std::ios::binary | std::ios::ate);
     if (!file) {
-        return std::unexpected(Error::FAILED_TO_OPEN_FILE);
+        spdlog::error("Failed to load image file from path = '{}'", path);
+        return std::unexpected(LegacyError::FAILED_TO_OPEN_FILE);
     }
 
     size_t file_size = file.tellg();
@@ -43,12 +45,14 @@ std::expected<sf::Image*, Error> BoyImage::loadFromFile(std::string_view path) {
     size_t decompressed_size = ZSTD_getFrameContentSize(compressed_data, compressed_data_size);
     if (decompressed_size == ZSTD_CONTENTSIZE_UNKNOWN || decompressed_size == ZSTD_CONTENTSIZE_ERROR) {
         throw std::runtime_error("BoyImage::loadFromFile failed to determine ZSTD frame content size");
+        spdlog::error("Failed to determine compression frame content size for image file at path = '{}'", path);
     }
 
     uint8_t* decompressed_data = new uint8_t[decompressed_size];
     size_t result = ZSTD_decompress(decompressed_data, decompressed_size, compressed_data, compressed_data_size);
     if (ZSTD_isError(result)) {
         throw std::runtime_error("BoyImage::loadFromFile failed to decompress ZSTD data");
+        spdlog::error("Failed to decompress image data for image file at path = '{}'", path);
     }
 
     delete[] compressed_data;

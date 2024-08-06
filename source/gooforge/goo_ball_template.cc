@@ -30,14 +30,22 @@ GooBallTemplate GooBallTemplate::deserializeFromFile(std::string_view path) {
 	ball_template.name = ball.find_field("name").get_string().take_value();
 	ball_template.width = ball.find_field("width").get_double().take_value();
 	ball_template.height = ball.find_field("height").get_double().take_value();
+	ball_template.sizeVariance = ball.find_field("sizeVariance").get_double().take_value();
 	ball_template.max_strands = ball.find_field("maxStrands").get_uint64().take_value();
 	ball_template.strandThickness = ball.find_field("strandThickness").get_double().take_value();
 	ball_template.strand_image_id = ball.find_field("strandImageId").find_field("imageId").get_string().take_value();
 	// this is somewhat sketchy as it relies upon the body being the first ball part... TODO: fix
-	auto body_image = ball.find_field("ballParts").at(0).find_field("images").at(0);
-	if (body_image.error() == simdjson::error_code::SUCCESS) {
-		ball_template.body_image_id = body_image.find_field("imageId").find_field("imageId").get_string().take_value();
+	auto body_part = ball.find_field("ballParts").at(0);
+	if (body_part.error() == simdjson::error_code::SUCCESS) {
+		auto body_image = body_part.find_field("images").at(0);
+
+		if (body_image.error() == simdjson::error_code::SUCCESS) {
+			ball_template.body_image_id = body_image.find_field("imageId").find_field("imageId").get_string().take_value();
+		}
+
+		ball_template.bodyScale = body_part.find_field("scale").get_double().take_value();
 	}
+	
 	
 	return ball_template;
 }

@@ -20,20 +20,25 @@ set(GOOFORGE_SOURCE_FILES
 	"${CMAKE_CURRENT_SOURCE_DIR}/buffer_stream.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/resource_manager.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/boy_image.cc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/entity_manager.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/goo_ball.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/goo_strand.cc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/goo_ball_template.cc")
+	"${CMAKE_CURRENT_SOURCE_DIR}/goo_ball_template.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/editor.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/level.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/vector.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/error.cc")
 
 set(GOOFORGE_INCLUDE_DIRECTORIES
 	"${CMAKE_SOURCE_DIR}/include/gooforge"
 	"${CMAKE_SOURCE_DIR}/third_party"
+	"${CMAKE_SOURCE_DIR}/third_party/nativefiledialog-extended/src/include"
 	"${CMAKE_SOURCE_DIR}/third_party/simdjson/include"
     "${CMAKE_SOURCE_DIR}/third_party/SFML/include"
+	"${CMAKE_SOURCE_DIR}/third_party/spdlog/include/spdlog"
     "${CMAKE_SOURCE_DIR}/third_party/zstd/lib"
 	"${PROJECT_BINARY_DIR}/source/gooforge")
 
-set(GOOFORGE_LINK_LIBRARIES libzstd sfml-graphics simdjson)
+set(GOOFORGE_LINK_LIBRARIES libzstd sfml-graphics simdjson pugixml spdlog ImGui-SFML::ImGui-SFML nfd)
 
 set(GOOFORGE_COMPILE_DEFINITIONS)
 
