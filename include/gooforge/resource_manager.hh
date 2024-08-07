@@ -59,8 +59,8 @@ class ResourceManager {
     public:
         ~ResourceManager();
         static ResourceManager* getInstance();
-        std::expected<void, LegacyError> loadManifest(std::string_view path);
-        std::expected<SpriteResource*, LegacyError> getSpriteResource(std::string_view id);
+        std::expected<void, Error> loadManifest(std::string_view path);
+        std::expected<SpriteResource*, Error> getSpriteResource(std::string_view id);
     private:
         static ResourceManager* instance;
         std::unordered_map<std::string, Resource*> resources;

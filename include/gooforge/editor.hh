@@ -19,6 +19,7 @@
 #define GOOFORGE_EDITOR_HH
 
 #include <filesystem>
+#include <variant>
 
 #include "SFML/Graphics.hpp"
 
@@ -27,19 +28,38 @@
 
 namespace gooforge {
 
+struct BaseEditorAction {
+
+};
+
+struct SelectEditorAction : public BaseEditorAction {
+
+};
+
+using EditorAction = std::variant<SelectEditorAction>;
+
 class Editor {
 	public:
+		~Editor();
 		void initialize();
 		void update(sf::Clock delta_clock);
 		void draw();
+		void processEvents();
+		void registerMainMenuBar();
+		void registerErrorDialog();
+		void showErrorDialog();
+		void registerSelectWOG2DirectoryDialog();
 		void showSelectWOG2DirectoryDialog();
-		void showErrorDialog(LegacyError error);
 	private:
 		sf::RenderWindow window;
+		sf::View view;
+		float zoom = 1.0f;
+		bool panning = false;
+		sf::Vector2f pan_start_position;
 		std::filesystem::path wog2_path;
-		std::optional<std::shared_ptr<Error>> error = std::nullopt;
-		bool error_logged = false;
-		Level* level;
+		std::optional<Error> error = std::nullopt;
+		Level* level = nullptr;
+		Entity* selected_entity;
 };
 
 } // namespace gooforge

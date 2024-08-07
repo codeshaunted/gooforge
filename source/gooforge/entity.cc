@@ -1,6 +1,6 @@
 // codeshaunted - gooforge
-// include/gooforge/boy_image.hh
-// contains BoyImage declarations
+// source/gooforge/entity.cc
+// contains Entity definitions
 // Copyright 2024 codeshaunted
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,23 +15,31 @@
 // See the License for the specific language governing permissionsand
 // limitations under the License.
 
-#ifndef GOOFORGE_BOY_IMAGE_HH
-#define GOOFORGE_BOY_IMAGE_HH
-
-#include <expected>
-#include <string_view>
-
-#include "SFML/Graphics.hpp"
-
-#include "error.hh"
+#include "entity.hh"
 
 namespace gooforge {
 
-class BoyImage {
-    public:
-        static std::expected<sf::Image*, Error> loadFromFile(std::string_view path);
-};
+bool Entity::wasClicked(Vector2f point) {
+	if (!this->click_bounds) {
+		return false;
+	}
+
+	if (this->click_bounds->type == EntityClickBoundShapeType::CIRCLE) {
+		EntityClickBoundCircle* circle = static_cast<EntityClickBoundCircle*>(this->click_bounds);
+		if (this->position.distance(point) <= circle->radius) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool Entity::getSelected() {
+	return this->selected;
+}
+
+void Entity::setSelected(bool selected) {
+	this->selected = selected;
+}
 
 } // namespace gooforge
-
-#endif // GOOFORGE_BOY_IMAGE_HH

@@ -92,13 +92,14 @@ struct GooBallInfo {
 	float detonationRadius;
 	float detonationForce;
 
-	static std::expected<GooBallInfo, std::shared_ptr<JSONDeserializeError>> deserialize(simdjson::ondemand::value json);
+	static std::expected<GooBallInfo, Error> deserialize(simdjson::ondemand::value json);
 };
 
 
 class GooBall : public Entity {
 	public:
-		GooBall(GooBallInfo info);
+		GooBall(GooBallInfo* info);
+		~GooBall();
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 	private:
@@ -106,7 +107,7 @@ class GooBall : public Entity {
 		static std::unordered_map<std::string, GooBallType> ball_name_to_type;
 		static std::unordered_map<GooBallType, GooBallTemplate> ball_templates;
 		static std::unordered_map<unsigned int, GooBall*> balls;
-		GooBallInfo info;
+		GooBallInfo* info;
 		GooBallTemplate* ball_template = nullptr;
 
 	friend class GooStrand;

@@ -53,7 +53,7 @@ std::expected<sf::Sprite, LegacyError> SpriteResource::get() {
         sf::Texture* texture = new sf::Texture();
         auto image = BoyImage::loadFromFile(this->path);
         if (!image) {
-            return std::unexpected(image.error());
+            //return std::unexpected(image.error());
         }
 
         texture->loadFromImage(**image);
@@ -79,12 +79,11 @@ ResourceManager* ResourceManager::getInstance() {
     return ResourceManager::instance;
 }
 
-std::expected<void, LegacyError> ResourceManager::loadManifest(std::string_view path) {
+std::expected<void, Error> ResourceManager::loadManifest(std::string_view path) {
     if (path.ends_with(".atlas")) {
         std::ifstream file(path.data(), std::ios::binary | std::ios::ate);
         if (!file) {
-            spdlog::error("Failed to open atlas manifest file at path = '{}'", path);
-            return std::unexpected(LegacyError::FAILED_TO_OPEN_FILE);
+            return std::unexpected(FileOpenError(std::string(path)));
         }
 
         size_t size = file.tellg();
@@ -124,24 +123,22 @@ std::expected<void, LegacyError> ResourceManager::loadManifest(std::string_view 
 
         spdlog::info("Successfully loaded atlas manifest from path = '{}'", path);
 
-        return std::expected<void, LegacyError>{};
+        return std::expected<void, Error>{};
     }
 
-    return std::unexpected(LegacyError::FAILED_TO_OPEN_FILE);
+    return std::unexpected(FileOpenError(std::string(path)));
 }
 
-std::expected<SpriteResource*, LegacyError> ResourceManager::getSpriteResource(std::string_view id) {
+std::expected<SpriteResource*, Error> ResourceManager::getSpriteResource(std::string_view id) {
     std::string id_string(id);
     if (!this->resources.contains(id_string)) {
-        spdlog::error("Failed to find resource with id = '{}'", id_string);
-        return std::unexpected(LegacyError::RESOURCE_NOT_FOUND);
+        return std::unexpected(ResourceNotFoundError(id_string));
     }
 
     SpriteResource* resource = static_cast<SpriteResource*>(this->resources.at(id_string));
 
     if (resource->type != ResourceType::SPRITE) {
-        spdlog::error("Resource with id = '{}' was found, but it is not a sprite resource as requested", id_string);
-        return std::unexpected(LegacyError::RESOURCE_NOT_FOUND);
+        return std::unexpected(ResourceNotFoundError(id_string));
     }
 
     return resource;

@@ -18,16 +18,38 @@
 #ifndef GOOFORGE_ENTITY_HH
 #define GOOFORGE_ENTITY_HH
 
+#include <optional>
+
 #include "SFML/Graphics.hpp"
 
 #include "positionable.hh"
 
 namespace gooforge {
 
+enum class EntityClickBoundShapeType {
+	CIRCLE
+};
+
+struct EntityClickBoundShape {
+	EntityClickBoundShape(EntityClickBoundShapeType type) : type(type) {}
+	EntityClickBoundShapeType type;
+};
+
+struct EntityClickBoundCircle : public EntityClickBoundShape {
+	EntityClickBoundCircle(float radius) : EntityClickBoundShape(EntityClickBoundShapeType::CIRCLE), radius(radius) {}
+	float radius;
+};
+
 class Entity : public Positionable {
 	public:
 		virtual void update() {}
 		virtual void draw(sf::RenderWindow* window) {}
+		bool wasClicked(Vector2f point);
+		bool getSelected();
+		void setSelected(bool selected);
+	protected:
+		EntityClickBoundShape* click_bounds = nullptr;
+		bool selected = false;
 };
 
 } // namespace gooforge

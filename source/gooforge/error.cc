@@ -17,6 +17,9 @@
 
 #include "error.hh"
 
+#include "spdlog.h"
+#include "zstd.h"
+
 namespace gooforge {
 
 void JSONDeserializeError::prependField(std::string field) {
@@ -25,6 +28,47 @@ void JSONDeserializeError::prependField(std::string field) {
 
 void JSONDeserializeError::prependFieldAndArrayIndex(std::string field, size_t index) {
 	this->field = field + "[" + std::to_string(index) + "]." + this->field;
+}
+
+void JSONDeserializeError::prependFilePath(std::string file_path) {
+	this->file_path = file_path;
+	spdlog::error(this->getMessage()); // log here because this is the termination of possible error stacking
+}
+
+std::string JSONDeserializeError::getMessage() {
+	if (file_path.empty()) {
+		return "Failed to deserialize JSON at field '" + this->field + "', with error '" + simdjson::error_message(this->code) + "'";
+	} else {
+		return "Failed to deserialize JSON file '" + this->file_path + "' at field '" + this->field + "', with error '" + simdjson::error_message(this->code) + "'";
+	}
+}
+
+ResourceNotFoundError::ResourceNotFoundError(std::string resource_id) {
+	this->resource_id = resource_id;
+	spdlog::error(this->getMessage());
+}
+
+std::string ResourceNotFoundError::getMessage() {
+	return "Failed to find resource with id '" + this->resource_id + "'";
+}
+
+FileOpenError::FileOpenError(std::string file_path) {
+	this->file_path = file_path;
+	spdlog::error(this->getMessage());
+}
+
+std::string FileOpenError::getMessage() {
+	return "Failed to open file at path '" + this->file_path + "'";
+}
+
+FileDecompressionError::FileDecompressionError(std::string file_path, size_t code) {
+	this->file_path = file_path;
+	this->code = code;
+	spdlog::error(this->getMessage());
+}
+
+std::string FileDecompressionError::getMessage() {
+	return "Failed to decompress file at path '" + this->file_path + "', with error '" + ZSTD_getErrorName(this->code) + "'";
 }
 
 } // namespace gooforge

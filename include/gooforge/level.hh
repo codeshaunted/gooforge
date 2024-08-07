@@ -64,19 +64,26 @@ struct LevelInfo {
 	bool enableTimeBugs;
 	int timebugMoves;
 
-	static std::expected<LevelInfo, std::shared_ptr<JSONDeserializeError>> deserialize(simdjson::ondemand::value json);
+	static std::expected<LevelInfo, Error> deserialize(simdjson::ondemand::value json);
+	static std::expected<LevelInfo, Error> deserializeFile(std::string_view file_path);
 };
 
 class Level {
 	public:
 		Level(LevelInfo info);
 		~Level();
+		void addEntity(Entity* entity);
 		void update();
 		void draw(sf::RenderWindow* window);
+		static sf::Vector2f worldToScreen(Vector2f world);
+		static Vector2f screenToWorld(sf::Vector2f screen);
 	private:
+		void sortEntities();
 		LevelInfo info;
 		std::vector<Entity*> entities;
 		bool entities_dirty = false;
+
+	friend class Editor;
 };
 
 } // namespace gooforge
