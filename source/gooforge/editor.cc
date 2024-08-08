@@ -130,8 +130,8 @@ void Editor::processEvents() {
                     bool clicked_entity = false;
                     for (auto entity : this->level->entities) {
                         if (entity->wasClicked(world_click_position)) {
-                            this->doAction(DeselectEditorAction(this->selected_entities));
-                            this->doAction(SelectEditorAction({ entity }));
+                            this->doEntitySelection(entity);
+                            
                             clicked_entity = true;
                             break;
                         }
@@ -179,6 +179,21 @@ void Editor::doAction(EditorAction action) {
                 }
             }
         }
+    }
+}
+
+void Editor::doEntitySelection(Entity* entity) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
+        if (entity->getSelected()) {
+            this->doAction(DeselectEditorAction({ entity }));
+        }
+        else {
+            this->doAction(SelectEditorAction({ entity }));
+        }
+    }
+    else {
+        this->doAction(DeselectEditorAction(this->selected_entities));
+        this->doAction(SelectEditorAction({ entity }));
     }
 }
 
@@ -303,7 +318,7 @@ void Editor::registerLevelWindow() {
                 // Draw selectable item with custom layout
                 ImGui::PushID(static_cast<int>(entity_i));
                 if (ImGui::Selectable("", entity->getSelected(), ImGuiSelectableFlags_SpanAllColumns)) {
-                    this->doAction(SelectEditorAction({ entity }));
+                    this->doEntitySelection(entity);
                 }
 
                 ImGui::SameLine();

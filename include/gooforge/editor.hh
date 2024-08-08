@@ -62,6 +62,7 @@ class Editor {
 		void draw();
 		void processEvents();
 		void doAction(EditorAction action);
+		void doEntitySelection(Entity* entity);
 		void registerMainMenuBar();
 		void registerErrorDialog();
 		void showErrorDialog();
