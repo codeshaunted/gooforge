@@ -38,6 +38,8 @@ void Editor::initialize() {
     this->window.create(sf::VideoMode(1920, 1080), "gooforge");
     this->window.setFramerateLimit(GOOFORGE_FRAMERATE_LIMIT);
     ImGui::SFML::Init(this->window);
+    ImGui::CreateContext();
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     this->view = sf::View(sf::FloatRect(0, 0, 1920, 1080));
 
@@ -57,30 +59,12 @@ void Editor::update(sf::Clock delta_clock) {
 
     ImGui::SFML::Update(this->window, delta_clock.restart());
 
+    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+
     this->registerErrorDialog();
     this->registerSelectWOG2DirectoryDialog();
     this->registerMainMenuBar();
-
-    /*
-    ImGui::SetNextWindowPos(ImVec2(0, menu_bar_height)); // Position at the top-left corner
-    ImGui::SetNextWindowSize(ImVec2(this->window.getSize().x / 5, this->window.getSize().y - menu_bar_height));
-    ImGui::Begin("Level Tree", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
-
-    if (this->level) {
-        for (auto entity : this->level->entities) {
-            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf;
-            if (entity == this->selected_entity) {
-                flags |= ImGuiTreeNodeFlags_Selected;
-            }
-
-            if (ImGui::TreeNodeEx("ENTITY", flags)) {
-                ImGui::TreePop();
-            }
-        }
-    }
-
-    ImGui::End();
-    */
+    this->registerLevelWindow();
 
     if (!std::filesystem::exists(this->wog2_path)) {
         this->showSelectWOG2DirectoryDialog();
@@ -137,22 +121,27 @@ void Editor::processEvents() {
                 this->pan_start_position = this->window.mapPixelToCoords(sf::Mouse::getPosition(this->window), this->view);
             }
 
-            /*if (event.mouseButton.button == sf::Mouse::Left) {
+            if (event.mouseButton.button == sf::Mouse::Left) {
                 if (this->level) {
                     sf::Vector2f screen_click_position = window.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y), this->view);
                     Vector2f world_click_position = Level::screenToWorld(screen_click_position);
 
                     this->level->sortEntities();
+                    bool clicked_entity = false;
                     for (auto entity : this->level->entities) {
                         if (entity->wasClicked(world_click_position)) {
-                            this->selected_entity->setSelected(false);
-                            this->selected_entity = entity;
-                            entity->setSelected(true);
+                            this->doAction(DeselectEditorAction(this->selected_entities));
+                            this->doAction(SelectEditorAction({ entity }));
+                            clicked_entity = true;
                             break;
                         }
                     }
+
+                    if (!clicked_entity) {
+                        
+                    }
                 }
-            }*/
+            }
         }
 
         if (event.type == sf::Event::MouseButtonReleased) {
@@ -172,6 +161,27 @@ void Editor::processEvents() {
     }
 }
 
+void Editor::doAction(EditorAction action) {
+    if (SelectEditorAction* select_action = std::get_if<SelectEditorAction>(&action)) {
+        for (auto entity : select_action->entities) {
+            entity->setSelected(true);
+            this->selected_entities.push_back(entity);
+        }
+    } else if (DeselectEditorAction* deselect_action = std::get_if<DeselectEditorAction>(&action)) {
+        for (auto entity : deselect_action->entities) {
+            entity->setSelected(false);
+            
+            // TODO: use an std::unordered_map so we don't have O(n) deletion
+            for (size_t i = 0; i < this->selected_entities.size(); ++i) {
+                if (this->selected_entities.at(i) == entity) {
+                    this->selected_entities.erase(this->selected_entities.begin() + i);
+                    break;
+                }
+            }
+        }
+    }
+}
+
 void Editor::registerMainMenuBar() {
     float menu_bar_height = 0.0f;
     if (ImGui::BeginMainMenuBar()) {
@@ -186,7 +196,6 @@ void Editor::registerMainMenuBar() {
                 args.filterCount = 1;
                 nfdresult_t result = NFD_OpenDialogU8_With(&out_path, &args);
                 if (result == NFD_OKAY) {
-                    // TODO: replace this with our own file load
                     auto level_info_result = LevelInfo::deserializeFile(out_path);
 
                     if (!level_info_result) {
@@ -267,6 +276,7 @@ void Editor::registerSelectWOG2DirectoryDialog() {
         if (ImGui::Button("OK")) {
             this->wog2_path = std::filesystem::path(directory_path);
             ResourceManager::getInstance()->loadManifest((this->wog2_path / "res/balls/_atlas.image.atlas").generic_string());
+            GooBall::loadGooBallTemplates((this->wog2_path / "res/balls/").generic_string()); // calling this here is a little hacky and coupling, TODO: fix?
             ImGui::CloseCurrentPopup();
         }
 
@@ -276,6 +286,39 @@ void Editor::registerSelectWOG2DirectoryDialog() {
 
 void Editor::showSelectWOG2DirectoryDialog() {
     ImGui::OpenPopup("Select World of Goo 2 Install");
+}
+
+void Editor::registerLevelWindow() {
+    ImGui::Begin("Level");
+
+    if (this->level) {
+        size_t entity_i = 0;
+        for (auto& entity : this->level->entities) {
+            if (entity->getType() == EntityType::GOO_BALL) {
+                GooBall* goo_ball = static_cast<GooBall*>(entity);
+                sf::Sprite sprite = *(*ResourceManager::getInstance()->getSpriteResource(goo_ball->getTemplate()->body_image_id))->get();
+                const char* text = "Goo Ball";
+                ImVec2 textSize = ImGui::CalcTextSize(text);
+
+                // Draw selectable item with custom layout
+                ImGui::PushID(static_cast<int>(entity_i));
+                if (ImGui::Selectable("", entity->getSelected(), ImGuiSelectableFlags_SpanAllColumns)) {
+                    this->doAction(SelectEditorAction({ entity }));
+                }
+
+                ImGui::SameLine();
+                ImGui::Image(sprite, ImVec2(textSize.y, textSize.y)); // Draw image
+                ImGui::SameLine();
+                ImGui::Text("%s", text); // Draw text
+
+                ImGui::PopID();
+            }
+
+            ++entity_i;
+        }
+    }
+
+    ImGui::End();
 }
 
 } // namespace gooforge

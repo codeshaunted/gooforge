@@ -29,27 +29,25 @@
 namespace gooforge {
 
 struct BaseEditorAction {
-
 };
 
 struct SelectEditorAction : public BaseEditorAction {
-
+	SelectEditorAction(std::vector<Entity*> entities) : entities(entities) {}
+	std::vector<Entity*> entities;
+	bool all = false;
 };
 
-using EditorAction = std::variant<SelectEditorAction>;
+struct DeselectEditorAction : public BaseEditorAction {
+	DeselectEditorAction(std::vector<Entity*> entities) : entities(entities) {}
+	std::vector<Entity*> entities;
+};
+
+using EditorAction = std::variant<SelectEditorAction, DeselectEditorAction>;
 
 class Editor {
 	public:
 		~Editor();
 		void initialize();
-		void update(sf::Clock delta_clock);
-		void draw();
-		void processEvents();
-		void registerMainMenuBar();
-		void registerErrorDialog();
-		void showErrorDialog();
-		void registerSelectWOG2DirectoryDialog();
-		void showSelectWOG2DirectoryDialog();
 	private:
 		sf::RenderWindow window;
 		sf::View view;
@@ -59,7 +57,17 @@ class Editor {
 		std::filesystem::path wog2_path;
 		std::optional<Error> error = std::nullopt;
 		Level* level = nullptr;
-		Entity* selected_entity;
+		std::vector<Entity*> selected_entities;
+		void update(sf::Clock delta_clock);
+		void draw();
+		void processEvents();
+		void doAction(EditorAction action);
+		void registerMainMenuBar();
+		void registerErrorDialog();
+		void showErrorDialog();
+		void registerSelectWOG2DirectoryDialog();
+		void showSelectWOG2DirectoryDialog();
+		void registerLevelWindow();
 };
 
 } // namespace gooforge

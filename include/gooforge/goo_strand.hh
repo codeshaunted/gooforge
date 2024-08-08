@@ -34,7 +34,6 @@ struct GooStrandInfo {
 	static GooStrandInfo deserialize(simdjson::ondemand::value json);
 };
 
-
 class GooStrand : public Entity {
 	public:
 		GooStrand(GooStrandInfo state);

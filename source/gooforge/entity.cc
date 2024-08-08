@@ -42,4 +42,8 @@ void Entity::setSelected(bool selected) {
 	this->selected = selected;
 }
 
+EntityType Entity::getType() {
+	return this->type;
+}
+
 } // namespace gooforge

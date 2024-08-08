@@ -102,8 +102,10 @@ class GooBall : public Entity {
 		~GooBall();
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
-	private:
 		static void loadGooBallTemplates(std::string_view path);
+		GooBallInfo* getInfo();
+		GooBallTemplate* getTemplate();
+	private:
 		static std::unordered_map<std::string, GooBallType> ball_name_to_type;
 		static std::unordered_map<GooBallType, GooBallTemplate> ball_templates;
 		static std::unordered_map<unsigned int, GooBall*> balls;

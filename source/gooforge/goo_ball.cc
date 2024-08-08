@@ -176,12 +176,9 @@ std::expected<GooBallInfo, Error> GooBallInfo::deserialize(simdjson::ondemand::v
 GooBall::GooBall(GooBallInfo* info) {
 	this->info = info;
 	this->layer = 1;
+	this->type = EntityType::GOO_BALL;
 
 	if (!this->ball_template) {
-		if (GooBall::ball_templates.empty()) { // empty could signify a failed load, TODO: fix
-			GooBall::loadGooBallTemplates("C:/Program Files/World of Goo 2/game/res/balls");
-		}
-
 		if (!GooBall::ball_templates.contains(this->info->typeEnum)) {
 			throw std::runtime_error("GooBall::GooBall GooBallTemplate for GooBallType = " + std::to_string(static_cast<int>(this->info->typeEnum)) + " has not been loaded");
 		}
@@ -214,7 +211,6 @@ void GooBall::draw(sf::RenderWindow* window) {
 	float scale = 0.5 * this->ball_template->width * (1.0 + this->ball_template->sizeVariance) * this->ball_template->bodyScale;
 	sprite.setScale(sf::Vector2f(scale, scale));
 	sprite.setPosition(Level::worldToScreen(this->position));
-	window->draw(sprite);
 
 	if (this->selected) {
 		sf::RectangleShape outline;
@@ -238,6 +234,8 @@ void GooBall::draw(sf::RenderWindow* window) {
 		// Draw the outline
 		window->draw(outline);
 	}
+
+	window->draw(sprite);
 }
 
 void GooBall::loadGooBallTemplates(std::string_view path) {
@@ -291,5 +289,13 @@ std::unordered_map<std::string, GooBallType> GooBall::ball_name_to_type = {
 std::unordered_map<GooBallType, GooBallTemplate> GooBall::ball_templates;
 
 std::unordered_map<unsigned int, GooBall*> GooBall::balls;
+
+GooBallInfo* GooBall::getInfo() {
+	return this->info;
+}
+
+GooBallTemplate* GooBall::getTemplate() {
+	return this->ball_template;
+}
 
 } // namespace gooforge

@@ -37,6 +37,7 @@ GooStrandInfo GooStrandInfo::deserialize(simdjson::ondemand::value json) {
 GooStrand::GooStrand(GooStrandInfo info) {
 	this->info = info;
 	this->layer = 0;
+	this->type = EntityType::GOO_STRAND;
 
 	if (!this->ball_template) {
 		if (GooBall::ball_templates.empty()) { // empty could signify a failed load, TODO: fix

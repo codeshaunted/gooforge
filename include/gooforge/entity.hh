@@ -40,6 +40,13 @@ struct EntityClickBoundCircle : public EntityClickBoundShape {
 	float radius;
 };
 
+// i wanted to do runtime polymorphism here with using Entity = std::variant<...>
+// but it got too complicated with the pointers... TODO: maybe try it again?
+enum class EntityType {
+	GOO_BALL,
+	GOO_STRAND
+};
+
 class Entity : public Positionable {
 	public:
 		virtual void update() {}
@@ -47,7 +54,9 @@ class Entity : public Positionable {
 		bool wasClicked(Vector2f point);
 		bool getSelected();
 		void setSelected(bool selected);
+		EntityType getType();
 	protected:
+		EntityType type;
 		EntityClickBoundShape* click_bounds = nullptr;
 		bool selected = false;
 };
