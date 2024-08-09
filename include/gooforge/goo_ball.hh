@@ -66,6 +66,259 @@ enum class GooBallType {
 	UTIL_ATTACH_WALKABLE
 };
 
+struct BallTemplateContainsInfo {
+	struct {
+		int ballType;
+	} ballType;
+	int count;
+};
+
+struct BallTemplateParticleEffectInfo {
+	std::string info;
+};
+
+struct BallTemplateImageIdInfo {
+	std::string imageId;
+};
+
+struct BallTemplateAttenuationFuncInfo {
+	std::vector<float> frames;
+	float totalLength;
+};
+
+struct BallTemplateBallPartImageInfo {
+	BallTemplateImageIdInfo imageId;
+	BallTemplateImageIdInfo imageMaskId;
+};
+
+enum class GooBallState {
+	WALKING = 0,
+	CLIMBING,
+	FALLING,
+	DRAGGING,
+	ATTACHED,
+	DETACHING,
+	DETACHED,
+	STANDING,
+	STUCK,
+	STUCK_ATTACHED,
+	STUCK_DETACHING,
+	PIPE,
+	TANK,
+	DYING,
+	PIPE_IN,
+	SWIMMMING,
+	DESPAWN,
+	NOT_VALID_SUCKING,
+	FLUSHING,
+	COUNT
+};
+
+struct GooBallStateEnumInfo {
+	GooBallState ballState;
+};
+
+struct BallTemplateColorInfo {
+	int color;
+};
+
+struct BallTemplateBallPartInfo {
+	std::string name;
+	std::vector<BallTemplateBallPartImageInfo> images;
+	std::vector<BallTemplateImageIdInfo> imageBackgroundIds;
+	int layer;
+	bool drawWhenAttached;
+	bool drawWhenNotAttached;
+	float minX;
+	float maxX;
+	float minY;
+	float maxY;
+	float minRangeX;
+	float maxRangeX;
+	float minRangeY;
+	float maxRangeY;
+	std::vector<GooBallStateEnumInfo> states;
+	bool isActiveWhenUndiscovered;
+	float scale;
+	bool scaleIsRelative;
+	float rotation;
+	bool isEye;
+	std::vector<BallTemplateImageIdInfo> pupilImageIds;
+	float pupilInset;
+	float pupilScale;
+	bool isRotating;
+	float stretchMaxSpeed;
+	float stretchParallel;
+	float stretchPerpendicular;
+	BallTemplateColorInfo color;
+	float stretchFactorFromStrandForce;
+};
+
+struct BallTemplateInfo {
+	std::string name;
+	float width;
+	float height;
+	struct {
+		int ballShape;
+	} shape;
+	float sizeVariance;
+	float mass;
+	float towerMass;
+	float dragMass;
+	float destroyForce;
+	float maxDropDistance;
+	int maxStrands;
+	float walkSpeed;
+	float climbSpeed;
+	float speedVariance;
+	float antiGravFactor;
+	bool isAntiGravAttached;
+	bool isAntiGravUnattached;
+	float dampening;
+	float rotationalDampening;
+	bool isEditable;
+	bool isDraggable;
+	bool isDetachable;
+	bool diesOnDetach;
+	bool isInvulnerable;
+	bool isInvulnerableToLava;
+	bool isStickyAttached;
+	bool isStickyUnattached;
+	bool attachToSomeTypeOnly;
+	bool isGrumpy;
+	bool isStatic;
+	bool isStaticWhenSleeping;
+	float selectionMarkerRadius;
+	bool countMoveOnUnatachedRelease;
+	int attachedMaginSS;
+	int unattachedMarginSS;
+	int health;
+	BallTemplateColorInfo blinkColor;
+	float jumpMultiplierMin;
+	float jumpMultiplierMax;
+	bool collideAttached;
+	bool collideWithAttached;
+	bool collideWithParticlesAttached;
+	int collisionGroup;
+	bool allowAttachmentsWhenStuck;
+	bool allowAttachmentsWhenFalling;
+	float motorMaxForce;
+	float motorMaxForceUndiscovered;
+	bool isSuckable;
+	bool opensExitUnattached;
+	bool affectsAutoboundsAttached;
+	bool affectsAutoboundsUnattached;
+	float burnTime;
+	float detonateForce;
+	float detonateRadius;
+	bool detonateKillBalls;
+	bool detonateKillItems;
+	bool detonateKillTerrain;
+	BallTemplateParticleEffectInfo detonateParticleEffect;
+	bool autoAttach;
+	bool isClimber;
+	float attachedParticleBarrierFactor;
+	struct {
+		std::string materialName;
+	} material;
+	std::vector<BallTemplateContainsInfo> contains;
+	struct {
+		std::string soundId;
+	} popSoundId;
+	std::string popParticlesId;
+	bool despawnTriggersFullDeath;
+	BallTemplateParticleEffectInfo deathParticleEffect;
+	BallTemplateParticleEffectInfo fireworksParticleEffect;
+	std::string trailEffectId;
+	BallTemplateParticleEffectInfo trailParticleEffect;
+	bool trailEffectEnabled;
+	float popDuration;
+	float popDelayMin;
+	float popDelayMax;
+	bool hideEyes;
+	bool botoxEyesWhenAttached;
+	bool isBehindStrands;
+	float wakeOtherBallsAtDistance;
+	struct {
+		int ballType;
+	} spawnType;
+	float decay;
+	float flingForceFactor;
+	float flingStrandMaxLength;
+	bool autoDisable;
+	float maxDragForce;
+	float dragDampeningFactor;
+	bool alwaysLookAtMouse;
+	bool hingeDrag;
+	float maxAttachSpeed;
+	bool jumpOnWakeup;
+	float thrust;
+	bool useDistantSounds;
+	bool canBeRotatedByHand;
+	int stencil;
+	bool stencilWhenAttached;
+	bool canSuckLiquidExternally;
+	bool canSuckLiquidFromPipe;
+	int liquidParticlesPerSecond;
+	int initialBallLiquidAmount;
+	float maxBallLiquidAmount;
+	float maxStrandLiquidAmount;
+	float liquidSinkOffset;
+	int strandSuckLiquidParticlesPerSecond;
+	float hitVelocityAccumulationLimit;
+	struct {
+		int strandType;
+	} strandType;
+	float springConstMin;
+	float springConstMax;
+	float strandDampening;
+	float maxReplacementStrandLength;
+	float maxNormalStrandLength;
+	float minStrandLength;
+	float strandShrinkLength;
+	float maxStretchForce;
+	float maxCompressForce;
+	float maxStrandAngle;
+	float maxStrandSeparation;
+	float strandDensity;
+	float strandThickness;
+	float strandGrowMultiplier;
+	bool isSingleStrandAllowed;
+	bool isSingleStrandAllowedEvenForOneStrand;
+	bool allowBallToStrandConversion;
+	bool swallowBall;
+	bool useStrandConnect;
+	bool isStrandWalkable;
+	bool canShrinkStrand;
+	BallTemplateImageIdInfo strandImageId;
+	BallTemplateImageIdInfo strandInactiveImageId;
+	BallTemplateImageIdInfo strandInactiveOverlayImageId;
+	float strandIgniteDelay;
+	float strandBurnSpeed;
+	std::string strandFireParticlesId;
+	BallTemplateImageIdInfo strandBurntImageId;
+	BallTemplateImageIdInfo strandBackgroundImageId;
+	BallTemplateImageIdInfo detachStrandImageId;
+	float detachStrandMaxLength;
+	BallTemplateImageIdInfo dragMarkerImageId;
+	BallTemplateImageIdInfo detachMarkerImageId;
+	float markerRotSpeed;
+	struct {
+		int liquidType;
+	} stainLiquidType;
+	BallTemplateAttenuationFuncInfo deselectAttenuationFunc;
+	BallTemplateAttenuationFuncInfo selectAttenuationFunc;
+	BallTemplateAttenuationFuncInfo dropAttenuationFunc;
+	BallTemplateAttenuationFuncInfo dragAttenuationFunc;
+	BallTemplateAttenuationFuncInfo spawnAttenuationFunc;
+	std::vector<BallTemplateBallPartInfo> ballParts;
+	struct {
+		std::string partName;
+	} bodyPart;
+	//std::vector<BallTemplateStateAnimationInfo> stateAnimations; // TODO: implement?
+	// TODO: implement the rest of this?
+};
+
 struct GooBallInfo {
 	GooBallType typeEnum;
 	int uid;

@@ -55,7 +55,8 @@ void GooBall::update() {
 
 // TODO: make this less awful
 void GooBall::draw(sf::RenderWindow* window) {
-	sf::Sprite sprite = *(*ResourceManager::getInstance()->getSpriteResource(this->ball_template->body_image_id))->get();
+	Resource sprite_resource = (*ResourceManager::getInstance()->getResource(this->ball_template->body_image_id));
+	sf::Sprite sprite = *std::get<SpriteResource*>(sprite_resource)->get();
 
 	// Set the origin to the center of the sprite
 	sf::FloatRect bounds = sprite.getLocalBounds();

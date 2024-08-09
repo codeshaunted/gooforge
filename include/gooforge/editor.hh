@@ -75,9 +75,9 @@ class Editor {
 		Level* level = nullptr;
 		std::vector<Entity*> selected_entities;
 		std::deque<EditorAction> undo_stack;
-		size_t undo_stack_count;
+		sf::Clock undo_clock;
+		sf::Time undo_cooldown = sf::milliseconds(200);
 		std::deque<EditorAction> redo_stack;
-		size_t redo_stack_count;
 		void update(sf::Clock delta_clock);
 		void draw();
 		void processEvents();
@@ -86,6 +86,7 @@ class Editor {
 		void undoLastAction();
 		void redoLastUndo();
 		void doEntitySelection(Entity* entity);
+		void doOpenFile();
 		void registerMainMenuBar();
 		void registerErrorDialog();
 		void showErrorDialog();

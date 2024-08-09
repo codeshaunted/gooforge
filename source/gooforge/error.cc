@@ -32,6 +32,16 @@ std::string JSONDeserializeError::getMessage() {
 	return "Failed to deserialize JSON file '" + this->file_path + "', with error '" + this->glaze_message + "'";
 }
 
+XMLDeserializeError::XMLDeserializeError(std::string file_path, std::string pugixml_message) {
+	this->file_path = file_path;
+	this->pugixml_message = pugixml_message;
+	spdlog::error(this->getMessage());
+}
+
+std::string XMLDeserializeError::getMessage() {
+	return "Failed to deserialize XML file '" + this->file_path + "', with error '" + this->pugixml_message + "'";
+}
+
 ResourceNotFoundError::ResourceNotFoundError(std::string resource_id) {
 	this->resource_id = resource_id;
 	spdlog::error(this->getMessage());

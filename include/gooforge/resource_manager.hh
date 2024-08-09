@@ -19,6 +19,7 @@
 #define GOOFORGE_RESOURCE_MANAGER_HH
 
 #include <expected>
+#include <filesystem>
 #include <string_view>
 #include <unordered_map>
 
@@ -32,38 +33,40 @@ enum class ResourceType {
     SPRITE,
 };
 
-class Resource {
+class BaseResource {
     public:
-        Resource(ResourceType type, std::string_view path) : type(type), path(path), asset(nullptr) {}
-        ~Resource();
+        BaseResource(std::string path) : path(path), asset(nullptr) {}
+        ~BaseResource();
         void unload();
     protected:
-        ResourceType type;
         std::string path;
         void* asset;
-    
-    friend class ResourceManager;
 };
 
-class SpriteResource : public Resource {
+class SpriteResource : public BaseResource {
     public:
-        SpriteResource(std::string_view path) : Resource(ResourceType::SPRITE, path), atlas_sprite(nullptr) {}
-        SpriteResource(SpriteResource* atlas_sprite, sf::IntRect atlas_rect) : Resource(ResourceType::SPRITE, ""), atlas_sprite(atlas_sprite), atlas_rect(atlas_rect) {}
-        std::expected<sf::Sprite, LegacyError> get();
+        SpriteResource(std::string path) : BaseResource(path), atlas_sprite(nullptr) {}
+        SpriteResource(SpriteResource* atlas_sprite, sf::IntRect atlas_rect) : BaseResource(atlas_sprite->path), atlas_sprite(atlas_sprite), atlas_rect(atlas_rect) {}
+        std::expected<sf::Sprite, Error> get();
     private:
         SpriteResource* atlas_sprite;
         sf::IntRect atlas_rect;
 };
 
+using Resource = std::variant<SpriteResource*>;
+
 class ResourceManager {
     public:
         ~ResourceManager();
         static ResourceManager* getInstance();
-        std::expected<void, Error> loadManifest(std::string_view path);
-        std::expected<SpriteResource*, Error> getSpriteResource(std::string_view id);
+        std::expected<void, Error> takeInventory(std::filesystem::path& base_path);
+        std::expected<void, Error> loadResourceManifest(std::filesystem::path& path);
+        std::expected<void, Error> loadAtlasManifest(std::filesystem::path& path);
+        std::expected<Resource, Error> getResource(std::string id);
     private:
         static ResourceManager* instance;
-        std::unordered_map<std::string, Resource*> resources;
+        std::filesystem::path base_path;
+        std::unordered_map<std::string, Resource> resources;
 };
 
 } // namespace gooforge

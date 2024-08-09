@@ -18,9 +18,8 @@
 #ifndef GOOFORGE_ERROR_HH
 #define GOOFORGE_ERROR_HH
 
+#include <string>
 #include <variant>
-
-#include "simdjson.h"
 
 namespace gooforge {
 
@@ -33,6 +32,13 @@ struct JSONDeserializeError : BaseError {
     std::string getMessage() override;
     std::string file_path;
     std::string glaze_message;
+};
+
+struct XMLDeserializeError : BaseError {
+    XMLDeserializeError(std::string file_path, std::string pugixml_message);
+    std::string getMessage() override;
+    std::string file_path;
+    std::string pugixml_message;
 };
 
 struct ResourceNotFoundError : BaseError {
@@ -54,7 +60,7 @@ struct FileDecompressionError : BaseError {
     size_t code;
 };
 
-using Error = std::variant<JSONDeserializeError, ResourceNotFoundError, FileOpenError, FileDecompressionError>;
+using Error = std::variant<JSONDeserializeError, XMLDeserializeError, ResourceNotFoundError, FileOpenError, FileDecompressionError>;
 
 enum class LegacyError {
     FAILED_TO_OPEN_FILE = 0,

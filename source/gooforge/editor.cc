@@ -25,6 +25,7 @@
 #include "simdjson.h"
 #include "spdlog.h"
 #include "glaze/json/read.hpp"
+#include "glaze/json/write.hpp"
 
 #include "constants.hh"
 #include "resource_manager.hh"
@@ -111,7 +112,18 @@ void Editor::update(sf::Clock delta_clock) {
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::O)) {
+            this->doOpenFile();
+        }
 
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Z) && this->undo_clock.getElapsedTime() > this->undo_cooldown) {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LShift)) {
+                this->redoLastUndo();
+            }
+            else {
+                this->undoLastAction();
+            }
+
+            this->undo_clock.restart();
         }
     }
 
@@ -243,6 +255,10 @@ void Editor::undoAction(EditorAction action) {
 }
 
 void Editor::undoLastAction() {
+    if (this->undo_stack.empty()) {
+        return;
+    }
+
     EditorAction last_action = this->undo_stack.front();
     this->undo_stack.pop_front();
 
@@ -250,7 +266,9 @@ void Editor::undoLastAction() {
 }
 
 void Editor::redoLastUndo() {
-
+    if (this->redo_stack.empty()) {
+        return;
+    }
 }
 
 void Editor::doEntitySelection(Entity* entity) {
@@ -267,40 +285,46 @@ void Editor::doEntitySelection(Entity* entity) {
     }
 }
 
+void Editor::doOpenFile() {
+    NFD_Init();
+    nfdu8char_t* out_path;
+    nfdu8filteritem_t filters[2] = { {"World Of Goo 2", "wog2"} };
+    nfdopendialogu8args_t args = { 0 };
+    args.filterList = filters;
+    args.filterCount = 1;
+    nfdresult_t result = NFD_OpenDialogU8_With(&out_path, &args);
+    if (result == NFD_OKAY) {
+        LevelInfo level_info;
+        std::string buffer;
+        auto level_info_error = glz::read_file_json < glz::opts{ .error_on_unknown_keys = false } > (level_info, out_path, buffer);
+
+        if (level_info_error) {
+            this->error = JSONDeserializeError(out_path, glz::format_error(level_info_error, buffer));
+        }
+        else {
+            this->level = new Level(level_info);
+        }
+
+        NFD_FreePathU8(out_path);
+    }
+    NFD_Quit();
+}
+
 void Editor::registerMainMenuBar() {
     float menu_bar_height = 0.0f;
     if (ImGui::BeginMainMenuBar()) {
         menu_bar_height = ImGui::GetWindowHeight();
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Open", "Ctrl+O")) {
-                NFD_Init();
-                nfdu8char_t* out_path;
-                nfdu8filteritem_t filters[2] = { {"World Of Goo 2", "wog2"} };
-                nfdopendialogu8args_t args = { 0 };
-                args.filterList = filters;
-                args.filterCount = 1;
-                nfdresult_t result = NFD_OpenDialogU8_With(&out_path, &args);
-                if (result == NFD_OKAY) {
-                    LevelInfo level_info;
-                    std::string buffer;
-                    auto level_info_error = glz::read_file_json<glz::opts{ .error_on_unknown_keys = false }>(level_info, out_path, buffer);
-
-                    if (level_info_error) {
-                        this->error = JSONDeserializeError(out_path, glz::format_error(level_info_error, buffer));
-                    }
-                    else {
-                        this->level = new Level(level_info);
-                    }
-
-                    NFD_FreePathU8(out_path);
-                }
-                NFD_Quit();
+                this->doOpenFile();
             }
-
-
 
             if (ImGui::MenuItem("Save", "Ctrl+S")) {
 
+            }
+
+            if (ImGui::MenuItem("Save As", "Ctrl+Shift+S")) {
+                auto ec = glz::write_file_json<glz::opts{ .prettify = true }>(this->level->info, "./obj.json", std::string{});
             }
 
             if (ImGui::MenuItem("Exit", "Alt+F4")) {
@@ -377,7 +401,8 @@ void Editor::registerSelectWOG2DirectoryDialog() {
 
         if (ImGui::Button("OK")) {
             this->wog2_path = std::filesystem::path(directory_path);
-            ResourceManager::getInstance()->loadManifest((this->wog2_path / "res/balls/_atlas.image.atlas").generic_string());
+            ResourceManager::getInstance()->takeInventory(this->wog2_path);
+            //ResourceManager::getInstance()->loadManifest((this->wog2_path / "res/balls/_atlas.image.atlas").generic_string());
             GooBall::loadGooBallTemplates((this->wog2_path / "res/balls/").generic_string()); // calling this here is a little hacky and coupling, TODO: fix?
             ImGui::CloseCurrentPopup();
         }
@@ -398,7 +423,8 @@ void Editor::registerLevelWindow() {
         for (auto& entity : this->level->entities) {
             if (entity->getType() == EntityType::GOO_BALL) {
                 GooBall* goo_ball = static_cast<GooBall*>(entity);
-                sf::Sprite sprite = *(*ResourceManager::getInstance()->getSpriteResource(goo_ball->getTemplate()->body_image_id))->get();
+                Resource sprite_resource = (*ResourceManager::getInstance()->getResource(goo_ball->getTemplate()->body_image_id));
+                sf::Sprite sprite = *std::get<SpriteResource*>(sprite_resource)->get();
                 const char* text = "Goo Ball";
                 ImVec2 textSize = ImGui::CalcTextSize(text);
 

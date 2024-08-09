@@ -19,26 +19,27 @@
 
 #include <fstream>
 
-#include "spdlog/spdlog.h"
+#include "pugixml.hpp"
+#include "spdlog.h"
 
 #include "boy_image.hh"
 #include "buffer_stream.hh"
 
 namespace gooforge {
 
-Resource::~Resource() {
+BaseResource::~BaseResource() {
     if (this->asset) {
         delete this->asset;
     }
 }
 
-void Resource::unload() {
+void BaseResource::unload() {
     if (this->asset) {
         delete this->asset;
     }
 }
 
-std::expected<sf::Sprite, LegacyError> SpriteResource::get() {
+std::expected<sf::Sprite, Error> SpriteResource::get() {
     if (this->atlas_sprite) {
         const sf::Texture* texture = this->atlas_sprite->get()->getTexture();
 
@@ -53,7 +54,7 @@ std::expected<sf::Sprite, LegacyError> SpriteResource::get() {
         sf::Texture* texture = new sf::Texture();
         auto image = BoyImage::loadFromFile(this->path);
         if (!image) {
-            //return std::unexpected(image.error());
+            return std::unexpected(image.error());
         }
 
         texture->loadFromImage(**image);
@@ -66,7 +67,8 @@ std::expected<sf::Sprite, LegacyError> SpriteResource::get() {
 
 ResourceManager::~ResourceManager() {
     for (auto resource : this->resources) {
-        delete resource.second;
+        BaseResource* base_resource = std::visit([](auto& derived_resource) -> BaseResource* { return derived_resource; }, resource.second);
+        delete base_resource;
     }
 }
 
@@ -79,69 +81,112 @@ ResourceManager* ResourceManager::getInstance() {
     return ResourceManager::instance;
 }
 
-std::expected<void, Error> ResourceManager::loadManifest(std::string_view path) {
-    if (path.ends_with(".atlas")) {
-        std::ifstream file(path.data(), std::ios::binary | std::ios::ate);
-        if (!file) {
-            return std::unexpected(FileOpenError(std::string(path)));
-        }
+std::expected<void, Error> ResourceManager::takeInventory(std::filesystem::path& base_path) {
+    this->base_path = base_path;
 
-        size_t size = file.tellg();
-        file.seekg(0);
-
-        char* data = new char[size];
-        file.read(data, size);
-
-        BufferStream stream(data, size);
-        stream.seek(8); // skip header
-
-        std::string atlas_image_path = std::string(path.substr(0, path.size() - 6));
-        SpriteResource* atlas_sprite = new SpriteResource(atlas_image_path); // chop off .atlas
-        this->resources.insert({atlas_image_path, atlas_sprite});
-        
-        uint32_t number_of_files = stream.read<uint32_t>();
-        for (size_t i = 0; i < number_of_files; ++i) {
-            std::string id;
-            for (size_t j = 0; j < 64; ++j) {
-                char character = stream.read<char>();
-
-                if (character) {
-                    id += character;
-                }
+    // load manifests
+    for (const std::filesystem::directory_entry& entry : std::filesystem::recursive_directory_iterator(base_path)) {
+        auto path = entry.path();
+        if (path.extension() == ".xml") {
+            auto result = this->loadResourceManifest(path);
+            if (!result) {
+                return std::unexpected(result.error());
             }
-
-            uint32_t x_offset = stream.read<uint32_t>();
-            uint32_t y_offset = stream.read<uint32_t>();
-            uint32_t x_size = stream.read<uint32_t>();
-            uint32_t y_size = stream.read<uint32_t>();
-
-            sf::IntRect rect(x_offset, y_offset, x_size, y_size);
-
-            SpriteResource* sprite_resource = new SpriteResource(atlas_sprite, rect);
-            this->resources.insert({id, sprite_resource});
+        } else if (path.extension() == ".atlas") {
+            auto result = this->loadAtlasManifest(path);
+            if (!result) {
+                return std::unexpected(result.error());
+            }
         }
-
-        spdlog::info("Successfully loaded atlas manifest from path = '{}'", path);
-
-        return std::expected<void, Error>{};
     }
 
-    return std::unexpected(FileOpenError(std::string(path)));
+    return std::expected<void, Error>{};
 }
 
-std::expected<SpriteResource*, Error> ResourceManager::getSpriteResource(std::string_view id) {
+std::expected<void, Error> ResourceManager::loadResourceManifest(std::filesystem::path& path) {
+    pugi::xml_document document;
+    pugi::xml_parse_result result = document.load_file(path.string().c_str());
+
+    if (!result) {
+        return std::unexpected(XMLDeserializeError(path.string(), result.description()));
+    }
+
+    pugi::xml_node root = document.child("ResourceManifest");
+
+    for (auto resource = root.child("Resources"); resource; resource = resource.next_sibling("Resources")) {
+        pugi::xml_node set_defaults = resource.child("SetDefaults");
+
+        std::filesystem::path resource_path = this->base_path;
+        std::string resource_id;
+        if (set_defaults) {
+            resource_path /= set_defaults.attribute("path").as_string();
+            resource_id = set_defaults.attribute("id_prefix").as_string();
+        }
+
+        for (auto image = resource.child("Image"); image; image = image.next_sibling("Image")) {
+            resource_id += image.attribute("id").as_string();
+            resource_path /= image.attribute("path").as_string();
+            resource_path.replace_extension(".image");
+
+            SpriteResource* sprite_resource = new SpriteResource(resource_path.string());
+            this->resources.insert({ resource_id, sprite_resource });
+        }
+    }
+
+    return std::expected<void, Error>{};
+}
+
+std::expected<void, Error> ResourceManager::loadAtlasManifest(std::filesystem::path& path) {
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    if (!file) {
+        return std::unexpected(FileOpenError(path.string()));
+    }
+
+    size_t size = file.tellg();
+    file.seekg(0);
+
+    char* data = new char[size];
+    file.read(data, size);
+
+    BufferStream stream(data, size);
+    stream.seek(8); // skip header
+
+    path.replace_extension("");
+    SpriteResource* atlas_sprite = new SpriteResource(path.string()); // chop off .atlas
+    this->resources.insert({ path.string(), atlas_sprite});
+        
+    uint32_t number_of_files = stream.read<uint32_t>();
+    for (size_t i = 0; i < number_of_files; ++i) {
+        std::string id;
+        for (size_t j = 0; j < 64; ++j) {
+            char character = stream.read<char>();
+
+            if (character) {
+                id += character;
+            }
+        }
+
+        uint32_t x_offset = stream.read<uint32_t>();
+        uint32_t y_offset = stream.read<uint32_t>();
+        uint32_t x_size = stream.read<uint32_t>();
+        uint32_t y_size = stream.read<uint32_t>();
+
+        sf::IntRect rect(x_offset, y_offset, x_size, y_size);
+
+        SpriteResource* sprite_resource = new SpriteResource(atlas_sprite, rect);
+        this->resources.insert({id, sprite_resource});
+    }
+
+    return std::expected<void, Error>{};
+}
+
+std::expected<Resource, Error> ResourceManager::getResource(std::string id) {
     std::string id_string(id);
     if (!this->resources.contains(id_string)) {
         return std::unexpected(ResourceNotFoundError(id_string));
     }
 
-    SpriteResource* resource = static_cast<SpriteResource*>(this->resources.at(id_string));
-
-    if (resource->type != ResourceType::SPRITE) {
-        return std::unexpected(ResourceNotFoundError(id_string));
-    }
-
-    return resource;
+    return this->resources.at(id_string);
 }
 
 ResourceManager* ResourceManager::instance = nullptr;
