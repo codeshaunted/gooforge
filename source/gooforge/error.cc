@@ -22,25 +22,14 @@
 
 namespace gooforge {
 
-void JSONDeserializeError::prependField(std::string field) {
-	this->field = field + "." + this->field;
-}
-
-void JSONDeserializeError::prependFieldAndArrayIndex(std::string field, size_t index) {
-	this->field = field + "[" + std::to_string(index) + "]." + this->field;
-}
-
-void JSONDeserializeError::prependFilePath(std::string file_path) {
+JSONDeserializeError::JSONDeserializeError(std::string file_path, std::string glaze_message) {
 	this->file_path = file_path;
-	spdlog::error(this->getMessage()); // log here because this is the termination of possible error stacking
+	this->glaze_message = glaze_message;
+	spdlog::error(this->getMessage());
 }
 
 std::string JSONDeserializeError::getMessage() {
-	if (file_path.empty()) {
-		return "Failed to deserialize JSON at field '" + this->field + "', with error '" + simdjson::error_message(this->code) + "'";
-	} else {
-		return "Failed to deserialize JSON file '" + this->file_path + "' at field '" + this->field + "', with error '" + simdjson::error_message(this->code) + "'";
-	}
+	return "Failed to deserialize JSON file '" + this->file_path + "', with error '" + this->glaze_message + "'";
 }
 
 ResourceNotFoundError::ResourceNotFoundError(std::string resource_id) {

@@ -24,6 +24,7 @@
 #include "nfd.h"
 #include "simdjson.h"
 #include "spdlog.h"
+#include "glaze/json/read.hpp"
 
 #include "constants.hh"
 #include "resource_manager.hh"
@@ -66,6 +67,12 @@ void Editor::update(sf::Clock delta_clock) {
     this->registerMainMenuBar();
     this->registerLevelWindow();
 
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::O)) {
+
+        }
+    }
+
     if (!std::filesystem::exists(this->wog2_path)) {
         this->showSelectWOG2DirectoryDialog();
     }
@@ -102,6 +109,10 @@ void Editor::processEvents() {
             this->view = sf::View(visible_area);
         }
 
+        if (ImGui::IsAnyItemHovered()) {
+            continue;
+        }
+
         if (event.type == sf::Event::MouseWheelScrolled) {
             if (event.mouseWheelScroll.wheel == sf::Mouse::Wheel::VerticalWheel) {
                 if (event.mouseWheelScroll.delta > 0) {
@@ -128,7 +139,7 @@ void Editor::processEvents() {
 
                     this->level->sortEntities();
                     bool clicked_entity = false;
-                    for (auto entity : this->level->entities) {
+                    for (auto entity : std::ranges::reverse_view(this->level->entities)) {
                         if (entity->wasClicked(world_click_position)) {
                             this->doEntitySelection(entity);
                             
@@ -138,7 +149,7 @@ void Editor::processEvents() {
                     }
 
                     if (!clicked_entity) {
-                        
+                        this->doAction(DeselectEditorAction(this->selected_entities));
                     }
                 }
             }
@@ -161,7 +172,17 @@ void Editor::processEvents() {
     }
 }
 
-void Editor::doAction(EditorAction action) {
+void Editor::doAction(EditorAction action, bool for_redo) {
+    this->undo_stack.push_front(action);
+    BaseEditorAction* base_action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, action);
+    if (!base_action->implicit && !for_redo) {
+        ++this->redo_stack_count;
+    }
+    if (base_action->implicit && !for_redo) {
+        this->redo_stack_count = 0;
+        this->redo_stack.clear();
+    }
+
     if (SelectEditorAction* select_action = std::get_if<SelectEditorAction>(&action)) {
         for (auto entity : select_action->entities) {
             entity->setSelected(true);
@@ -182,6 +203,77 @@ void Editor::doAction(EditorAction action) {
     }
 }
 
+void Editor::undoAction(EditorAction action) {
+    if (SelectEditorAction* select_action = std::get_if<SelectEditorAction>(&action)) {
+        for (auto entity : select_action->entities) {
+            entity->setSelected(false);
+
+            // TODO: use an std::unordered_map so we don't have O(n) deletion
+            for (size_t i = 0; i < this->selected_entities.size(); ++i) {
+                if (this->selected_entities.at(i) == entity) {
+                    this->selected_entities.erase(this->selected_entities.begin() + i);
+                    break;
+                }
+            }
+        }
+    }
+    else if (DeselectEditorAction* deselect_action = std::get_if<DeselectEditorAction>(&action)) {
+        for (auto entity : deselect_action->entities) {
+            entity->setSelected(true);
+            this->selected_entities.push_back(entity);
+        }
+
+    }
+}
+
+void Editor::undoLastAction() {
+    EditorAction last_action = this->undo_stack.front();
+    this->undo_stack.pop_front();
+    this->redo_stack.push_front(last_action);
+    ++this->redo_stack_count;
+    this->undoAction(last_action);
+
+    if (this->undo_stack.empty()) {
+        return;
+    }
+
+    // thank you modern c++ for the following abomination
+    // all you need to know is that this also undoes all implicit actions and adds them to the redo stack
+    last_action = this->undo_stack.front();
+    for (BaseEditorAction* action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, last_action); action->implicit;) {
+        this->undo_stack.pop_front();
+        this->redo_stack.push_front(last_action);
+        this->undoAction(last_action);
+
+        if (this->undo_stack.empty()) {
+            break;
+        }
+
+        last_action = this->undo_stack.front();
+    }
+
+    --this->undo_stack_count;
+}
+
+void Editor::redoLastUndo() {
+    EditorAction last_action = this->redo_stack.back();
+    for (BaseEditorAction* action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, last_action); action->implicit;) {
+        this->redo_stack.pop_back();
+        this->doAction(last_action);
+
+        if (this->redo_stack.empty()) {
+            break;
+        }
+
+        last_action = this->redo_stack.back();
+    }
+
+    this->doAction(last_action);
+
+    this->redo_stack.pop_back();
+    --this->redo_stack_count;
+}
+
 void Editor::doEntitySelection(Entity* entity) {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
         if (entity->getSelected()) {
@@ -192,7 +284,7 @@ void Editor::doEntitySelection(Entity* entity) {
         }
     }
     else {
-        this->doAction(DeselectEditorAction(this->selected_entities));
+        this->doAction(DeselectEditorAction(this->selected_entities, true));
         this->doAction(SelectEditorAction({ entity }));
     }
 }
@@ -211,13 +303,15 @@ void Editor::registerMainMenuBar() {
                 args.filterCount = 1;
                 nfdresult_t result = NFD_OpenDialogU8_With(&out_path, &args);
                 if (result == NFD_OKAY) {
-                    auto level_info_result = LevelInfo::deserializeFile(out_path);
+                    LevelInfo level_info;
+                    std::string buffer;
+                    auto level_info_error = glz::read_file_json<glz::opts{ .error_on_unknown_keys = false }>(level_info, out_path, buffer);
 
-                    if (!level_info_result) {
-                        this->error = level_info_result.error();
+                    if (level_info_error) {
+                        this->error = JSONDeserializeError(out_path, glz::format_error(level_info_error, buffer));
                     }
                     else {
-                        this->level = new Level(level_info_result.value());
+                        this->level = new Level(level_info);
                     }
 
                     NFD_FreePathU8(out_path);
@@ -238,6 +332,22 @@ void Editor::registerMainMenuBar() {
             ImGui::EndMenu();
         }
 
+        if (ImGui::BeginMenu("Edit")) {
+            ImGui::BeginDisabled(this->undo_stack.empty());
+            if (ImGui::MenuItem("Undo", "Ctrl+Z")) {
+                this->undoLastAction();
+            }
+            ImGui::EndDisabled();
+
+            ImGui::BeginDisabled(this->redo_stack.empty());
+            if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z")) {
+                this->redoLastUndo();
+            }
+            ImGui::EndDisabled();
+
+            ImGui::EndMenu();
+        }
+
         ImGui::EndMainMenuBar();
     }
 }
@@ -247,9 +357,8 @@ void Editor::registerErrorDialog() {
         std::string message = "";
         if (this->error) {
             Error error_value = this->error.value();
-            if (JSONDeserializeError* json_error = std::get_if<JSONDeserializeError>(&error_value)) {
-                message = "Error deserializing JSON at field = '" + json_error->field + "', error = '" + simdjson::error_message(json_error->code) + "'";
-            }
+            BaseError* base_error = std::visit([](auto& derived_error) -> BaseError* { return &derived_error; }, error_value);
+            message = base_error->getMessage();
         }
 
         ImGui::Text(message.c_str());

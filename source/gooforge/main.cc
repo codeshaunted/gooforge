@@ -17,6 +17,9 @@
 
 #include "editor.hh"
 
+#include "glaze/json/read.hpp"
+#include "level.hh"
+
 int main(int argc, char* argv[]) {
     gooforge::Editor editor;
 

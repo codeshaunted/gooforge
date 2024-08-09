@@ -19,6 +19,7 @@
 #define GOOFORGE_EDITOR_HH
 
 #include <filesystem>
+#include <deque>
 #include <variant>
 
 #include "SFML/Graphics.hpp"
@@ -29,16 +30,17 @@
 namespace gooforge {
 
 struct BaseEditorAction {
+	BaseEditorAction(bool implicit) : implicit(implicit) {}
+	bool implicit = false;
 };
 
 struct SelectEditorAction : public BaseEditorAction {
-	SelectEditorAction(std::vector<Entity*> entities) : entities(entities) {}
+	SelectEditorAction(std::vector<Entity*> entities, bool implicit = false) : BaseEditorAction(implicit), entities(entities) {}
 	std::vector<Entity*> entities;
-	bool all = false;
 };
 
 struct DeselectEditorAction : public BaseEditorAction {
-	DeselectEditorAction(std::vector<Entity*> entities) : entities(entities) {}
+	DeselectEditorAction(std::vector<Entity*> entities, bool implicit = false) : BaseEditorAction(implicit), entities(entities) {}
 	std::vector<Entity*> entities;
 };
 
@@ -58,10 +60,17 @@ class Editor {
 		std::optional<Error> error = std::nullopt;
 		Level* level = nullptr;
 		std::vector<Entity*> selected_entities;
+		std::deque<EditorAction> undo_stack;
+		size_t undo_stack_count;
+		std::deque<EditorAction> redo_stack;
+		size_t redo_stack_count;
 		void update(sf::Clock delta_clock);
 		void draw();
 		void processEvents();
-		void doAction(EditorAction action);
+		void doAction(EditorAction action, bool for_redo = false);
+		void undoAction(EditorAction action);
+		void undoLastAction();
+		void redoLastUndo();
 		void doEntitySelection(Entity* entity);
 		void registerMainMenuBar();
 		void registerErrorDialog();

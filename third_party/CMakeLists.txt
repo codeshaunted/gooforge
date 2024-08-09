@@ -15,6 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# glaze
+add_subdirectory("glaze")
+
 # imgui-sfml
 set(IMGUI_SFML_FIND_SFML FALSE)
 set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/third_party/imgui")

@@ -29,15 +29,10 @@ struct BaseError {
 };
 
 struct JSONDeserializeError : BaseError {
-    JSONDeserializeError(std::string field, simdjson::error_code code) : field(field), code(code) {}
-    JSONDeserializeError(std::string field, size_t array_index, simdjson::error_code code) : field(field + "[" + std::to_string(array_index) + "]"), code(code) {}
-    void prependField(std::string field);
-    void prependFieldAndArrayIndex(std::string field, size_t index);
-    void prependFilePath(std::string file_path);
+    JSONDeserializeError(std::string file_path, std::string glaze_message);
     std::string getMessage() override;
-    std::string field;
-    simdjson::error_code code;
     std::string file_path;
+    std::string glaze_message;
 };
 
 struct ResourceNotFoundError : BaseError {

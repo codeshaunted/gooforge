@@ -67,7 +67,6 @@ enum class GooBallType {
 };
 
 struct GooBallInfo {
-	// .wog2 fields
 	GooBallType typeEnum;
 	int uid;
 	Vector2f pos;
@@ -91,8 +90,6 @@ struct GooBallInfo {
 	bool filled;
 	float detonationRadius;
 	float detonationForce;
-
-	static std::expected<GooBallInfo, Error> deserialize(simdjson::ondemand::value json);
 };
 
 

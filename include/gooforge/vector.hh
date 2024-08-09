@@ -32,7 +32,6 @@ struct Vector2f {
 
 	Vector2f scale(float scalar);
 	float distance(const Vector2f& other) const;
-	static std::expected<Vector2f, Error> deserialize(simdjson::ondemand::value json);
 };
 
 } // namespace gooforge

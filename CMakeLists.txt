@@ -24,6 +24,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
 
+# for some reason using target_compile_options for this was not working
+# this is required for glaze on MSVC because Microsoft cannot make their
+# standards compliant preprocessor the default for some reason
+if(MSVC)
+	add_compile_options("/Zc:preprocessor")
+endif()
+
 # third party
 add_subdirectory("third_party")
 

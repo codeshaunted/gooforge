@@ -63,9 +63,6 @@ struct LevelInfo {
 	// std::vector<std::string> levelEnvironmentEffects; // TODO: implement
 	bool enableTimeBugs;
 	int timebugMoves;
-
-	static std::expected<LevelInfo, Error> deserialize(simdjson::ondemand::value json);
-	static std::expected<LevelInfo, Error> deserializeFile(std::string_view file_path);
 };
 
 class Level {

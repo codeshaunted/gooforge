@@ -24,17 +24,7 @@
 
 namespace gooforge {
 
-GooStrandInfo GooStrandInfo::deserialize(simdjson::ondemand::value json) {
-	GooStrandInfo info;
-	info.ball1UID = json.find_field("ball1UID").get_uint64().take_value();
-	info.ball2UID = json.find_field("ball2UID").get_uint64().take_value();
-	info.type = GooBallType(json.find_field("type").get_int64().take_value());
-	info.filled = json.find_field("filled").get_bool().take_value();
-
-	return info;
-}
-
-GooStrand::GooStrand(GooStrandInfo info) {
+GooStrand::GooStrand(GooStrandInfo* info) {
 	this->info = info;
 	this->layer = 0;
 	this->type = EntityType::GOO_STRAND;
@@ -44,23 +34,23 @@ GooStrand::GooStrand(GooStrandInfo info) {
 			GooBall::loadGooBallTemplates("C:/Program Files/World of Goo 2/game/res/balls");
 		}
 
-		if (!GooBall::ball_templates.contains(this->info.type)) {
-			throw std::runtime_error("GooStrand::GooStrand GooBallTemplate for GooBallType = " + std::to_string(static_cast<int>(this->info.type)) + " has not been loaded");
+		if (!GooBall::ball_templates.contains(this->info->type)) {
+			throw std::runtime_error("GooStrand::GooStrand GooBallTemplate for GooBallType = " + std::to_string(static_cast<int>(this->info->type)) + " has not been loaded");
 		}
 
-		this->ball_template = &GooBall::ball_templates.at(this->info.type);
+		this->ball_template = &GooBall::ball_templates.at(this->info->type);
 	}
 
-	if (!GooBall::balls.contains(this->info.ball1UID)) {
-		throw std::runtime_error("GooStrand::GooStrand GooBall with uid = " + std::to_string(static_cast<int>(this->info.ball1UID)) + " has not been loaded");
+	if (!GooBall::balls.contains(this->info->ball1UID)) {
+		throw std::runtime_error("GooStrand::GooStrand GooBall with uid = " + std::to_string(static_cast<int>(this->info->ball1UID)) + " has not been loaded");
 	}
 
-	if (!GooBall::balls.contains(this->info.ball2UID)) {
-		throw std::runtime_error("GooStrand::GooStrand GooBall with uid = " + std::to_string(static_cast<int>(this->info.ball1UID)) + " has not been loaded");
+	if (!GooBall::balls.contains(this->info->ball2UID)) {
+		throw std::runtime_error("GooStrand::GooStrand GooBall with uid = " + std::to_string(static_cast<int>(this->info->ball1UID)) + " has not been loaded");
 	}
 
-	this->ball1 = GooBall::balls.at(this->info.ball1UID);
-	this->ball2 = GooBall::balls.at(this->info.ball2UID);
+	this->ball1 = GooBall::balls.at(this->info->ball1UID);
+	this->ball2 = GooBall::balls.at(this->info->ball2UID);
 }
 
 void GooStrand::update() {

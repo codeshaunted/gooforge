@@ -22,3 +22,6 @@
 [submodule "third_party/nativefiledialog-extended"]
 	path = third_party/nativefiledialog-extended
 	url = https://github.com/btzy/nativefiledialog-extended
+[submodule "third_party/glaze"]
+	path = third_party/glaze
+	url = https://github.com/stephenberry/glaze

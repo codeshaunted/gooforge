@@ -30,19 +30,17 @@ struct GooStrandInfo {
 	unsigned int ball2UID;
 	GooBallType type;
 	bool filled;
-
-	static GooStrandInfo deserialize(simdjson::ondemand::value json);
 };
 
 class GooStrand : public Entity {
 	public:
-		GooStrand(GooStrandInfo state);
+		GooStrand(GooStrandInfo* state);
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 	private:
 		GooBall* ball1;
 		GooBall* ball2;
-		GooStrandInfo info;
+		GooStrandInfo* info;
 		GooBallTemplate* ball_template = nullptr;
 };
 

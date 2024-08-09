@@ -37,6 +37,7 @@ set(GOOFORGE_INCLUDE_DIRECTORIES
     "${CMAKE_SOURCE_DIR}/third_party/SFML/include"
 	"${CMAKE_SOURCE_DIR}/third_party/spdlog/include/spdlog"
     "${CMAKE_SOURCE_DIR}/third_party/zstd/lib"
+	"${CMAKE_SOURCE_DIR}/third_party/glaze/include"
 	"${PROJECT_BINARY_DIR}/source/gooforge")
 
 set(GOOFORGE_LINK_LIBRARIES libzstd sfml-graphics simdjson pugixml spdlog ImGui-SFML::ImGui-SFML nfd)
