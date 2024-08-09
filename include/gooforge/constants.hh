@@ -20,6 +20,9 @@
 
 namespace gooforge {
 
+// eventually we hopefully entirely get rid of
+// or just drastically reduce the number of magic
+// numbers declared in this file, for now it's fine
 #define GOOFORGE_PIXELS_PER_UNIT 113.385826772 // roughly 2160/19.05, calculated manually
 #define GOOFORGE_FRAMERATE_LIMIT 144
 

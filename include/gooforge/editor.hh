@@ -29,22 +29,36 @@
 
 namespace gooforge {
 
+// forward declare these so we can use them in the variant
+// and then use the variant in BaseEditorAction
+struct SelectEditorAction;
+struct DeselectEditorAction;
+
+using EditorAction = std::variant<SelectEditorAction, DeselectEditorAction>;
+
 struct BaseEditorAction {
-	BaseEditorAction(bool implicit) : implicit(implicit) {}
-	bool implicit = false;
+	// we define implicit actions as actions executed before the main action is to be executed
+	// this is needed for stuff like selection, where we want to deselect all when a user selects
+	// a single entity in the editor window
+	BaseEditorAction(std::vector<EditorAction> implicit_actions) : implicit_actions(implicit_actions) {}
+	virtual void execute(Editor* editor) {}
+	virtual void revert(Editor* editor) {}
+	std::vector<EditorAction> implicit_actions;
 };
 
 struct SelectEditorAction : public BaseEditorAction {
-	SelectEditorAction(std::vector<Entity*> entities, bool implicit = false) : BaseEditorAction(implicit), entities(entities) {}
+	SelectEditorAction(std::vector<Entity*> entities, std::vector<EditorAction> implicit_actions = {}) : BaseEditorAction(implicit_actions), entities(entities) {}
+	void execute(Editor* editor) override;
+	void revert(Editor* editor) override;
 	std::vector<Entity*> entities;
 };
 
 struct DeselectEditorAction : public BaseEditorAction {
-	DeselectEditorAction(std::vector<Entity*> entities, bool implicit = false) : BaseEditorAction(implicit), entities(entities) {}
+	DeselectEditorAction(std::vector<Entity*> entities, std::vector<EditorAction> implicit_actions = {}) : BaseEditorAction(implicit_actions), entities(entities) {}
+	void execute(Editor* editor) override;
+	void revert(Editor* editor) override;
 	std::vector<Entity*> entities;
 };
-
-using EditorAction = std::variant<SelectEditorAction, DeselectEditorAction>;
 
 class Editor {
 	public:
@@ -67,7 +81,7 @@ class Editor {
 		void update(sf::Clock delta_clock);
 		void draw();
 		void processEvents();
-		void doAction(EditorAction action, bool for_redo = false);
+		void doAction(EditorAction action);
 		void undoAction(EditorAction action);
 		void undoLastAction();
 		void redoLastUndo();
@@ -78,6 +92,12 @@ class Editor {
 		void registerSelectWOG2DirectoryDialog();
 		void showSelectWOG2DirectoryDialog();
 		void registerLevelWindow();
+
+	// we either make everything public or declare every
+	// single derived action as a friend class, pick
+	// your poison, or maybe just structure it better? :P
+	friend class SelectEditorAction;
+	friend class DeselectEditorAction;
 };
 
 } // namespace gooforge

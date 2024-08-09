@@ -31,6 +31,48 @@
 
 namespace gooforge {
 
+void SelectEditorAction::execute(Editor* editor) {
+    for (auto entity : this->entities) {
+        entity->setSelected(true);
+        editor->selected_entities.push_back(entity);
+    }
+}
+
+void SelectEditorAction::revert(Editor* editor) {
+    for (auto entity : this->entities) {
+        entity->setSelected(false);
+
+        // TODO: use an std::unordered_map so we don't have O(n) deletion
+        for (size_t i = 0; i < editor->selected_entities.size(); ++i) {
+            if (editor->selected_entities.at(i) == entity) {
+                editor->selected_entities.erase(editor->selected_entities.begin() + i);
+                break;
+            }
+        }
+    }
+}
+
+void DeselectEditorAction::execute(Editor* editor) {
+    for (auto entity : this->entities) {
+        entity->setSelected(false);
+
+        // TODO: use an std::unordered_map so we don't have O(n) deletion
+        for (size_t i = 0; i < editor->selected_entities.size(); ++i) {
+            if (editor->selected_entities.at(i) == entity) {
+                editor->selected_entities.erase(editor->selected_entities.begin() + i);
+                break;
+            }
+        }
+    }
+}
+
+void DeselectEditorAction::revert(Editor* editor) {
+    for (auto entity : this->entities) {
+        entity->setSelected(true);
+        editor->selected_entities.push_back(entity);
+    }
+}
+
 Editor::~Editor() {
     delete this->level;
 }
@@ -148,7 +190,7 @@ void Editor::processEvents() {
                         }
                     }
 
-                    if (!clicked_entity) {
+                    if (!clicked_entity && !this->selected_entities.empty()) {
                         this->doAction(DeselectEditorAction(this->selected_entities));
                     }
                 }
@@ -172,106 +214,43 @@ void Editor::processEvents() {
     }
 }
 
-void Editor::doAction(EditorAction action, bool for_redo) {
+void Editor::doAction(EditorAction action) {
     this->undo_stack.push_front(action);
     BaseEditorAction* base_action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, action);
-    if (!base_action->implicit && !for_redo) {
-        ++this->redo_stack_count;
-    }
-    if (base_action->implicit && !for_redo) {
-        this->redo_stack_count = 0;
-        this->redo_stack.clear();
+
+    // execute all implicit actions first
+    for (EditorAction implicit_action : base_action->implicit_actions) {
+        BaseEditorAction* base_implicit_action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, implicit_action);
+        base_implicit_action->execute(this);
     }
 
-    if (SelectEditorAction* select_action = std::get_if<SelectEditorAction>(&action)) {
-        for (auto entity : select_action->entities) {
-            entity->setSelected(true);
-            this->selected_entities.push_back(entity);
-        }
-    } else if (DeselectEditorAction* deselect_action = std::get_if<DeselectEditorAction>(&action)) {
-        for (auto entity : deselect_action->entities) {
-            entity->setSelected(false);
-            
-            // TODO: use an std::unordered_map so we don't have O(n) deletion
-            for (size_t i = 0; i < this->selected_entities.size(); ++i) {
-                if (this->selected_entities.at(i) == entity) {
-                    this->selected_entities.erase(this->selected_entities.begin() + i);
-                    break;
-                }
-            }
-        }
-    }
+    // execute the main action
+    base_action->execute(this);
 }
 
 void Editor::undoAction(EditorAction action) {
-    if (SelectEditorAction* select_action = std::get_if<SelectEditorAction>(&action)) {
-        for (auto entity : select_action->entities) {
-            entity->setSelected(false);
+    this->redo_stack.push_front(action);
+    BaseEditorAction* base_action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, action);
 
-            // TODO: use an std::unordered_map so we don't have O(n) deletion
-            for (size_t i = 0; i < this->selected_entities.size(); ++i) {
-                if (this->selected_entities.at(i) == entity) {
-                    this->selected_entities.erase(this->selected_entities.begin() + i);
-                    break;
-                }
-            }
-        }
-    }
-    else if (DeselectEditorAction* deselect_action = std::get_if<DeselectEditorAction>(&action)) {
-        for (auto entity : deselect_action->entities) {
-            entity->setSelected(true);
-            this->selected_entities.push_back(entity);
-        }
+    // revert the main (final) action first
+    base_action->revert(this);
 
+    // revert all implicit actions after
+    for (EditorAction implicit_action : base_action->implicit_actions) {
+        BaseEditorAction* base_implicit_action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, implicit_action);
+        base_implicit_action->revert(this);
     }
 }
 
 void Editor::undoLastAction() {
     EditorAction last_action = this->undo_stack.front();
     this->undo_stack.pop_front();
-    this->redo_stack.push_front(last_action);
-    ++this->redo_stack_count;
+
     this->undoAction(last_action);
-
-    if (this->undo_stack.empty()) {
-        return;
-    }
-
-    // thank you modern c++ for the following abomination
-    // all you need to know is that this also undoes all implicit actions and adds them to the redo stack
-    last_action = this->undo_stack.front();
-    for (BaseEditorAction* action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, last_action); action->implicit;) {
-        this->undo_stack.pop_front();
-        this->redo_stack.push_front(last_action);
-        this->undoAction(last_action);
-
-        if (this->undo_stack.empty()) {
-            break;
-        }
-
-        last_action = this->undo_stack.front();
-    }
-
-    --this->undo_stack_count;
 }
 
 void Editor::redoLastUndo() {
-    EditorAction last_action = this->redo_stack.back();
-    for (BaseEditorAction* action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, last_action); action->implicit;) {
-        this->redo_stack.pop_back();
-        this->doAction(last_action);
 
-        if (this->redo_stack.empty()) {
-            break;
-        }
-
-        last_action = this->redo_stack.back();
-    }
-
-    this->doAction(last_action);
-
-    this->redo_stack.pop_back();
-    --this->redo_stack_count;
 }
 
 void Editor::doEntitySelection(Entity* entity) {
@@ -284,8 +263,7 @@ void Editor::doEntitySelection(Entity* entity) {
         }
     }
     else {
-        this->doAction(DeselectEditorAction(this->selected_entities, true));
-        this->doAction(SelectEditorAction({ entity }));
+        this->doAction(SelectEditorAction({ entity }, { DeselectEditorAction(this->selected_entities) }));
     }
 }
 
