@@ -26,6 +26,8 @@
 #include "SFML/Graphics.hpp"
 
 #include "error.hh"
+#include "goo_ball.hh"
+#include "item.hh"
 
 namespace gooforge {
 
@@ -53,7 +55,19 @@ class SpriteResource : public BaseResource {
         sf::IntRect atlas_rect;
 };
 
-using Resource = std::variant<SpriteResource*>;
+class BallTemplateResource : public BaseResource {
+public:
+    BallTemplateResource(std::string path) : BaseResource(path) {}
+    std::expected<BallTemplateInfo*, Error> get();
+};
+
+class ItemResource : public BaseResource {
+public:
+    ItemResource(std::string path) : BaseResource(path) {}
+    std::expected<ItemInfoFile*, Error> get();
+};
+
+using Resource = std::variant<SpriteResource*, BallTemplateResource*, ItemResource*>;
 
 class ResourceManager {
     public:

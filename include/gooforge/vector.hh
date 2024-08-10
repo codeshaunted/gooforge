@@ -20,8 +20,6 @@
 
 #include <expected>
 
-#include "simdjson.h"
-
 #include "error.hh"
 
 namespace gooforge {
@@ -30,8 +28,9 @@ struct Vector2f {
 	float x;
 	float y;
 
-	Vector2f scale(float scalar);
 	float distance(const Vector2f& other) const;
+	Vector2f operator+(const Vector2f& other) const;
+	Vector2f operator*(float scalar) const;
 };
 
 } // namespace gooforge

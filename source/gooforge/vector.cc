@@ -17,22 +17,23 @@
 
 #include "vector.hh"
 
+#include <cmath>
+
 namespace gooforge {
-
-Vector2f Vector2f::scale(float scalar) {
-    Vector2f scaled;
-
-    scaled.x = this->x * scalar;
-    scaled.y = this->y * scalar;
-
-    return scaled;
-}
 
 float Vector2f::distance(const Vector2f& other) const {
     float dx = other.x - this->x;
     float dy = other.y - this->y;
 
     return std::sqrt((dx * dx) + (dy * dy));
+}
+
+Vector2f Vector2f::operator+(const Vector2f& other) const {
+    return { this->x + other.x, this->y + other.y };
+}
+
+Vector2f Vector2f::operator*(float scalar) const {
+    return { this->x * scalar, this->y * scalar };
 }
 
 } // namespace gooforge

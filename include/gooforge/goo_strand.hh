@@ -34,14 +34,14 @@ struct GooStrandInfo {
 
 class GooStrand : public Entity {
 	public:
-		GooStrand(GooStrandInfo* state);
+		GooStrand(GooStrandInfo* info);
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 	private:
 		GooBall* ball1;
 		GooBall* ball2;
 		GooStrandInfo* info;
-		GooBallTemplate* ball_template = nullptr;
+		BallTemplateInfo* ball_template = nullptr;
 };
 
 } // namespace gooforge

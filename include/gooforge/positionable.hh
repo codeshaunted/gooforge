@@ -25,7 +25,7 @@ namespace gooforge {
 struct Positionable {
 	public:
 		Vector2f position;
-		int layer;
+		float layer;
 		float rotation;
 };
 

@@ -29,6 +29,10 @@ namespace gooforge {
 Level::Level(LevelInfo info) {
 	this->info = info;
 
+	for (ItemInstanceInfo& item_instance_info : this->info.items) {
+		this->addEntity(new ItemInstance(&item_instance_info));
+	}
+
 	for (GooBallInfo& ball_info : this->info.balls) {
 		this->addEntity(new GooBall(&ball_info));
 	}

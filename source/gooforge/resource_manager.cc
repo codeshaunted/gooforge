@@ -19,6 +19,7 @@
 
 #include <fstream>
 
+#include "glaze/json/read.hpp"
 #include "pugixml.hpp"
 #include "spdlog.h"
 
@@ -65,6 +66,40 @@ std::expected<sf::Sprite, Error> SpriteResource::get() {
     }
 }
 
+std::expected<BallTemplateInfo*, Error> BallTemplateResource::get() {
+    if (!this->asset) {
+        BallTemplateInfo* template_info = new BallTemplateInfo();
+        std::string buffer;
+        auto template_info_error = glz::read_file_json<glz::opts{ .error_on_unknown_keys = false }>(template_info, this->path, buffer);
+
+        if (template_info_error) {
+            return std::unexpected(JSONDeserializeError(this->path, glz::format_error(template_info_error, buffer)));
+        }
+        else {
+            this->asset = template_info;
+        }
+    }
+
+    return static_cast<BallTemplateInfo*>(this->asset);
+}
+
+std::expected<ItemInfoFile*, Error> ItemResource::get() {
+    if (!this->asset) {
+        ItemInfoFile* item_info_file = new ItemInfoFile();
+        std::string buffer;
+        auto item_info_file_error = glz::read_file_json<glz::opts{ .error_on_unknown_keys = false }>(item_info_file, this->path, buffer);
+
+        if (item_info_file_error) {
+            return std::unexpected(JSONDeserializeError(this->path, glz::format_error(item_info_file_error, buffer)));
+        }
+        else {
+            this->asset = item_info_file;
+        }
+    }
+
+    return static_cast<ItemInfoFile*>(this->asset);
+}
+
 ResourceManager::~ResourceManager() {
     for (auto resource : this->resources) {
         BaseResource* base_resource = std::visit([](auto& derived_resource) -> BaseResource* { return derived_resource; }, resource.second);
@@ -98,6 +133,20 @@ std::expected<void, Error> ResourceManager::takeInventory(std::filesystem::path&
                 return std::unexpected(result.error());
             }
         }
+        else if (path.extension() == ".wog2" && path.parent_path().stem() == "items") {
+            ItemResource* resource = new ItemResource(path.string());
+            std::string id = "GOOFORGE_ITEM_RESOURCE_" + path.replace_extension("").filename().string();
+
+            this->resources.insert({ id, resource });
+        }
+    }
+
+    // load ball templates
+    for (auto pair : GooBall::ball_name_to_type) {
+        std::string id = "GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(pair.second));
+        BallTemplateResource* resource = new BallTemplateResource((base_path / "res/balls/" / pair.first / "ball.wog2").string());
+
+        this->resources.insert({ id, resource });
     }
 
     return std::expected<void, Error>{};
@@ -116,16 +165,16 @@ std::expected<void, Error> ResourceManager::loadResourceManifest(std::filesystem
     for (auto resource = root.child("Resources"); resource; resource = resource.next_sibling("Resources")) {
         pugi::xml_node set_defaults = resource.child("SetDefaults");
 
-        std::filesystem::path resource_path = this->base_path;
-        std::string resource_id;
+        std::filesystem::path resource_path_base = this->base_path;
+        std::string resource_id_prefix;
         if (set_defaults) {
-            resource_path /= set_defaults.attribute("path").as_string();
-            resource_id = set_defaults.attribute("id_prefix").as_string();
+            resource_path_base /= set_defaults.attribute("path").as_string();
+            resource_id_prefix = set_defaults.attribute("idprefix").as_string();
         }
 
         for (auto image = resource.child("Image"); image; image = image.next_sibling("Image")) {
-            resource_id += image.attribute("id").as_string();
-            resource_path /= image.attribute("path").as_string();
+            std::string resource_id = resource_id_prefix + image.attribute("id").as_string();
+            std::filesystem::path resource_path = resource_path_base / image.attribute("path").as_string();
             resource_path.replace_extension(".image");
 
             SpriteResource* sprite_resource = new SpriteResource(resource_path.string());

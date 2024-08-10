@@ -33,14 +33,12 @@ GooBall::GooBall(GooBallInfo* info) {
 	this->type = EntityType::GOO_BALL;
 
 	if (!this->ball_template) {
-		if (!GooBall::ball_templates.contains(this->info->typeEnum)) {
-			throw std::runtime_error("GooBall::GooBall GooBallTemplate for GooBallType = " + std::to_string(static_cast<int>(this->info->typeEnum)) + " has not been loaded");
-		}
-
-		this->ball_template = &GooBall::ball_templates.at(this->info->typeEnum);
+		Resource template_resource = *ResourceManager::getInstance()->getResource("GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(this->info->typeEnum)));
+		
+		this->ball_template = *std::get<BallTemplateResource*>(template_resource)->get();
 	}
 
-	this->click_bounds = static_cast<EntityClickBoundShape*>(new EntityClickBoundCircle(0.5 * this->ball_template->width * (1.0 + this->ball_template->sizeVariance) * this->ball_template->bodyScale));
+	this->click_bounds = static_cast<EntityClickBoundShape*>(new EntityClickBoundCircle(0.5 * this->ball_template->width * (1.0 + this->ball_template->sizeVariance) * this->ball_template->ballParts[0].scale));
 
 	GooBall::balls.insert({ this->info->uid, this });
 }
@@ -55,7 +53,7 @@ void GooBall::update() {
 
 // TODO: make this less awful
 void GooBall::draw(sf::RenderWindow* window) {
-	Resource sprite_resource = (*ResourceManager::getInstance()->getResource(this->ball_template->body_image_id));
+	Resource sprite_resource = (*ResourceManager::getInstance()->getResource(this->ball_template->ballParts[0].images[0].imageId.imageId));
 	sf::Sprite sprite = *std::get<SpriteResource*>(sprite_resource)->get();
 
 	// Set the origin to the center of the sprite
@@ -63,7 +61,7 @@ void GooBall::draw(sf::RenderWindow* window) {
 	sprite.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
 
 	// we don't actually randomize the variance because this is an editor
-	float scale = 0.5 * this->ball_template->width * (1.0 + this->ball_template->sizeVariance) * this->ball_template->bodyScale;
+	float scale = 0.5 * this->ball_template->width * (1.0 + this->ball_template->sizeVariance) * this->ball_template->ballParts[0].scale;
 	sprite.setScale(sf::Vector2f(scale, scale));
 	sprite.setPosition(Level::worldToScreen(this->position));
 
@@ -91,15 +89,6 @@ void GooBall::draw(sf::RenderWindow* window) {
 	}
 
 	window->draw(sprite);
-}
-
-void GooBall::loadGooBallTemplates(std::string_view path) {
-	for (auto& ball : GooBall::ball_name_to_type) {
-		std::string template_path = std::string(path) + "/" + ball.first + "/ball.wog2";
-		if (std::filesystem::exists(template_path)) {
-			GooBall::ball_templates.insert({ball.second, GooBallTemplate::deserializeFromFile(template_path)});
-		}
-	}
 }
 
 std::unordered_map<std::string, GooBallType> GooBall::ball_name_to_type = {
@@ -141,15 +130,13 @@ std::unordered_map<std::string, GooBallType> GooBall::ball_name_to_type = {
 	{"UtilAttachWalkable", GooBallType::UTIL_ATTACH_WALKABLE}
 };
 
-std::unordered_map<GooBallType, GooBallTemplate> GooBall::ball_templates;
-
 std::unordered_map<unsigned int, GooBall*> GooBall::balls;
 
 GooBallInfo* GooBall::getInfo() {
 	return this->info;
 }
 
-GooBallTemplate* GooBall::getTemplate() {
+BallTemplateInfo* GooBall::getTemplate() {
 	return this->ball_template;
 }
 

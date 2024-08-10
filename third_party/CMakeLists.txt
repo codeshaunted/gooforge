@@ -29,9 +29,6 @@ add_subdirectory("nativefiledialog-extended")
 # pugixml
 add_subdirectory("pugixml")
 
-# simdjson
-add_subdirectory("simdjson")
-
 # SFML
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory("SFML")

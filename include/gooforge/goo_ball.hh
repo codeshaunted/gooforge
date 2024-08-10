@@ -23,7 +23,6 @@
 #include "SFML/Graphics.hpp"
 
 #include "entity.hh"
-#include "goo_ball_template.hh"
 
 namespace gooforge {
 
@@ -66,10 +65,12 @@ enum class GooBallType {
 	UTIL_ATTACH_WALKABLE
 };
 
+struct BallTemplateBallTypeInfo {
+	GooBallType ballType;
+};
+
 struct BallTemplateContainsInfo {
-	struct {
-		int ballType;
-	} ballType;
+	BallTemplateBallTypeInfo ballType;
 	int count;
 };
 
@@ -119,7 +120,7 @@ struct GooBallStateEnumInfo {
 };
 
 struct BallTemplateColorInfo {
-	int color;
+	unsigned int color;
 };
 
 struct BallTemplateBallPartInfo {
@@ -154,15 +155,33 @@ struct BallTemplateBallPartInfo {
 	float stretchFactorFromStrandForce;
 };
 
+struct BallTemplateBallShapeInfo {
+	int ballShape;
+};
+
+struct BallTemplateMaterialInfo {
+	std::string materialName;
+};
+
+struct BallTemplateSoundIdInfo {
+	std::string soundId;
+};
+
+struct BallTemplateLiquidTypeInfo {
+	int liquidType;
+};
+
+struct BallTemplateBodyPartNameInfo {
+	std::string partName;
+};
+
 struct BallTemplateInfo {
 	std::string name;
 	float width;
 	float height;
-	struct {
-		int ballShape;
-	} shape;
+	BallTemplateBallShapeInfo shape;
 	float sizeVariance;
-	float mass;
+	/*float mass;
 	float towerMass;
 	float dragMass;
 	float destroyForce;
@@ -218,13 +237,9 @@ struct BallTemplateInfo {
 	bool autoAttach;
 	bool isClimber;
 	float attachedParticleBarrierFactor;
-	struct {
-		std::string materialName;
-	} material;
+	BallTemplateMaterialInfo material;
 	std::vector<BallTemplateContainsInfo> contains;
-	struct {
-		std::string soundId;
-	} popSoundId;
+	BallTemplateSoundIdInfo popSoundId;
 	std::string popParticlesId;
 	bool despawnTriggersFullDeath;
 	BallTemplateParticleEffectInfo deathParticleEffect;
@@ -239,9 +254,7 @@ struct BallTemplateInfo {
 	bool botoxEyesWhenAttached;
 	bool isBehindStrands;
 	float wakeOtherBallsAtDistance;
-	struct {
-		int ballType;
-	} spawnType;
+	BallTemplateBallTypeInfo spawnType;
 	float decay;
 	float flingForceFactor;
 	float flingStrandMaxLength;
@@ -266,9 +279,7 @@ struct BallTemplateInfo {
 	float liquidSinkOffset;
 	int strandSuckLiquidParticlesPerSecond;
 	float hitVelocityAccumulationLimit;
-	struct {
-		int strandType;
-	} strandType;
+	BallTemplateBallTypeInfo strandType;
 	float springConstMin;
 	float springConstMax;
 	float strandDampening;
@@ -303,18 +314,14 @@ struct BallTemplateInfo {
 	BallTemplateImageIdInfo dragMarkerImageId;
 	BallTemplateImageIdInfo detachMarkerImageId;
 	float markerRotSpeed;
-	struct {
-		int liquidType;
-	} stainLiquidType;
+	BallTemplateLiquidTypeInfo stainLiquidType;
 	BallTemplateAttenuationFuncInfo deselectAttenuationFunc;
 	BallTemplateAttenuationFuncInfo selectAttenuationFunc;
 	BallTemplateAttenuationFuncInfo dropAttenuationFunc;
 	BallTemplateAttenuationFuncInfo dragAttenuationFunc;
-	BallTemplateAttenuationFuncInfo spawnAttenuationFunc;
+	BallTemplateAttenuationFuncInfo spawnAttenuationFunc;*/
 	std::vector<BallTemplateBallPartInfo> ballParts;
-	struct {
-		std::string partName;
-	} bodyPart;
+	BallTemplateBodyPartNameInfo bodyPart;
 	//std::vector<BallTemplateStateAnimationInfo> stateAnimations; // TODO: implement?
 	// TODO: implement the rest of this?
 };
@@ -352,15 +359,13 @@ class GooBall : public Entity {
 		~GooBall();
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
-		static void loadGooBallTemplates(std::string_view path);
 		GooBallInfo* getInfo();
-		GooBallTemplate* getTemplate();
-	private:
+		BallTemplateInfo* getTemplate();
 		static std::unordered_map<std::string, GooBallType> ball_name_to_type;
-		static std::unordered_map<GooBallType, GooBallTemplate> ball_templates;
+	private:
 		static std::unordered_map<unsigned int, GooBall*> balls;
 		GooBallInfo* info;
-		GooBallTemplate* ball_template = nullptr;
+		BallTemplateInfo* ball_template = nullptr;
 
 	friend class GooStrand;
 };

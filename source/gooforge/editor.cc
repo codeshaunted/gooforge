@@ -22,7 +22,6 @@
 #include "imgui.h"
 #include "imgui-SFML.h"
 #include "nfd.h"
-#include "simdjson.h"
 #include "spdlog.h"
 #include "glaze/json/read.hpp"
 #include "glaze/json/write.hpp"
@@ -403,7 +402,6 @@ void Editor::registerSelectWOG2DirectoryDialog() {
             this->wog2_path = std::filesystem::path(directory_path);
             ResourceManager::getInstance()->takeInventory(this->wog2_path);
             //ResourceManager::getInstance()->loadManifest((this->wog2_path / "res/balls/_atlas.image.atlas").generic_string());
-            GooBall::loadGooBallTemplates((this->wog2_path / "res/balls/").generic_string()); // calling this here is a little hacky and coupling, TODO: fix?
             ImGui::CloseCurrentPopup();
         }
 
@@ -423,7 +421,7 @@ void Editor::registerLevelWindow() {
         for (auto& entity : this->level->entities) {
             if (entity->getType() == EntityType::GOO_BALL) {
                 GooBall* goo_ball = static_cast<GooBall*>(entity);
-                Resource sprite_resource = (*ResourceManager::getInstance()->getResource(goo_ball->getTemplate()->body_image_id));
+                Resource sprite_resource = (*ResourceManager::getInstance()->getResource(goo_ball->getTemplate()->ballParts[0].images[0].imageId.imageId));
                 sf::Sprite sprite = *std::get<SpriteResource*>(sprite_resource)->get();
                 const char* text = "Goo Ball";
                 ImVec2 textSize = ImGui::CalcTextSize(text);

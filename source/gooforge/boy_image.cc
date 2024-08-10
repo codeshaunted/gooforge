@@ -45,8 +45,10 @@ std::expected<sf::Image*, Error> BoyImage::loadFromFile(std::string_view path) {
         return std::unexpected(FileDecompressionError(std::string(path), decompressed_size));
     }
 
-    uint8_t* decompressed_data = new uint8_t[decompressed_size];
-    size_t result = ZSTD_decompress(decompressed_data, decompressed_size, compressed_data, compressed_data_size);
+    // some files wont decompress with the getFrameContentSize result...
+    // for now just do decompressed_size * 2, TODO: switch to stream decompression
+    uint8_t* decompressed_data = new uint8_t[decompressed_size * 2];
+    size_t result = ZSTD_decompress(decompressed_data, decompressed_size * 2, compressed_data, compressed_data_size);
     if (ZSTD_isError(result)) {
         return std::unexpected(FileDecompressionError(std::string(path), result));
     }

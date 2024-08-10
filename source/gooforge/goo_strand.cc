@@ -28,12 +28,9 @@ GooStrand::GooStrand(GooStrandInfo* info) {
 	this->info = info;
 	this->layer = 0;
 	this->type = EntityType::GOO_STRAND;
+	/*
 
 	if (!this->ball_template) {
-		if (GooBall::ball_templates.empty()) { // empty could signify a failed load, TODO: fix
-			GooBall::loadGooBallTemplates("C:/Program Files/World of Goo 2/game/res/balls");
-		}
-
 		if (!GooBall::ball_templates.contains(this->info->type)) {
 			throw std::runtime_error("GooStrand::GooStrand GooBallTemplate for GooBallType = " + std::to_string(static_cast<int>(this->info->type)) + " has not been loaded");
 		}
@@ -50,16 +47,17 @@ GooStrand::GooStrand(GooStrandInfo* info) {
 	}
 
 	this->ball1 = GooBall::balls.at(this->info->ball1UID);
-	this->ball2 = GooBall::balls.at(this->info->ball2UID);
+	this->ball2 = GooBall::balls.at(this->info->ball2UID);*/
 }
 
 void GooStrand::update() {
+	/*
 	this->position.x = (this->ball1->position.x + this->ball2->position.x) / 2.0;
-	this->position.y = (this->ball1->position.y + this->ball2->position.y) / 2.0;
+	this->position.y = (this->ball1->position.y + this->ball2->position.y) / 2.0;*/
 }
 
 // TODO: make this less awful
-void GooStrand::draw(sf::RenderWindow* window) {
+void GooStrand::draw(sf::RenderWindow* window) {/*
 	Resource sprite_resource = (*ResourceManager::getInstance()->getResource(this->ball_template->strand_image_id));
 	sf::Sprite sprite = *std::get<SpriteResource*>(sprite_resource)->get();
 
@@ -91,7 +89,7 @@ void GooStrand::draw(sf::RenderWindow* window) {
 	sprite.setRotation(angle + 90.0);
 
 	// Draw the sprite
-	window->draw(sprite);
+	window->draw(sprite);*/
 }
 
 

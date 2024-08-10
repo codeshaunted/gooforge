@@ -20,14 +20,22 @@
 
 #include <expected>
 
-#include "simdjson.h"
-
 #include "error.hh"
 #include "goo_ball.hh"
 #include "goo_strand.hh"
+#include "item.hh"
 #include "vector.hh"
 
 namespace gooforge {
+
+enum class Layer {
+	BACKGROUND = 0,
+	TERRAIN,
+	GAMEPLAY,
+	FOREGROUND,
+	MISC,
+	DECORATIONS
+};
 
 struct TerrainGroupInfo {
 	Vector2f textureOffset;
@@ -40,36 +48,6 @@ struct TerrainGroupInfo {
 	bool destructable;
 	bool buildable;
 	bool occluder;
-};
-
-// if you think this name is too long,
-// so do i, but this is literally the
-// name directly from the binary
-struct ItemInstanceUserVariableInfo {
-	float value;
-};
-
-struct ItemInstanceInfo {
-	std::string id;
-	std::string type;
-	std::string localizedStringId;
-	unsigned int uid;
-	Vector2f pos;
-	Vector2f scale;
-	float rotation;
-	float depth;
-	bool flipHorizontal;
-	bool flipVertical;
-	float rotSpeed;
-	int seed;
-	int liquidType; 
-	unsigned int adapterBallId;
-	bool invisible;
-	int forcedRandomizationIndex;
-	std::string particleEffectName;
-	int uid1;
-	int uid2;
-	std::vector<ItemInstanceUserVariableInfo> userVariables;
 };
 
 struct PinInfo {
