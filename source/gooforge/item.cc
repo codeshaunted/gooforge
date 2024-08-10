@@ -29,8 +29,8 @@ ItemInstance::ItemInstance(ItemInstanceInfo* info) {
 	this->info = info;
 	this->layer = this->info->depth;
 
-	Resource resource = (*ResourceManager::getInstance()->getResource("GOOFORGE_ITEM_RESOURCE_" + this->info->type));
-	this->info_file = *std::get<ItemResource*>(resource)->get();
+	Resource* resource = (*ResourceManager::getInstance()->getResource("GOOFORGE_ITEM_RESOURCE_" + this->info->type));
+	this->info_file = *std::get<ItemResource>(*resource).get();
 }
 
 void ItemInstance::update() {
@@ -40,8 +40,8 @@ void ItemInstance::update() {
 
 void ItemInstance::draw(sf::RenderWindow* window) {
 	for (auto object : this->info_file->items[0].objects) {
-		Resource sprite_resource = (*ResourceManager::getInstance()->getResource(object.name));
-		sf::Sprite sprite = *std::get<SpriteResource*>(sprite_resource)->get();
+		Resource* sprite_resource = (*ResourceManager::getInstance()->getResource(object.name));
+		sf::Sprite sprite = *std::get<SpriteResource>(*sprite_resource).get();
 
 		sf::FloatRect bounds = sprite.getLocalBounds();
 		sf::Vector2f origin(object.pivot.x * bounds.width, bounds.height - (object.pivot.y * bounds.height));

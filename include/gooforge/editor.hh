@@ -62,7 +62,6 @@ struct DeselectEditorAction : public BaseEditorAction {
 
 class Editor {
 	public:
-		~Editor();
 		void initialize();
 	private:
 		sf::RenderWindow window;
@@ -72,7 +71,7 @@ class Editor {
 		sf::Vector2f pan_start_position;
 		std::filesystem::path wog2_path;
 		std::optional<Error> error = std::nullopt;
-		Level* level = nullptr;
+		std::unique_ptr<Level> level;
 		std::vector<Entity*> selected_entities;
 		std::deque<EditorAction> undo_stack;
 		sf::Clock undo_clock;

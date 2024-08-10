@@ -73,10 +73,6 @@ void DeselectEditorAction::revert(Editor* editor) {
     }
 }
 
-Editor::~Editor() {
-    delete this->level;
-}
-
 void Editor::initialize() {
     this->window.create(sf::VideoMode(1920, 1080), "gooforge");
     this->window.setFramerateLimit(GOOFORGE_FRAMERATE_LIMIT);
@@ -192,9 +188,9 @@ void Editor::processEvents() {
 
                     this->level->sortEntities();
                     bool clicked_entity = false;
-                    for (auto entity : std::ranges::reverse_view(this->level->entities)) {
+                    for (auto& entity : std::ranges::reverse_view(this->level->entities)) {
                         if (entity->wasClicked(world_click_position)) {
-                            this->doEntitySelection(entity);
+                            this->doEntitySelection(entity.get());
                             
                             clicked_entity = true;
                             break;
@@ -301,7 +297,7 @@ void Editor::doOpenFile() {
             this->error = JSONDeserializeError(out_path, glz::format_error(level_info_error, buffer));
         }
         else {
-            this->level = new Level(level_info);
+            this->level = std::make_unique<Level>(level_info);
         }
 
         NFD_FreePathU8(out_path);
@@ -419,17 +415,18 @@ void Editor::registerLevelWindow() {
     if (this->level) {
         size_t entity_i = 0;
         for (auto& entity : this->level->entities) {
+            Entity* raw_entity = entity.get();
             if (entity->getType() == EntityType::GOO_BALL) {
-                GooBall* goo_ball = static_cast<GooBall*>(entity);
-                Resource sprite_resource = (*ResourceManager::getInstance()->getResource(goo_ball->getTemplate()->ballParts[0].images[0].imageId.imageId));
-                sf::Sprite sprite = *std::get<SpriteResource*>(sprite_resource)->get();
+                GooBall* goo_ball = static_cast<GooBall*>(raw_entity);
+                Resource* sprite_resource = (*ResourceManager::getInstance()->getResource(goo_ball->getTemplate()->ballParts[0].images[0].imageId.imageId));
+                sf::Sprite sprite = *std::get<SpriteResource>(*sprite_resource).get();
                 const char* text = "Goo Ball";
                 ImVec2 textSize = ImGui::CalcTextSize(text);
 
                 // Draw selectable item with custom layout
                 ImGui::PushID(static_cast<int>(entity_i));
                 if (ImGui::Selectable("", entity->getSelected(), ImGuiSelectableFlags_SpanAllColumns)) {
-                    this->doEntitySelection(entity);
+                    this->doEntitySelection(raw_entity);
                 }
 
                 ImGui::SameLine();

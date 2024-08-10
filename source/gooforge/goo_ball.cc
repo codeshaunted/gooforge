@@ -33,9 +33,9 @@ GooBall::GooBall(GooBallInfo* info) {
 	this->type = EntityType::GOO_BALL;
 
 	if (!this->ball_template) {
-		Resource template_resource = *ResourceManager::getInstance()->getResource("GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(this->info->typeEnum)));
+		Resource* template_resource = *ResourceManager::getInstance()->getResource("GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(this->info->typeEnum)));
 		
-		this->ball_template = *std::get<BallTemplateResource*>(template_resource)->get();
+		this->ball_template = *std::get<BallTemplateResource>(*template_resource).get();
 	}
 
 	this->click_bounds = static_cast<EntityClickBoundShape*>(new EntityClickBoundCircle(0.5 * this->ball_template->width * (1.0 + this->ball_template->sizeVariance) * this->ball_template->ballParts[0].scale));
@@ -53,8 +53,8 @@ void GooBall::update() {
 
 // TODO: make this less awful
 void GooBall::draw(sf::RenderWindow* window) {
-	Resource sprite_resource = (*ResourceManager::getInstance()->getResource(this->ball_template->ballParts[0].images[0].imageId.imageId));
-	sf::Sprite sprite = *std::get<SpriteResource*>(sprite_resource)->get();
+	Resource* sprite_resource = (*ResourceManager::getInstance()->getResource(this->ball_template->ballParts[0].images[0].imageId.imageId));
+	sf::Sprite sprite = *std::get<SpriteResource>(*sprite_resource).get();
 
 	// Set the origin to the center of the sprite
 	sf::FloatRect bounds = sprite.getLocalBounds();

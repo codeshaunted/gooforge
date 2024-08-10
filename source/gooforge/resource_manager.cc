@@ -28,31 +28,22 @@
 
 namespace gooforge {
 
-BaseResource::~BaseResource() {
-    if (this->asset) {
-        delete this->asset;
-    }
-}
-
-void BaseResource::unload() {
-    if (this->asset) {
-        delete this->asset;
-    }
-}
-
 std::expected<sf::Sprite, Error> SpriteResource::get() {
-    if (this->atlas_sprite) {
-        const sf::Texture* texture = this->atlas_sprite->get()->getTexture();
+    if (!this->atlas_sprite_path.empty()) {
+        auto atlas_sprite_resource_result = ResourceManager::getInstance()->getResource(this->atlas_sprite_path);
+        if (!atlas_sprite_resource_result) {
+            return std::unexpected(atlas_sprite_resource_result.error());
+        }
 
-        return sf::Sprite(*texture, this->atlas_rect);
+        const sf::Texture* atlas_texture = std::get<SpriteResource>(*atlas_sprite_resource_result.value()).get()->getTexture();
+
+        return sf::Sprite(*atlas_texture, this->atlas_rect);
     }
 
-    if (this->asset) {
-        sf::Texture* texture = static_cast<sf::Texture*>(this->asset);
-
-        return sf::Sprite(*texture);
+    if (this->texture) {
+        return sf::Sprite(*this->texture.get());
     } else {
-        sf::Texture* texture = new sf::Texture();
+        this->texture = std::make_shared<sf::Texture>();
         auto image = BoyImage::loadFromFile(this->path);
         if (!image) {
             return std::unexpected(image.error());
@@ -60,15 +51,13 @@ std::expected<sf::Sprite, Error> SpriteResource::get() {
 
         texture->loadFromImage(**image);
 
-        this->asset = reinterpret_cast<void*>(texture);
-
         return this->get();
     }
 }
 
 std::expected<BallTemplateInfo*, Error> BallTemplateResource::get() {
-    if (!this->asset) {
-        BallTemplateInfo* template_info = new BallTemplateInfo();
+    if (!this->info) {
+        auto template_info = std::make_shared<BallTemplateInfo>();
         std::string buffer;
         auto template_info_error = glz::read_file_json<glz::opts{ .error_on_unknown_keys = false }>(template_info, this->path, buffer);
 
@@ -76,16 +65,16 @@ std::expected<BallTemplateInfo*, Error> BallTemplateResource::get() {
             return std::unexpected(JSONDeserializeError(this->path, glz::format_error(template_info_error, buffer)));
         }
         else {
-            this->asset = template_info;
+            this->info = template_info;
         }
     }
 
-    return static_cast<BallTemplateInfo*>(this->asset);
+    return static_cast<BallTemplateInfo*>(this->info.get());
 }
 
 std::expected<ItemInfoFile*, Error> ItemResource::get() {
-    if (!this->asset) {
-        ItemInfoFile* item_info_file = new ItemInfoFile();
+    if (!this->info_file) {
+        auto item_info_file = std::make_shared<ItemInfoFile>();
         std::string buffer;
         auto item_info_file_error = glz::read_file_json<glz::opts{ .error_on_unknown_keys = false }>(item_info_file, this->path, buffer);
 
@@ -93,18 +82,11 @@ std::expected<ItemInfoFile*, Error> ItemResource::get() {
             return std::unexpected(JSONDeserializeError(this->path, glz::format_error(item_info_file_error, buffer)));
         }
         else {
-            this->asset = item_info_file;
+            this->info_file = item_info_file;
         }
     }
 
-    return static_cast<ItemInfoFile*>(this->asset);
-}
-
-ResourceManager::~ResourceManager() {
-    for (auto resource : this->resources) {
-        BaseResource* base_resource = std::visit([](auto& derived_resource) -> BaseResource* { return derived_resource; }, resource.second);
-        delete base_resource;
-    }
+    return static_cast<ItemInfoFile*>(this->info_file.get());
 }
 
 ResourceManager* ResourceManager::getInstance() {
@@ -134,19 +116,19 @@ std::expected<void, Error> ResourceManager::takeInventory(std::filesystem::path&
             }
         }
         else if (path.extension() == ".wog2" && path.parent_path().stem() == "items") {
-            ItemResource* resource = new ItemResource(path.string());
+            ItemResource resource(path.string());
             std::string id = "GOOFORGE_ITEM_RESOURCE_" + path.replace_extension("").filename().string();
 
-            this->resources.insert({ id, resource });
+            this->resources.insert({ id, std::make_unique<Resource>(resource) });
         }
     }
 
     // load ball templates
     for (auto pair : GooBall::ball_name_to_type) {
         std::string id = "GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(pair.second));
-        BallTemplateResource* resource = new BallTemplateResource((base_path / "res/balls/" / pair.first / "ball.wog2").string());
+        BallTemplateResource resource((base_path / "res/balls/" / pair.first / "ball.wog2").string());
 
-        this->resources.insert({ id, resource });
+        this->resources.insert({ id, std::make_unique<Resource>(resource) });
     }
 
     return std::expected<void, Error>{};
@@ -177,8 +159,8 @@ std::expected<void, Error> ResourceManager::loadResourceManifest(std::filesystem
             std::filesystem::path resource_path = resource_path_base / image.attribute("path").as_string();
             resource_path.replace_extension(".image");
 
-            SpriteResource* sprite_resource = new SpriteResource(resource_path.string());
-            this->resources.insert({ resource_id, sprite_resource });
+            SpriteResource sprite_resource(resource_path.string());
+            this->resources.insert({ resource_id, std::make_unique<Resource>(sprite_resource)});
         }
     }
 
@@ -201,8 +183,8 @@ std::expected<void, Error> ResourceManager::loadAtlasManifest(std::filesystem::p
     stream.seek(8); // skip header
 
     path.replace_extension("");
-    SpriteResource* atlas_sprite = new SpriteResource(path.string()); // chop off .atlas
-    this->resources.insert({ path.string(), atlas_sprite});
+    SpriteResource atlas_sprite(path.string()); // chop off .atlas
+    this->resources.insert({ path.string(), std::make_unique<Resource>(atlas_sprite) });
         
     uint32_t number_of_files = stream.read<uint32_t>();
     for (size_t i = 0; i < number_of_files; ++i) {
@@ -222,20 +204,20 @@ std::expected<void, Error> ResourceManager::loadAtlasManifest(std::filesystem::p
 
         sf::IntRect rect(x_offset, y_offset, x_size, y_size);
 
-        SpriteResource* sprite_resource = new SpriteResource(atlas_sprite, rect);
-        this->resources.insert({id, sprite_resource});
+        SpriteResource sprite_resource(path.string(), rect);
+        this->resources.insert({id, std::make_unique<Resource>(sprite_resource)});
     }
 
     return std::expected<void, Error>{};
 }
 
-std::expected<Resource, Error> ResourceManager::getResource(std::string id) {
+std::expected<Resource*, Error> ResourceManager::getResource(std::string id) {
     std::string id_string(id);
     if (!this->resources.contains(id_string)) {
         return std::unexpected(ResourceNotFoundError(id_string));
     }
 
-    return this->resources.at(id_string);
+    return this->resources.at(id_string).get();
 }
 
 ResourceManager* ResourceManager::instance = nullptr;

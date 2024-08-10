@@ -37,37 +37,39 @@ enum class ResourceType {
 
 class BaseResource {
     public:
-        BaseResource(std::string path) : path(path), asset(nullptr) {}
-        ~BaseResource();
-        void unload();
+        BaseResource(std::string path) : path(path) {}
     protected:
         std::string path;
-        void* asset;
 };
 
 class SpriteResource : public BaseResource {
     public:
-        SpriteResource(std::string path) : BaseResource(path), atlas_sprite(nullptr) {}
-        SpriteResource(SpriteResource* atlas_sprite, sf::IntRect atlas_rect) : BaseResource(atlas_sprite->path), atlas_sprite(atlas_sprite), atlas_rect(atlas_rect) {}
+        SpriteResource(std::string path) : BaseResource(path), atlas_sprite_path("") {}
+        SpriteResource(std::string atlas_sprite_path, sf::IntRect atlas_rect) : BaseResource(atlas_sprite_path), atlas_sprite_path(atlas_sprite_path), atlas_rect(atlas_rect) {}
         std::expected<sf::Sprite, Error> get();
     private:
-        SpriteResource* atlas_sprite;
+        std::shared_ptr<sf::Texture> texture; // for some reason MSVC will not allow this to be a std::unique_ptr
+        std::string atlas_sprite_path;
         sf::IntRect atlas_rect;
 };
 
 class BallTemplateResource : public BaseResource {
-public:
-    BallTemplateResource(std::string path) : BaseResource(path) {}
-    std::expected<BallTemplateInfo*, Error> get();
+    public:
+        BallTemplateResource(std::string path) : BaseResource(path) {}
+        std::expected<BallTemplateInfo*, Error> get();
+    private:
+        std::shared_ptr<BallTemplateInfo> info; // for some reason MSVC will not allow this to be a std::unique_ptr
 };
 
 class ItemResource : public BaseResource {
-public:
-    ItemResource(std::string path) : BaseResource(path) {}
-    std::expected<ItemInfoFile*, Error> get();
+    public:
+        ItemResource(std::string path) : BaseResource(path) {}
+        std::expected<ItemInfoFile*, Error> get();
+    private:
+        std::shared_ptr<ItemInfoFile> info_file; // for some reason MSVC will not allow this to be a std::unique_ptr
 };
 
-using Resource = std::variant<SpriteResource*, BallTemplateResource*, ItemResource*>;
+using Resource = std::variant<SpriteResource, BallTemplateResource, ItemResource>;
 
 class ResourceManager {
     public:
@@ -76,11 +78,11 @@ class ResourceManager {
         std::expected<void, Error> takeInventory(std::filesystem::path& base_path);
         std::expected<void, Error> loadResourceManifest(std::filesystem::path& path);
         std::expected<void, Error> loadAtlasManifest(std::filesystem::path& path);
-        std::expected<Resource, Error> getResource(std::string id);
+        std::expected<Resource*, Error> getResource(std::string id);
     private:
         static ResourceManager* instance;
         std::filesystem::path base_path;
-        std::unordered_map<std::string, Resource> resources;
+        std::unordered_map<std::string, std::unique_ptr<Resource>> resources;
 };
 
 } // namespace gooforge

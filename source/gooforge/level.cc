@@ -30,31 +30,25 @@ Level::Level(LevelInfo info) {
 	this->info = info;
 
 	for (ItemInstanceInfo& item_instance_info : this->info.items) {
-		this->addEntity(new ItemInstance(&item_instance_info));
+		this->addEntity(std::make_shared<ItemInstance>(&item_instance_info));
 	}
 
 	for (GooBallInfo& ball_info : this->info.balls) {
-		this->addEntity(new GooBall(&ball_info));
+		this->addEntity(std::make_shared<GooBall>(&ball_info));
 	}
 
 	for (GooStrandInfo& strand_info : this->info.strands) {
-		this->addEntity(new GooStrand(&strand_info));
+		this->addEntity(std::make_shared<GooStrand>(&strand_info));
 	}
 }
 
-Level::~Level() {
-	for (auto entity : this->entities) {
-		delete entity;
-	}
-}
-
-void Level::addEntity(Entity* entity) {
-	this->entities.push_back(entity);
+void Level::addEntity(std::shared_ptr<Entity> entity) {
+	this->entities.push_back(std::move(entity));
 	this->entities_dirty = true;
 }
 
 void Level::update() {
-	for (auto entity : this->entities) {
+	for (auto& entity : this->entities) {
 		entity->update();
 	}
 }
@@ -62,7 +56,7 @@ void Level::update() {
 void Level::draw(sf::RenderWindow* window) {
 	this->sortEntities();
 
-	for (auto entity : this->entities) {
+	for (auto& entity : this->entities) {
 		entity->draw(window);
 	}
 }
@@ -80,7 +74,7 @@ void Level::sortEntities() {
 		return;
 	}
 
-	std::sort(this->entities.begin(), this->entities.end(), [](const Entity* a, const Entity* b) {
+	std::sort(this->entities.begin(), this->entities.end(), [](const std::shared_ptr<Entity> a, const std::shared_ptr<Entity> b) {
 		return a->layer < b->layer;
 		});
 
