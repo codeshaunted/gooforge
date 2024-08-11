@@ -213,7 +213,7 @@ struct ItemInfo {
 	std::string uuid;
 	int type;
 	std::string category;
-	int layer;
+	Layer layer;
 	float minDepth;
 	float maxDepth;
 	int sortOffset;
@@ -253,7 +253,7 @@ struct ItemInfoFile {
 
 class ItemInstance : public Entity {
 public:
-	ItemInstance(ItemInstanceInfo* state);
+	ItemInstance() : Entity(EntityType::ITEM_INSTANCE) {}
 	~ItemInstance() override;
 	void update() override;
 	void draw(sf::RenderWindow* window) override;

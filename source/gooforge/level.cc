@@ -18,6 +18,7 @@
 #include "level.hh"
 
 #include <fstream>
+#include <numbers>
 #include <sstream>
 
 #include "spdlog.h"
@@ -26,20 +27,28 @@
 
 namespace gooforge {
 
-Level::Level(LevelInfo info) {
+std::expected<void, Error> Level::setup(LevelInfo info) {
 	this->info = info;
 
 	for (ItemInstanceInfo& item_instance_info : this->info.items) {
-		this->addEntity(new ItemInstance(&item_instance_info));
+		//this->addEntity(new ItemInstance(&item_instance_info));
 	}
 
 	for (GooBallInfo& ball_info : this->info.balls) {
-		this->addEntity(new GooBall(&ball_info));
+		GooBall* goo_ball = new GooBall();
+		auto result = goo_ball->setup(&ball_info);
+		if (!result) {
+			return std::unexpected(result.error());
+		}
+
+		this->addEntity(goo_ball);
 	}
 
 	for (GooStrandInfo& strand_info : this->info.strands) {
-		this->addEntity(new GooStrand(&strand_info));
+		//this->addEntity(new GooStrand(&strand_info));
 	}
+	
+	// TODO: MAKE THIS COLLECT ERRORS INSTEAD OF JUST RETURNING A SINGLE ONE
 }
 
 Level::~Level() {
@@ -76,14 +85,22 @@ Vector2f Level::screenToWorld(sf::Vector2f screen) {
 	return Vector2f(screen.x / GOOFORGE_PIXELS_PER_UNIT, -1.0f * (screen.y / GOOFORGE_PIXELS_PER_UNIT));
 }
 
+float Level::radiansToDegrees(float radians) {
+	return radians * (180.0f / std::numbers::pi);
+}
+
+float Level::degreesToRadians(float degrees) {
+	return degrees * (std::numbers::pi / 180.0f);
+}
+
 void Level::sortEntities() {
 	if (!this->entities_dirty) {
 		return;
 	}
 
 	std::sort(this->entities.begin(), this->entities.end(), [](const Entity* a, const Entity* b) {
-		return a->layer < b->layer;
-		});
+		return a->depth < b->depth;
+	});
 
 	this->entities_dirty = false;
 }

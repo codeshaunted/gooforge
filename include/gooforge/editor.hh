@@ -94,6 +94,7 @@ class Editor {
 		void registerSelectWOG2DirectoryDialog();
 		void showSelectWOG2DirectoryDialog();
 		void registerLevelWindow();
+		void registerPropertiesWindow();
 
 	// we either make everything public or declare every
 	// single derived action as a friend class, pick

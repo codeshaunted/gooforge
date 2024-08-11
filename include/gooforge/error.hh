@@ -60,14 +60,14 @@ struct FileDecompressionError : BaseError {
     size_t code;
 };
 
-using Error = std::variant<JSONDeserializeError, XMLDeserializeError, ResourceNotFoundError, FileOpenError, FileDecompressionError>;
-
-enum class LegacyError {
-    FAILED_TO_OPEN_FILE = 0,
-    RESOURCE_NOT_FOUND,
-    FAILED_TO_DESERIALIZE_LEVEL,
-    FAILED_TO_DESERIALIZE_VECTOR2
+struct GooBallSetupError : BaseError {
+    GooBallSetupError(int uid, std::string setup_error);
+    std::string getMessage() override;
+    int uid;
+    std::string setup_error;
 };
+
+using Error = std::variant<JSONDeserializeError, XMLDeserializeError, ResourceNotFoundError, FileOpenError, FileDecompressionError, GooBallSetupError>;
 
 } // namespace gooforge
 

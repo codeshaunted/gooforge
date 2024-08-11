@@ -46,13 +46,13 @@ class BaseResource {
 
 class SpriteResource : public BaseResource {
     public:
-        SpriteResource(std::string path) : BaseResource(path), atlas_sprite_path("") {}
-        SpriteResource(std::string atlas_sprite_path, sf::IntRect atlas_rect) : BaseResource(atlas_sprite_path), atlas_sprite_path(atlas_sprite_path), atlas_rect(atlas_rect) {}
+        SpriteResource(std::string path) : BaseResource(path) {}
+        SpriteResource(std::string atlas_sprite_path, sf::IntRect atlas_rect) : BaseResource(atlas_sprite_path), atlas_sprite(true), atlas_rect(atlas_rect) {}
         std::expected<sf::Sprite, Error> get();
         void unload() override;
     private:
         sf::Texture* texture = nullptr;
-        std::string atlas_sprite_path;
+        bool atlas_sprite = false;
         sf::IntRect atlas_rect;
 };
 
@@ -83,13 +83,26 @@ class ResourceManager {
         std::expected<void, Error> takeInventory(std::filesystem::path& base_path);
         std::expected<void, Error> loadResourceManifest(std::filesystem::path& path);
         std::expected<void, Error> loadAtlasManifest(std::filesystem::path& path);
-        std::expected<Resource*, Error> getResource(std::string id);
+        template<typename T> std::expected<T*, Error> getResource(std::string id);
         void unloadAll();
     private:
         static ResourceManager* instance;
         std::filesystem::path base_path;
         std::unordered_map<std::string, Resource*> resources;
 };
+
+template<typename T>
+std::expected<T*, Error> ResourceManager::getResource(std::string id) {
+    if (!this->resources.contains(id)) {
+        return std::unexpected(ResourceNotFoundError(id));
+    }
+
+    Resource* resource = this->resources.at(id);
+
+    if (T* t_resource = std::get_if<T>(resource)) {
+        return t_resource;
+    }
+}
 
 } // namespace gooforge
 

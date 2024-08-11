@@ -28,15 +28,6 @@
 
 namespace gooforge {
 
-enum class Layer {
-	BACKGROUND = 0,
-	TERRAIN,
-	GAMEPLAY,
-	FOREGROUND,
-	MISC,
-	DECORATIONS
-};
-
 struct TerrainGroupInfo {
 	Vector2f textureOffset;
 	std::string typeUuid;
@@ -111,13 +102,15 @@ struct LevelInfo {
 
 class Level {
 	public:
-		Level(LevelInfo info);
 		~Level();
+		std::expected<void, Error> setup(LevelInfo info);
 		void addEntity(Entity* entity);
 		void update();
 		void draw(sf::RenderWindow* window);
 		static sf::Vector2f worldToScreen(Vector2f world);
 		static Vector2f screenToWorld(sf::Vector2f screen);
+		static float radiansToDegrees(float radians);
+		static float degreesToRadians(float degrees);
 	private:
 		void sortEntities();
 		LevelInfo info;

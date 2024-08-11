@@ -18,6 +18,7 @@
 #include "item.hh"
 
 #include <numbers>
+#include <ranges>
 
 #include "constants.hh"
 #include "level.hh"
@@ -25,38 +26,39 @@
 
 namespace gooforge {
 
-ItemInstance::ItemInstance(ItemInstanceInfo* info) {
-	this->info = info;
-	this->layer = this->info->depth;
-
-	Resource* resource = (*ResourceManager::getInstance()->getResource("GOOFORGE_ITEM_RESOURCE_" + this->info->type));
-	this->info_file = *std::get<ItemResource>(*resource).get();
-}
-
 ItemInstance::~ItemInstance() {
 
 }
 
 void ItemInstance::update() {
-	this->position = this->info->pos;
-	this->rotation = this->info->rotation;
+	//this->position = this->info->pos;
+	//this->rotation = this->info->rotation;
 }
 
 void ItemInstance::draw(sf::RenderWindow* window) {
-	for (auto object : this->info_file->items[0].objects) {
-		Resource* sprite_resource = (*ResourceManager::getInstance()->getResource(object.name));
-		sf::Sprite sprite = *std::get<SpriteResource>(*sprite_resource).get();
+	/*
+	size_t index = this->info->forcedRandomizationIndex != -1 ? this->info->forcedRandomizationIndex : 0;
+	auto object = this->info_file->items[0].objects[index];
+	Resource* sprite_resource = (*ResourceManager::getInstance()->getResource(object.name));
+	sf::Sprite sprite = *std::get<SpriteResource>(*sprite_resource).get();
 
-		sf::FloatRect bounds = sprite.getLocalBounds();
-		sf::Vector2f origin(object.pivot.x * bounds.width, bounds.height - (object.pivot.y * bounds.height));
-		sprite.setOrigin(origin);
+	sf::FloatRect bounds = sprite.getLocalBounds();
+	sf::Vector2f origin(object.pivot.x * bounds.width, bounds.height - (object.pivot.y * bounds.height));
+	sprite.setOrigin(origin);
 
-		sprite.setScale(sf::Vector2f(this->info->scale.x * object.scale.x, this->info->scale.y * object.scale.y));
-		sprite.setPosition(Level::worldToScreen(this->position));
-		sprite.rotate((this->rotation + object.rotation) * (-180.0f / std::numbers::pi));
+	sprite.setScale(this->info->scale.x * object.scale.x * (this->info->flipHorizontal != object.flipHorizontal ? -1.0f : 1.0f), this->info->scale.y * object.scale.y * (this->info->flipVertical != object.flipVertical ? -1.0f : 1.0f));
+	sprite.setPosition(Level::worldToScreen(this->position));
+	sprite.rotate((this->rotation + object.rotation) * (-180.0f / std::numbers::pi));
 
-		window->draw(sprite);
-	}
+	uint32_t argb = object.color;
+	uint8_t alpha = (argb >> 24) & 0xFF;
+	uint8_t red = (argb >> 16) & 0xFF;
+	uint8_t green = (argb >> 8) & 0xFF;
+	uint8_t blue = argb & 0xFF;
+
+	sprite.setColor(sf::Color(red, green, blue, alpha));
+
+	window->draw(sprite);
 
 	/*
 	sf::RectangleShape outline(sf::Vector2f(bounds.width, bounds.height));

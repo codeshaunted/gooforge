@@ -18,6 +18,7 @@
 #include "resource_manager.hh"
 
 #include <fstream>
+#include <regex>
 
 #include "glaze/json/read.hpp"
 #include "pugixml.hpp"
@@ -33,13 +34,13 @@ BaseResource::~BaseResource() {
 }
 
 std::expected<sf::Sprite, Error> SpriteResource::get() {
-    if (!this->atlas_sprite_path.empty()) {
-        auto atlas_sprite_resource_result = ResourceManager::getInstance()->getResource(this->atlas_sprite_path);
-        if (!atlas_sprite_resource_result) {
-            return std::unexpected(atlas_sprite_resource_result.error());
+    if (this->atlas_sprite) {
+        auto atlas_sprite_resource = ResourceManager::getInstance()->getResource<SpriteResource>(this->path);
+        if (!atlas_sprite_resource) {
+            return std::unexpected(atlas_sprite_resource.error());
         }
 
-        const sf::Texture* atlas_texture = std::get<SpriteResource>(*atlas_sprite_resource_result.value()).get()->getTexture();
+        const sf::Texture* atlas_texture = atlas_sprite_resource.value()->get()->getTexture();
 
         return sf::Sprite(*atlas_texture, this->atlas_rect);
     }
@@ -53,7 +54,7 @@ std::expected<sf::Sprite, Error> SpriteResource::get() {
             return std::unexpected(image.error());
         }
 
-        texture->loadFromImage(*image);
+        this->texture->loadFromImage(*image);
 
         return this->get();
     }
@@ -125,7 +126,7 @@ std::expected<void, Error> ResourceManager::takeInventory(std::filesystem::path&
     // load manifests
     for (const std::filesystem::directory_entry& entry : std::filesystem::recursive_directory_iterator(base_path)) {
         auto path = entry.path();
-        if (path.extension() == ".xml") {
+        if (path.extension() == ".xml" || path.extension() == ".resrc") {
             auto result = this->loadResourceManifest(path);
             if (!result) {
                 return std::unexpected(result.error());
@@ -156,8 +157,21 @@ std::expected<void, Error> ResourceManager::takeInventory(std::filesystem::path&
 }
 
 std::expected<void, Error> ResourceManager::loadResourceManifest(std::filesystem::path& path) {
+    std::ifstream file(path);
+    if (!file) {
+        return std::unexpected(FileOpenError(path.string()));
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string xml_content = buffer.str();
+    // they left out quotes on one of the ids for some reason, which messes with pugixml
+    // so we have to fix it with this regex replace
+    // TODO: check if this fails?
+    xml_content = std::regex_replace(xml_content, std::regex(R"(id=(\w+))"), R"(id="\1")");
+
     pugi::xml_document document;
-    pugi::xml_parse_result result = document.load_file(path.string().c_str());
+    pugi::xml_parse_result result = document.load_string(xml_content.c_str());
 
     if (!result) {
         return std::unexpected(XMLDeserializeError(path.string(), result.description()));
@@ -230,15 +244,6 @@ std::expected<void, Error> ResourceManager::loadAtlasManifest(std::filesystem::p
     }
 
     return std::expected<void, Error>{};
-}
-
-std::expected<Resource*, Error> ResourceManager::getResource(std::string id) {
-    std::string id_string(id);
-    if (!this->resources.contains(id_string)) {
-        return std::unexpected(ResourceNotFoundError(id_string));
-    }
-
-    return this->resources.at(id_string);
 }
 
 void ResourceManager::unloadAll() {

@@ -343,7 +343,7 @@ struct GooBallInfo {
 	bool launcherCanUseBalls;
 	float launcherKnockbackFactor;
 	int launcherMaxActive;
-	int launcherBallTypeToGenerate;
+	GooBallType launcherBallTypeToGenerate;
 	float thrustForce;
 	float maxVelocity;
 	float stiffness;
@@ -355,17 +355,24 @@ struct GooBallInfo {
 
 class GooBall : public Entity {
 	public:
-		GooBall(GooBallInfo* info);
+		GooBall() : Entity(EntityType::GOO_BALL) {}
 		~GooBall() override;
+		std::expected<void, Error> setup(GooBallInfo* info);
+		std::expected<void, Error> refresh();
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
+		sf::Sprite getThumbnail() override;
+		std::string getDisplayName() override;
 		GooBallInfo* getInfo();
 		BallTemplateInfo* getTemplate();
 		static std::unordered_map<std::string, GooBallType> ball_name_to_type;
+		static std::unordered_map<GooBallType, std::string> ball_type_to_name;
 	private:
 		static std::unordered_map<unsigned int, GooBall*> balls;
 		GooBallInfo* info;
 		BallTemplateInfo* ball_template = nullptr;
+		BallTemplateBallPartInfo* body_part = nullptr;
+		sf::Sprite display_sprite;
 
 	friend class GooStrand;
 };

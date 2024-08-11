@@ -24,32 +24,6 @@
 
 namespace gooforge {
 
-GooStrand::GooStrand(GooStrandInfo* info) {
-	this->info = info;
-	this->layer = 0;
-	this->type = EntityType::GOO_STRAND;
-	/*
-
-	if (!this->ball_template) {
-		if (!GooBall::ball_templates.contains(this->info->type)) {
-			throw std::runtime_error("GooStrand::GooStrand GooBallTemplate for GooBallType = " + std::to_string(static_cast<int>(this->info->type)) + " has not been loaded");
-		}
-
-		this->ball_template = &GooBall::ball_templates.at(this->info->type);
-	}
-
-	if (!GooBall::balls.contains(this->info->ball1UID)) {
-		throw std::runtime_error("GooStrand::GooStrand GooBall with uid = " + std::to_string(static_cast<int>(this->info->ball1UID)) + " has not been loaded");
-	}
-
-	if (!GooBall::balls.contains(this->info->ball2UID)) {
-		throw std::runtime_error("GooStrand::GooStrand GooBall with uid = " + std::to_string(static_cast<int>(this->info->ball1UID)) + " has not been loaded");
-	}
-
-	this->ball1 = GooBall::balls.at(this->info->ball1UID);
-	this->ball2 = GooBall::balls.at(this->info->ball2UID);*/
-}
-
 GooStrand::~GooStrand() {
 
 }

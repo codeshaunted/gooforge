@@ -108,6 +108,7 @@ void Editor::update(sf::Clock delta_clock) {
     this->registerSelectWOG2DirectoryDialog();
     this->registerMainMenuBar();
     this->registerLevelWindow();
+    this->registerPropertiesWindow();
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::O)) {
@@ -131,6 +132,7 @@ void Editor::update(sf::Clock delta_clock) {
     }
 
     if (this->error) {
+        this->doCloseFile();
         this->showErrorDialog();
     }
 
@@ -301,7 +303,11 @@ void Editor::doOpenFile() {
             this->error = JSONDeserializeError(out_path, glz::format_error(level_info_error, buffer));
         }
         else {
-            this->level = new Level(level_info);
+            this->level = new Level();
+            auto setup_result = this->level->setup(level_info);
+            if (!setup_result) {
+                this->error = setup_result.error();
+            }
         }
 
         NFD_FreePathU8(out_path);
@@ -435,28 +441,100 @@ void Editor::registerLevelWindow() {
     if (this->level) {
         size_t entity_i = 0;
         for (auto& entity : this->level->entities) {
-            if (entity->getType() == EntityType::GOO_BALL) {
-                GooBall* goo_ball = static_cast<GooBall*>(entity);
-                Resource* sprite_resource = (*ResourceManager::getInstance()->getResource(goo_ball->getTemplate()->ballParts[0].images[0].imageId.imageId));
-                sf::Sprite sprite = *std::get<SpriteResource>(*sprite_resource).get();
-                const char* text = "Goo Ball";
-                ImVec2 textSize = ImGui::CalcTextSize(text);
+            sf::Sprite sprite = entity->getThumbnail();
+            std::string text = entity->getDisplayName();
+            ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
 
-                // Draw selectable item with custom layout
-                ImGui::PushID(static_cast<int>(entity_i));
-                if (ImGui::Selectable("", entity->getSelected(), ImGuiSelectableFlags_SpanAllColumns)) {
-                    this->doEntitySelection(entity);
-                }
-
-                ImGui::SameLine();
-                ImGui::Image(sprite, ImVec2(textSize.y, textSize.y)); // Draw image
-                ImGui::SameLine();
-                ImGui::Text("%s", text); // Draw text
-
-                ImGui::PopID();
+            ImGui::PushID(static_cast<int>(entity_i));
+            if (ImGui::Selectable("", entity->getSelected(), ImGuiSelectableFlags_SpanAllColumns)) {
+                this->doEntitySelection(entity);
             }
 
+            ImGui::SameLine();
+            ImGui::Image(sprite, ImVec2(textSize.y, textSize.y));
+            ImGui::SameLine();
+            ImGui::Text("%s", text.c_str());
+
+            ImGui::PopID();
+
             ++entity_i;
+        }
+    }
+
+    ImGui::End();
+}
+
+void Editor::registerPropertiesWindow() {
+    ImGui::Begin("Properties");
+
+    if (this->level) {
+        if (this->selected_entities.size() == 1) {
+            Entity* entity = this->selected_entities[0];
+
+            if (entity->getType() == EntityType::GOO_BALL) {
+                GooBall* goo_ball = static_cast<GooBall*>(entity);
+                GooBallInfo* info = goo_ball->getInfo();
+                ImGui::LabelText("Name", goo_ball->getDisplayName().c_str());
+                if (ImGui::BeginCombo("Type", GooBall::ball_type_to_name.at(info->typeEnum).c_str())) {
+                    for (auto& [name, id] : GooBall::ball_name_to_type) {
+                        bool selected = id == info->typeEnum;
+                        if (ImGui::Selectable(name.c_str(), selected)) {
+                            info->typeEnum = id;
+                            auto refresh_result = goo_ball->refresh();
+                            if (!refresh_result) {
+                                this->error = refresh_result.error();
+                            }
+                        }
+                        
+                        if (selected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+
+                    ImGui::EndCombo();
+                }
+                ImGui::InputInt("Unique ID", &info->uid);
+                ImGui::InputFloat2("Position", &info->pos.x); // pray to god the struct is packed
+                float degrees_angle = Level::radiansToDegrees(info->angle);
+                if (ImGui::InputFloat("Rotation", &degrees_angle)) {
+                    info->angle = Level::degreesToRadians(std::fmod(degrees_angle, 360.0f));
+                }
+                ImGui::Checkbox("Discovered", &info->discovered);
+                ImGui::Checkbox("Float While Asleep", &info->floatingWhileAsleep);
+                ImGui::Checkbox("Interactive", &info->interactive);
+                ImGui::Checkbox("Exit Pipe Alert", &info->exitPipeAlert);
+                ImGui::Checkbox("Affects Auto Bounds", &info->affectsAutoBounds);
+                if (info->typeEnum == GooBallType::LAUNCHER_L2L || info->typeEnum == GooBallType::LAUNCHER_L2B) {
+                    ImGui::InputFloat("Minimum Launcher Lifespan", &info->launcherLifespanMin);
+                    ImGui::InputFloat("Maximum Launcher Lifespan", &info->launcherLifespanMax);
+                    ImGui::InputFloat("Launcher Force Factor", &info->launcherForceFactor);
+                    ImGui::Checkbox("Launcher Can Use Balls", &info->launcherCanUseBalls);
+                    ImGui::InputFloat("Launcher Knockback Factor", &info->launcherKnockbackFactor);
+                    ImGui::InputInt("Launcher Maximum Active", &info->launcherMaxActive);
+                    
+                    if (ImGui::BeginCombo("Launcher Ball Type To Generate", GooBall::ball_type_to_name.at(info->launcherBallTypeToGenerate).c_str())) {
+                        for (auto& [name, id] : GooBall::ball_name_to_type) {
+                            bool selected = id == info->launcherBallTypeToGenerate;
+                            if (ImGui::Selectable(name.c_str(), selected)) {
+                                info->launcherBallTypeToGenerate = id;
+                            }
+                            if (selected) {
+                                ImGui::SetItemDefaultFocus();
+                            }
+                        }
+
+                        ImGui::EndCombo();
+                    }
+                }
+                if (info->typeEnum == GooBallType::THRUSTER) {
+                    ImGui::InputFloat("Thrust Force", &info->thrustForce);
+                }
+                ImGui::InputFloat("Maximum Velocity", &info->maxVelocity);
+                ImGui::InputFloat("Stiffness", &info->stiffness);
+                ImGui::Checkbox("Filled", &info->filled);
+                ImGui::InputFloat("Detonation Radius", &info->detonationRadius);
+                ImGui::InputFloat("Detonation Force", &info->detonationForce);
+            }
         }
     }
 

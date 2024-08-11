@@ -70,4 +70,14 @@ std::string FileDecompressionError::getMessage() {
 	return "Failed to decompress file at path '" + this->file_path + "', with error '" + ZSTD_getErrorName(this->code) + "'";
 }
 
+GooBallSetupError::GooBallSetupError(int uid, std::string setup_error) {
+	this->uid = uid;
+	this->setup_error = setup_error;
+	spdlog::error(this->getMessage());
+}
+
+std::string GooBallSetupError::getMessage() {
+	return "Failed to setup GooBall with uid '" + std::to_string(this->uid) + "', with error '" + this->setup_error + "'";
+}
+
 } // namespace gooforge

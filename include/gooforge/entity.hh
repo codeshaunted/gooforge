@@ -18,13 +18,20 @@
 #ifndef GOOFORGE_ENTITY_HH
 #define GOOFORGE_ENTITY_HH
 
-#include <optional>
-
 #include "SFML/Graphics.hpp"
 
-#include "positionable.hh"
+#include "vector.hh"
 
 namespace gooforge {
+
+enum class Layer {
+	BACKGROUND = 0,
+	TERRAIN,
+	GAMEPLAY,
+	FOREGROUND,
+	MISC,
+	DECORATIONS
+};
 
 enum class EntityClickBoundShapeType {
 	CIRCLE
@@ -44,14 +51,18 @@ struct EntityClickBoundCircle : public EntityClickBoundShape {
 // but it got too complicated with the pointers... TODO: maybe try it again?
 enum class EntityType {
 	GOO_BALL,
-	GOO_STRAND
+	GOO_STRAND,
+	ITEM_INSTANCE
 };
 
-class Entity : public Positionable {
+class Entity {
 	public:
+		Entity(EntityType type) : type(type) {}
 		virtual ~Entity() {}
 		virtual void update() {}
 		virtual void draw(sf::RenderWindow* window) {}
+		virtual sf::Sprite getThumbnail() { return sf::Sprite(); }
+		virtual std::string getDisplayName() { return ""; }
 		bool wasClicked(Vector2f point);
 		bool getSelected();
 		void setSelected(bool selected);
@@ -60,6 +71,12 @@ class Entity : public Positionable {
 		EntityType type;
 		EntityClickBoundShape* click_bounds = nullptr;
 		bool selected = false;
+		Vector2f position;
+		Layer layer;
+		float depth;
+		float rotation;
+
+	friend class Level;
 };
 
 } // namespace gooforge
