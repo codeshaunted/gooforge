@@ -73,6 +73,10 @@ void DeselectEditorAction::revert(Editor* editor) {
     }
 }
 
+Editor::~Editor() {
+    delete this->level;
+}
+
 void Editor::initialize() {
     this->window.create(sf::VideoMode(1920, 1080), "gooforge");
     this->window.setFramerateLimit(GOOFORGE_FRAMERATE_LIMIT);
@@ -190,7 +194,7 @@ void Editor::processEvents() {
                     bool clicked_entity = false;
                     for (auto& entity : std::ranges::reverse_view(this->level->entities)) {
                         if (entity->wasClicked(world_click_position)) {
-                            this->doEntitySelection(entity.get());
+                            this->doEntitySelection(entity);
                             
                             clicked_entity = true;
                             break;
@@ -297,12 +301,21 @@ void Editor::doOpenFile() {
             this->error = JSONDeserializeError(out_path, glz::format_error(level_info_error, buffer));
         }
         else {
-            this->level = std::make_unique<Level>(level_info);
+            this->level = new Level(level_info);
         }
 
         NFD_FreePathU8(out_path);
     }
     NFD_Quit();
+}
+
+void Editor::doCloseFile() {
+    delete this->level;
+    this->level = nullptr;
+    this->selected_entities.clear();
+    this->undo_stack.clear();
+    this->redo_stack.clear();
+    ResourceManager::getInstance()->unloadAll();
 }
 
 void Editor::registerMainMenuBar() {
@@ -311,6 +324,9 @@ void Editor::registerMainMenuBar() {
         menu_bar_height = ImGui::GetWindowHeight();
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Open", "Ctrl+O")) {
+                if (this->level) {
+                    this->doCloseFile();
+                }
                 this->doOpenFile();
             }
 
@@ -320,6 +336,10 @@ void Editor::registerMainMenuBar() {
 
             if (ImGui::MenuItem("Save As", "Ctrl+Shift+S")) {
                 auto ec = glz::write_file_json<glz::opts{ .prettify = true }>(this->level->info, "./obj.json", std::string{});
+            }
+
+            if (ImGui::MenuItem("Close")) {
+                this->doCloseFile();
             }
 
             if (ImGui::MenuItem("Exit", "Alt+F4")) {
@@ -415,9 +435,8 @@ void Editor::registerLevelWindow() {
     if (this->level) {
         size_t entity_i = 0;
         for (auto& entity : this->level->entities) {
-            Entity* raw_entity = entity.get();
             if (entity->getType() == EntityType::GOO_BALL) {
-                GooBall* goo_ball = static_cast<GooBall*>(raw_entity);
+                GooBall* goo_ball = static_cast<GooBall*>(entity);
                 Resource* sprite_resource = (*ResourceManager::getInstance()->getResource(goo_ball->getTemplate()->ballParts[0].images[0].imageId.imageId));
                 sf::Sprite sprite = *std::get<SpriteResource>(*sprite_resource).get();
                 const char* text = "Goo Ball";
@@ -426,7 +445,7 @@ void Editor::registerLevelWindow() {
                 // Draw selectable item with custom layout
                 ImGui::PushID(static_cast<int>(entity_i));
                 if (ImGui::Selectable("", entity->getSelected(), ImGuiSelectableFlags_SpanAllColumns)) {
-                    this->doEntitySelection(raw_entity);
+                    this->doEntitySelection(entity);
                 }
 
                 ImGui::SameLine();

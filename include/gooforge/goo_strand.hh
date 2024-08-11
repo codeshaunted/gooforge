@@ -35,6 +35,7 @@ struct GooStrandInfo {
 class GooStrand : public Entity {
 	public:
 		GooStrand(GooStrandInfo* info);
+		~GooStrand() override;
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 	private:

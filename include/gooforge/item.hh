@@ -254,6 +254,7 @@ struct ItemInfoFile {
 class ItemInstance : public Entity {
 public:
 	ItemInstance(ItemInstanceInfo* state);
+	~ItemInstance() override;
 	void update() override;
 	void draw(sf::RenderWindow* window) override;
 private:

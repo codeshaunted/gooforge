@@ -112,7 +112,8 @@ struct LevelInfo {
 class Level {
 	public:
 		Level(LevelInfo info);
-		void addEntity(std::shared_ptr<Entity> entity);
+		~Level();
+		void addEntity(Entity* entity);
 		void update();
 		void draw(sf::RenderWindow* window);
 		static sf::Vector2f worldToScreen(Vector2f world);
@@ -120,7 +121,7 @@ class Level {
 	private:
 		void sortEntities();
 		LevelInfo info;
-		std::vector<std::shared_ptr<Entity>> entities;
+		std::vector<Entity*> entities;
 		bool entities_dirty = false;
 
 	friend class Editor;

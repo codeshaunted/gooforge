@@ -25,7 +25,7 @@
 
 namespace gooforge {
 
-std::expected<sf::Image*, Error> BoyImage::loadFromFile(std::string_view path) {
+std::expected<sf::Image, Error> BoyImage::loadFromFile(std::string_view path) {
     std::ifstream file(path.data(), std::ios::binary | std::ios::ate);
     if (!file) {
         return std::unexpected(FileOpenError(std::string(path)));
@@ -42,6 +42,7 @@ std::expected<sf::Image*, Error> BoyImage::loadFromFile(std::string_view path) {
 
     size_t decompressed_size = ZSTD_getFrameContentSize(compressed_data, compressed_data_size);
     if (ZSTD_isError(decompressed_size)) {
+        delete[] compressed_data;
         return std::unexpected(FileDecompressionError(std::string(path), decompressed_size));
     }
 
@@ -50,6 +51,8 @@ std::expected<sf::Image*, Error> BoyImage::loadFromFile(std::string_view path) {
     uint8_t* decompressed_data = new uint8_t[decompressed_size * 2];
     size_t result = ZSTD_decompress(decompressed_data, decompressed_size * 2, compressed_data, compressed_data_size);
     if (ZSTD_isError(result)) {
+        delete[] compressed_data;
+        delete[] decompressed_data;
         return std::unexpected(FileDecompressionError(std::string(path), result));
     }
 
@@ -64,8 +67,8 @@ std::expected<sf::Image*, Error> BoyImage::loadFromFile(std::string_view path) {
 
     char* pixel_data = stream.remainder();
 
-    sf::Image* image = new sf::Image();
-    image->create(pixel_width, pixel_height, (uint8_t*)pixel_data);
+    sf::Image image;
+    image.create(pixel_width, pixel_height, (uint8_t*)pixel_data);
 
     delete[] decompressed_data;
 

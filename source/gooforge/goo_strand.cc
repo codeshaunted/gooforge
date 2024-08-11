@@ -50,6 +50,10 @@ GooStrand::GooStrand(GooStrandInfo* info) {
 	this->ball2 = GooBall::balls.at(this->info->ball2UID);*/
 }
 
+GooStrand::~GooStrand() {
+
+}
+
 void GooStrand::update() {
 	/*
 	this->position.x = (this->ball1->position.x + this->ball2->position.x) / 2.0;

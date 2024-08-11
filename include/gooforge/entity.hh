@@ -49,6 +49,7 @@ enum class EntityType {
 
 class Entity : public Positionable {
 	public:
+		virtual ~Entity() {}
 		virtual void update() {}
 		virtual void draw(sf::RenderWindow* window) {}
 		bool wasClicked(Vector2f point);

@@ -356,7 +356,7 @@ struct GooBallInfo {
 class GooBall : public Entity {
 	public:
 		GooBall(GooBallInfo* info);
-		~GooBall();
+		~GooBall() override;
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 		GooBallInfo* getInfo();

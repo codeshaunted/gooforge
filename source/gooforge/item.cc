@@ -33,6 +33,10 @@ ItemInstance::ItemInstance(ItemInstanceInfo* info) {
 	this->info_file = *std::get<ItemResource>(*resource).get();
 }
 
+ItemInstance::~ItemInstance() {
+
+}
+
 void ItemInstance::update() {
 	this->position = this->info->pos;
 	this->rotation = this->info->rotation;
