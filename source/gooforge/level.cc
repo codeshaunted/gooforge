@@ -34,6 +34,7 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 		//this->addEntity(new ItemInstance(&item_instance_info));
 	}
 
+	size_t goo_ball_i = 0;
 	for (GooBallInfo& ball_info : this->info.balls) {
 		GooBall* goo_ball = new GooBall();
 		auto result = goo_ball->setup(&ball_info);

@@ -73,12 +73,13 @@ class Editor {
 		std::filesystem::path wog2_path;
 		std::optional<Error> error = std::nullopt;
 		Level* level = nullptr;
+		std::string level_file_path;
 		std::vector<Entity*> selected_entities;
 		std::deque<EditorAction> undo_stack;
 		sf::Clock undo_clock;
 		sf::Time undo_cooldown = sf::milliseconds(200);
 		std::deque<EditorAction> redo_stack;
-		void update(sf::Clock delta_clock);
+		void update(sf::Clock& delta_clock);
 		void draw();
 		void processEvents();
 		void doAction(EditorAction action);
@@ -95,6 +96,7 @@ class Editor {
 		void showSelectWOG2DirectoryDialog();
 		void registerLevelWindow();
 		void registerPropertiesWindow();
+		bool registerGooBallTypeCombo(const char* label, GooBallType* type);
 
 	// we either make everything public or declare every
 	// single derived action as a friend class, pick

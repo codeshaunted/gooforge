@@ -52,7 +52,8 @@ struct EntityClickBoundCircle : public EntityClickBoundShape {
 enum class EntityType {
 	GOO_BALL,
 	GOO_STRAND,
-	ITEM_INSTANCE
+	ITEM_INSTANCE,
+	TERRAIN_GROUP
 };
 
 class Entity {

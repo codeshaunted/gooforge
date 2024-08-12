@@ -24,22 +24,10 @@
 #include "goo_ball.hh"
 #include "goo_strand.hh"
 #include "item.hh"
+#include "terrain_group.hh"
 #include "vector.hh"
 
 namespace gooforge {
-
-struct TerrainGroupInfo {
-	Vector2f textureOffset;
-	std::string typeUuid;
-	int typeIndex;
-	int sortOffset;
-	float depth;
-	bool foreground;
-	bool collision;
-	bool destructable;
-	bool buildable;
-	bool occluder;
-};
 
 struct PinInfo {
 	unsigned int uid;

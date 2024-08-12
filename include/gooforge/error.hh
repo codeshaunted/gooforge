@@ -67,7 +67,13 @@ struct GooBallSetupError : BaseError {
     std::string setup_error;
 };
 
-using Error = std::variant<JSONDeserializeError, XMLDeserializeError, ResourceNotFoundError, FileOpenError, FileDecompressionError, GooBallSetupError>;
+struct LevelSetupError : BaseError {
+    LevelSetupError(std::string setup_error);
+    std::string getMessage() override;
+    std::string setup_error;
+};
+
+using Error = std::variant<JSONDeserializeError, XMLDeserializeError, ResourceNotFoundError, FileOpenError, FileDecompressionError, GooBallSetupError, LevelSetupError>;
 
 } // namespace gooforge
 

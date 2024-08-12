@@ -80,4 +80,13 @@ std::string GooBallSetupError::getMessage() {
 	return "Failed to setup GooBall with uid '" + std::to_string(this->uid) + "', with error '" + this->setup_error + "'";
 }
 
+LevelSetupError::LevelSetupError(std::string setup_error) {
+	this->setup_error = setup_error;
+	spdlog::error(this->getMessage());
+}
+
+std::string LevelSetupError::getMessage() {
+	return "Failed to setup GooBall with error '" + this->setup_error + "'";
+}
+
 } // namespace gooforge

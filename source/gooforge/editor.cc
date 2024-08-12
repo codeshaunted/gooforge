@@ -95,7 +95,7 @@ void Editor::initialize() {
     ImGui::SFML::Shutdown();
 }
 
-void Editor::update(sf::Clock delta_clock) {
+void Editor::update(sf::Clock& delta_clock) {
     this->window.setView(this->view);
 
     this->processEvents();
@@ -303,6 +303,7 @@ void Editor::doOpenFile() {
             this->error = JSONDeserializeError(out_path, glz::format_error(level_info_error, buffer));
         }
         else {
+            this->level_file_path = out_path;
             this->level = new Level();
             auto setup_result = this->level->setup(level_info);
             if (!setup_result) {
@@ -337,7 +338,9 @@ void Editor::registerMainMenuBar() {
             }
 
             if (ImGui::MenuItem("Save", "Ctrl+S")) {
-
+                if (this->level) {
+                    auto ec = glz::write_file_json < glz::opts{ .prettify = true } > (this->level->info, this->level_file_path, std::string{});
+                }
             }
 
             if (ImGui::MenuItem("Save As", "Ctrl+Shift+S")) {
@@ -423,7 +426,6 @@ void Editor::registerSelectWOG2DirectoryDialog() {
         if (ImGui::Button("OK")) {
             this->wog2_path = std::filesystem::path(directory_path);
             ResourceManager::getInstance()->takeInventory(this->wog2_path);
-            //ResourceManager::getInstance()->loadManifest((this->wog2_path / "res/balls/_atlas.image.atlas").generic_string());
             ImGui::CloseCurrentPopup();
         }
 
@@ -470,75 +472,217 @@ void Editor::registerPropertiesWindow() {
     if (this->level) {
         if (this->selected_entities.size() == 1) {
             Entity* entity = this->selected_entities[0];
+            std::string text = entity->getDisplayName();
+            ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
+
+            ImGui::Image(entity->getThumbnail(), ImVec2(textSize.y * 2.0f, textSize.y * 2.0f));
+            ImGui::SameLine();
+            ImGui::Text(text.c_str());
 
             if (entity->getType() == EntityType::GOO_BALL) {
                 GooBall* goo_ball = static_cast<GooBall*>(entity);
                 GooBallInfo* info = goo_ball->getInfo();
-                ImGui::LabelText("Name", goo_ball->getDisplayName().c_str());
-                if (ImGui::BeginCombo("Type", GooBall::ball_type_to_name.at(info->typeEnum).c_str())) {
-                    for (auto& [name, id] : GooBall::ball_name_to_type) {
-                        bool selected = id == info->typeEnum;
-                        if (ImGui::Selectable(name.c_str(), selected)) {
-                            info->typeEnum = id;
-                            auto refresh_result = goo_ball->refresh();
-                            if (!refresh_result) {
-                                this->error = refresh_result.error();
-                            }
-                        }
-                        
-                        if (selected) {
-                            ImGui::SetItemDefaultFocus();
+                
+                ImGui::SeparatorText("General Properties");
+                if (ImGui::BeginTable("General Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
+                    // type
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Type");
+                    ImGui::TableSetColumnIndex(2);
+                    if (this->registerGooBallTypeCombo("", &info->typeEnum)) {
+                        auto refresh_result = goo_ball->refresh();
+                        if (!refresh_result) {
+                            this->error = refresh_result.error();
                         }
                     }
 
-                    ImGui::EndCombo();
+                    // position x
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Position");
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::Text("X");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::InputFloat("##positionx", &info->pos.x);
+
+                    // position y
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::Text("Y");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::InputFloat("##positiony", &info->pos.y);
+
+                    // rotation
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Rotation");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::InputFloat("##rotation", &info->angle);
+
+                    // max velocity
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Maximum Velocity");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::InputFloat("##maxvelocity", &info->maxVelocity);
+
+                    // stiffness
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Stiffness");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::InputFloat("##stiffness", &info->stiffness);
+
+                    // detonation radius
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Detonation Radius");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::InputFloat("##detonationradius", &info->detonationRadius);
+
+                    // detonation force
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Detonation Force");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::InputFloat("##detonationforce", &info->detonationForce);
+
+                    // discovered
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Discovered");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Checkbox("##discovered", &info->discovered);
+
+                    // floating while asleep
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Float While Asleep");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Checkbox("##floatingwhileasleep", &info->floatingWhileAsleep);
+
+                    // interactive
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Interactive");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Checkbox("##interactive", &info->interactive);
+
+                    // wake with liquid
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Wake With Liquid");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Checkbox("##wakewithliquid", &info->wakeWithLiquid);
+
+                    // exit pipe alert
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Exit Pipe Alert");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Checkbox("##exitpipealert", &info->exitPipeAlert);
+
+                    // affects auto bounds
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Affects Auto Bounds");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Checkbox("##affectsautobounds", &info->affectsAutoBounds);
+
+                    // filled
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Filled");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Checkbox("##filled", &info->filled);
+
+                    ImGui::EndTable();
                 }
-                ImGui::InputInt("Unique ID", &info->uid);
-                ImGui::InputFloat2("Position", &info->pos.x); // pray to god the struct is packed
-                float degrees_angle = Level::radiansToDegrees(info->angle);
-                if (ImGui::InputFloat("Rotation", &degrees_angle)) {
-                    info->angle = Level::degreesToRadians(std::fmod(degrees_angle, 360.0f));
-                }
-                ImGui::Checkbox("Discovered", &info->discovered);
-                ImGui::Checkbox("Float While Asleep", &info->floatingWhileAsleep);
-                ImGui::Checkbox("Interactive", &info->interactive);
-                ImGui::Checkbox("Exit Pipe Alert", &info->exitPipeAlert);
-                ImGui::Checkbox("Affects Auto Bounds", &info->affectsAutoBounds);
-                if (info->typeEnum == GooBallType::LAUNCHER_L2L || info->typeEnum == GooBallType::LAUNCHER_L2B) {
-                    ImGui::InputFloat("Minimum Launcher Lifespan", &info->launcherLifespanMin);
-                    ImGui::InputFloat("Maximum Launcher Lifespan", &info->launcherLifespanMax);
-                    ImGui::InputFloat("Launcher Force Factor", &info->launcherForceFactor);
-                    ImGui::Checkbox("Launcher Can Use Balls", &info->launcherCanUseBalls);
-                    ImGui::InputFloat("Launcher Knockback Factor", &info->launcherKnockbackFactor);
-                    ImGui::InputInt("Launcher Maximum Active", &info->launcherMaxActive);
-                    
-                    if (ImGui::BeginCombo("Launcher Ball Type To Generate", GooBall::ball_type_to_name.at(info->launcherBallTypeToGenerate).c_str())) {
-                        for (auto& [name, id] : GooBall::ball_name_to_type) {
-                            bool selected = id == info->launcherBallTypeToGenerate;
-                            if (ImGui::Selectable(name.c_str(), selected)) {
-                                info->launcherBallTypeToGenerate = id;
-                            }
-                            if (selected) {
-                                ImGui::SetItemDefaultFocus();
-                            }
+
+                if (info->typeEnum == GooBallType::LAUNCHER_L2B || info->typeEnum == GooBallType::LAUNCHER_L2L) {
+                    ImGui::SeparatorText("Launcher Properties");
+                    if (ImGui::BeginTable("Launcher Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
+                        if (info->typeEnum == GooBallType::LAUNCHER_L2L) {
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::Text("Ball Type To Generate");
+                            ImGui::TableSetColumnIndex(2);
+                            this->registerGooBallTypeCombo("", &info->launcherBallTypeToGenerate);
                         }
 
-                        ImGui::EndCombo();
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Text("Minimum Lifespan");
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::InputFloat("##launcherlifespanmin", &info->launcherLifespanMin);
+
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Text("Maximum Lifespan");
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::InputFloat("##launcherlifespanmax", &info->launcherLifespanMax);
+
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Text("Knockback Factor");
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::InputFloat("##knockbackfactor", &info->launcherKnockbackFactor);
+
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Text("Can Use Balls");
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::Checkbox("##launchercanuseballs", &info->launcherCanUseBalls);
+
+                        ImGui::EndTable();
                     }
                 }
+                
                 if (info->typeEnum == GooBallType::THRUSTER) {
-                    ImGui::InputFloat("Thrust Force", &info->thrustForce);
+                    ImGui::SeparatorText("Thruster Properties");
+                    if (ImGui::BeginTable("Thruster Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
+                        ImGui::TableNextRow();
+                        ImGui::SeparatorText("Thruster");
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Text("Thrust Force");
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::InputFloat("##thrustforce", &info->thrustForce);
+
+                        ImGui::EndTable();
+                    }
                 }
-                ImGui::InputFloat("Maximum Velocity", &info->maxVelocity);
-                ImGui::InputFloat("Stiffness", &info->stiffness);
-                ImGui::Checkbox("Filled", &info->filled);
-                ImGui::InputFloat("Detonation Radius", &info->detonationRadius);
-                ImGui::InputFloat("Detonation Force", &info->detonationForce);
             }
         }
     }
 
     ImGui::End();
+}
+
+// returns true if changed
+bool Editor::registerGooBallTypeCombo(const char* label, GooBallType* type) {
+    bool changed = false;
+    if (ImGui::BeginCombo(label, GooBall::ball_type_to_name.at(*type).c_str())) {
+        for (auto& [name, id] : GooBall::ball_name_to_type) {
+            if (name == "Invalid" || name == "LiquidLevelExit") {
+                continue; // exclude these
+            }
+
+            bool selected = id == *type;
+            if (ImGui::Selectable(name.c_str(), selected)) {
+                *type = id;
+                changed = true;
+            }
+
+            if (selected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+
+        ImGui::EndCombo();
+    }
+
+    return changed;
 }
 
 } // namespace gooforge
