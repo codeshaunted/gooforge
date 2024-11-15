@@ -37,7 +37,6 @@ std::expected<void, Error> GooBall::setup(GooBallInfo* info) {
 }
 
 std::expected<void, Error> GooBall::refresh() {
-	this->info = info;
 	this->depth = std::numeric_limits<float>::max();
 
 	std::string resource_id = "GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(this->info->typeEnum));

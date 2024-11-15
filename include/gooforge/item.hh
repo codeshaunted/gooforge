@@ -255,11 +255,18 @@ class ItemInstance : public Entity {
 public:
 	ItemInstance() : Entity(EntityType::ITEM_INSTANCE) {}
 	~ItemInstance() override;
+	std::expected<void, Error> setup(ItemInstanceInfo* info);
+	std::expected<void, Error> refresh();
 	void update() override;
 	void draw(sf::RenderWindow* window) override;
+	sf::Sprite getThumbnail() override;
+	std::string getDisplayName() override;
+	ItemInstanceInfo* getInfo();
 private:
 	ItemInstanceInfo* info;
 	ItemInfoFile* info_file;
+	ItemObjectInfo* object_info;
+	sf::Sprite display_sprite;
 };
 
 } // namespace gooforge

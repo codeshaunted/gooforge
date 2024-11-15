@@ -31,7 +31,13 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 	this->info = info;
 
 	for (ItemInstanceInfo& item_instance_info : this->info.items) {
-		//this->addEntity(new ItemInstance(&item_instance_info));
+		ItemInstance* item_instance = new ItemInstance();
+		auto result = item_instance->setup(&item_instance_info);
+		if (!result) {
+			return std::unexpected(result.error());
+		}
+
+		this->addEntity(item_instance);
 	}
 
 	size_t goo_ball_i = 0;
@@ -73,8 +79,9 @@ void Level::update() {
 void Level::draw(sf::RenderWindow* window) {
 	this->sortEntities();
 
-	for (auto& entity : this->entities) {
-		entity->draw(window);
+	for (auto it = this->entities.rbegin(); it != this->entities.rend(); ++it) {
+    	Entity* entity = *it;
+    	entity->draw(window);
 	}
 }
 

@@ -652,6 +652,19 @@ void Editor::registerPropertiesWindow() {
                         ImGui::EndTable();
                     }
                 }
+            } else if (entity->getType() == EntityType::ITEM_INSTANCE) {
+                ItemInstance* item_instance = static_cast<ItemInstance*>(entity);
+                ItemInstanceInfo* info = item_instance->getInfo();
+
+                if (ImGui::BeginTable("General Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Depth");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::InputFloat("##depth", &info->depth);
+
+                    ImGui::EndTable();
+                }
             }
         }
     }
