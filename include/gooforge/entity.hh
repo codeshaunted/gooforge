@@ -60,6 +60,7 @@ class Entity {
 	public:
 		Entity(EntityType type) : type(type) {}
 		virtual ~Entity() {}
+		virtual std::expected<void, Error> refresh() { return std::expected<void, Error>{}; }
 		virtual void update() {}
 		virtual void draw(sf::RenderWindow* window) {}
 		virtual sf::Sprite getThumbnail() { return sf::Sprite(); }

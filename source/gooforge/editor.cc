@@ -31,14 +31,16 @@
 
 namespace gooforge {
 
-void SelectEditorAction::execute(Editor* editor) {
+std::expected<void, Error> SelectEditorAction::execute(Editor* editor) {
     for (auto entity : this->entities) {
         entity->setSelected(true);
         editor->selected_entities.push_back(entity);
     }
+    
+    return std::expected<void, Error>{};
 }
 
-void SelectEditorAction::revert(Editor* editor) {
+std::expected<void, Error> SelectEditorAction::revert(Editor* editor) {
     for (auto entity : this->entities) {
         entity->setSelected(false);
 
@@ -50,9 +52,11 @@ void SelectEditorAction::revert(Editor* editor) {
             }
         }
     }
+
+    return std::expected<void, Error>{};
 }
 
-void DeselectEditorAction::execute(Editor* editor) {
+std::expected<void, Error> DeselectEditorAction::execute(Editor* editor) {
     for (auto entity : this->entities) {
         entity->setSelected(false);
 
@@ -64,13 +68,17 @@ void DeselectEditorAction::execute(Editor* editor) {
             }
         }
     }
+
+    return std::expected<void, Error>{};
 }
 
-void DeselectEditorAction::revert(Editor* editor) {
+std::expected<void, Error> DeselectEditorAction::revert(Editor* editor) {
     for (auto entity : this->entities) {
         entity->setSelected(true);
         editor->selected_entities.push_back(entity);
     }
+
+    return std::expected<void, Error>{};
 }
 
 Editor::~Editor() {
@@ -131,7 +139,7 @@ void Editor::update(sf::Clock& delta_clock) {
         this->showSelectWOG2DirectoryDialog();
     }
 
-    if (this->error) {
+    if (!this->errors.empty()) {
         this->doCloseFile();
         this->showErrorDialog();
     }
@@ -300,14 +308,14 @@ void Editor::doOpenFile() {
         auto level_info_error = glz::read_file_json < glz::opts{ .error_on_unknown_keys = false } > (level_info, out_path, buffer);
 
         if (level_info_error) {
-            this->error = JSONDeserializeError(out_path, glz::format_error(level_info_error, buffer));
+            this->errors.push_back(JSONDeserializeError(out_path, glz::format_error(level_info_error, buffer)));
         }
         else {
             this->level_file_path = out_path;
             this->level = new Level();
             auto setup_result = this->level->setup(level_info);
             if (!setup_result) {
-                this->error = setup_result.error();
+                this->errors.push_back(setup_result.error());
             }
         }
 
@@ -381,8 +389,8 @@ void Editor::registerMainMenuBar() {
 void Editor::registerErrorDialog() {
     if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         std::string message = "";
-        if (this->error) {
-            Error error_value = this->error.value();
+        if (!this->errors.empty()) {
+            Error error_value = this->errors.back();
             BaseError* base_error = std::visit([](auto& derived_error) -> BaseError* { return &derived_error; }, error_value);
             message = base_error->getMessage();
         }
@@ -392,7 +400,7 @@ void Editor::registerErrorDialog() {
 
         if (ImGui::Button("OK")) {
             ImGui::CloseCurrentPopup();
-            this->error = std::nullopt;
+            this->errors.pop_back();
         }
 
         ImGui::EndPopup();
@@ -490,12 +498,7 @@ void Editor::registerPropertiesWindow() {
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Type");
                     ImGui::TableSetColumnIndex(2);
-                    if (this->registerGooBallTypeCombo("", &info->typeEnum)) {
-                        auto refresh_result = goo_ball->refresh();
-                        if (!refresh_result) {
-                            this->error = refresh_result.error();
-                        }
-                    }
+                    this->registerGooBallTypeCombo("", &info->typeEnum, goo_ball);
 
                     // position x
                     ImGui::TableNextRow();
@@ -504,7 +507,10 @@ void Editor::registerPropertiesWindow() {
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("X");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##positionx", &info->pos.x);
+                    float pos_x = info->pos.x;
+                    if (ImGui::InputFloat("##positionx", &pos_x, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue)) {
+                        this->doAction(ModifyPropertyEditorAction<float>(&info->pos.x, pos_x));
+                    }
 
                     // position y
                     ImGui::TableNextRow();
@@ -673,7 +679,7 @@ void Editor::registerPropertiesWindow() {
 }
 
 // returns true if changed
-bool Editor::registerGooBallTypeCombo(const char* label, GooBallType* type) {
+bool Editor::registerGooBallTypeCombo(const char* label, GooBallType* type, GooBall* refresh_goo_ball) {
     bool changed = false;
     if (ImGui::BeginCombo(label, GooBall::ball_type_to_name.at(*type).c_str())) {
         for (auto& [name, id] : GooBall::ball_name_to_type) {
@@ -683,7 +689,7 @@ bool Editor::registerGooBallTypeCombo(const char* label, GooBallType* type) {
 
             bool selected = id == *type;
             if (ImGui::Selectable(name.c_str(), selected)) {
-                *type = id;
+                this->doAction(ModifyPropertyEditorAction<GooBallType>(type, id, refresh_goo_ball));
                 changed = true;
             }
 

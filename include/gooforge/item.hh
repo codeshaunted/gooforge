@@ -256,7 +256,7 @@ public:
 	ItemInstance() : Entity(EntityType::ITEM_INSTANCE) {}
 	~ItemInstance() override;
 	std::expected<void, Error> setup(ItemInstanceInfo* info);
-	std::expected<void, Error> refresh();
+	std::expected<void, Error> refresh() override;
 	void update() override;
 	void draw(sf::RenderWindow* window) override;
 	sf::Sprite getThumbnail() override;

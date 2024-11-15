@@ -358,7 +358,7 @@ class GooBall : public Entity {
 		GooBall() : Entity(EntityType::GOO_BALL) {}
 		~GooBall() override;
 		std::expected<void, Error> setup(GooBallInfo* info);
-		std::expected<void, Error> refresh();
+		std::expected<void, Error> refresh() override;
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 		sf::Sprite getThumbnail() override;

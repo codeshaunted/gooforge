@@ -33,31 +33,66 @@ namespace gooforge {
 // and then use the variant in BaseEditorAction
 struct SelectEditorAction;
 struct DeselectEditorAction;
+template <typename T>
+struct ModifyPropertyEditorAction;
 
-using EditorAction = std::variant<SelectEditorAction, DeselectEditorAction>;
+// this template shit is horrendous but whatever
+using EditorAction = std::variant<SelectEditorAction, DeselectEditorAction, ModifyPropertyEditorAction<GooBallType>, ModifyPropertyEditorAction<float>>;
 
 struct BaseEditorAction {
 	// we define implicit actions as actions executed before the main action is to be executed
 	// this is needed for stuff like selection, where we want to deselect all when a user selects
 	// a single entity in the editor window
 	BaseEditorAction(std::vector<EditorAction> implicit_actions) : implicit_actions(implicit_actions) {}
-	virtual void execute(Editor* editor) {}
-	virtual void revert(Editor* editor) {}
+	virtual std::expected<void, Error> execute(Editor* editor) { return std::expected<void, Error>{}; }
+	virtual std::expected<void, Error> revert(Editor* editor) { return std::expected<void, Error>{}; }
 	std::vector<EditorAction> implicit_actions;
 };
 
 struct SelectEditorAction : public BaseEditorAction {
 	SelectEditorAction(std::vector<Entity*> entities, std::vector<EditorAction> implicit_actions = {}) : BaseEditorAction(implicit_actions), entities(entities) {}
-	void execute(Editor* editor) override;
-	void revert(Editor* editor) override;
+	std::expected<void, Error> execute(Editor* editor) override;
+	std::expected<void, Error> revert(Editor* editor) override;
 	std::vector<Entity*> entities;
 };
 
 struct DeselectEditorAction : public BaseEditorAction {
 	DeselectEditorAction(std::vector<Entity*> entities, std::vector<EditorAction> implicit_actions = {}) : BaseEditorAction(implicit_actions), entities(entities) {}
-	void execute(Editor* editor) override;
-	void revert(Editor* editor) override;
+	std::expected<void, Error> execute(Editor* editor) override;
+	std::expected<void, Error> revert(Editor* editor) override;
 	std::vector<Entity*> entities;
+};
+
+template<typename T>
+struct ModifyPropertyEditorAction : public BaseEditorAction {
+	ModifyPropertyEditorAction(T* property, T new_value, Entity* refresh_entity = nullptr) : BaseEditorAction({}), property(property), old_value(*property), new_value(new_value), refresh_entity(refresh_entity) {}
+	std::expected<void, Error> execute(Editor* editor) override {
+		*this->property = new_value;
+		if (this->refresh_entity) {
+			auto result = this->refresh_entity->refresh();
+			if (!result) {
+				return std::unexpected(result.error());
+			}
+		}
+
+		return std::expected<void, Error>{};
+	}
+	std::expected<void, Error> revert(Editor* editor) override {
+		*this->property = old_value;
+		
+		if (this->refresh_entity) {
+			auto result = this->refresh_entity->refresh();
+			if (!result) {
+				return std::unexpected(result.error());
+			}
+		}
+
+		return std::expected<void, Error>{};
+	}
+	T* property;
+	T old_value;
+	T new_value;
+	Entity* refresh_entity;
 };
 
 class Editor {
@@ -71,7 +106,7 @@ class Editor {
 		bool panning = false;
 		sf::Vector2f pan_start_position;
 		std::filesystem::path wog2_path;
-		std::optional<Error> error = std::nullopt;
+		std::vector<Error> errors;
 		Level* level = nullptr;
 		std::string level_file_path;
 		std::vector<Entity*> selected_entities;
@@ -96,13 +131,13 @@ class Editor {
 		void showSelectWOG2DirectoryDialog();
 		void registerLevelWindow();
 		void registerPropertiesWindow();
-		bool registerGooBallTypeCombo(const char* label, GooBallType* type);
+		bool registerGooBallTypeCombo(const char* label, GooBallType* type, GooBall* refresh_goo_ball = nullptr);
 
 	// we either make everything public or declare every
 	// single derived action as a friend class, pick
 	// your poison, or maybe just structure it better? :P
-	friend class SelectEditorAction;
-	friend class DeselectEditorAction;
+	friend struct SelectEditorAction;
+	friend struct DeselectEditorAction;
 };
 
 } // namespace gooforge
