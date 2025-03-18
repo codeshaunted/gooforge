@@ -71,6 +71,7 @@ class Entity {
 		bool getSelected();
 		void setSelected(bool selected);
 		EntityType getType();
+		Vector2f getPosition();
 	protected:
 		EntityType type;
 		EntityClickBoundShape* click_bounds = nullptr;

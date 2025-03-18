@@ -1,6 +1,6 @@
 // codeshaunted - gooforge
-// include/gooforge/terrain_group.hh
-// contains TerrainGroup declarations
+// include/gooforge/terrain.hh
+// contains Terrain and related declarations
 // Copyright (C) 2024 codeshaunted
 //
 // This file is part of gooforge.
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with gooforge. If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef GOOFORGE_TERRAIN_GROUP_HH
-#define GOOFORGE_TERRAIN_GROUP_HH
+#ifndef GOOFORGE_TERRAIN_HH
+#define GOOFORGE_TERRAIN_HH
 
 #include <expected>
 
@@ -39,6 +39,24 @@ struct TerrainGroupInfo {
 	bool occluder;
 };
 
+struct TerrainTemplateImageIdInfo {
+	std::string imageId;
+};
+
+struct TerrainTemplateBaseSettingsInfo {
+	TerrainTemplateImageIdInfo image;
+};
+
+struct TerrainTemplateInfo {
+	std::string uuid;
+	std::string name;
+	TerrainTemplateBaseSettingsInfo baseSettings;
+};
+
+struct TerrainTemplateInfoFile {
+	std::vector<TerrainTemplateInfo> terrainTypes;
+};
+
 class TerrainGroup : public Entity {
 	public:
 		TerrainGroup() : Entity(EntityType::TERRAIN_GROUP) {}
@@ -47,12 +65,15 @@ class TerrainGroup : public Entity {
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 		void addTerrainBall(GooBall* goo_ball);
+		std::string getDisplayName() override;
+		sf::Sprite getThumbnail() override;
 	private:
 		TerrainGroupInfo* info;
-
+		TerrainTemplateInfo* template_info;
 		std::vector<GooBall*> terrain_balls;
+		sf::Sprite display_sprite;
 };
 
 } // namespace gooforge
 
-#endif // GOOFORGE_TERRAIN_GROUP_HH
+#endif // GOOFORGE_TERRAIN_HH

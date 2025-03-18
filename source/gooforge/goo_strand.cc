@@ -22,12 +22,25 @@
 #include <filesystem>
 
 #include "constants.hh"
+#include "level.hh"
 #include "resource_manager.hh"
 
 namespace gooforge {
 
 GooStrand::~GooStrand() {
 
+}
+
+std::expected<void, Error> GooStrand::setup(GooStrandInfo* info, GooBall* ball1, GooBall* ball2) {
+	this->info = info;
+	this->ball1 = ball1;
+	this->ball2 = ball2;
+
+	return this->refresh();
+}
+
+std::expected<void, Error> GooStrand::refresh() {
+	return std::expected<void, Error>{};
 }
 
 void GooStrand::update() {
@@ -37,7 +50,21 @@ void GooStrand::update() {
 }
 
 // TODO: make this less awful
-void GooStrand::draw(sf::RenderWindow* window) {/*
+void GooStrand::draw(sf::RenderWindow* window) {
+	// Create a line using the positions of the two balls
+    sf::Vertex line[] =
+    {
+        sf::Vertex(Level::worldToScreen(this->ball1->getPosition())),
+        sf::Vertex(Level::worldToScreen(this->ball2->getPosition()))
+    };
+
+    // Set the line's color (you can change this)
+    line[0].color = sf::Color::Green;
+    line[1].color = sf::Color::Green;
+
+    // Draw the line
+    window->draw(line, 2, sf::Lines);
+	/*
 	Resource sprite_resource = (*ResourceManager::getInstance()->getResource(this->ball_template->strand_image_id));
 	sf::Sprite sprite = *std::get<SpriteResource*>(sprite_resource)->get();
 

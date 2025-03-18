@@ -26,7 +26,7 @@
 #include "goo_ball.hh"
 #include "goo_strand.hh"
 #include "item.hh"
-#include "terrain_group.hh"
+#include "terrain.hh"
 #include "vector.hh"
 
 namespace gooforge {

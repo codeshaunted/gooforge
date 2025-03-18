@@ -38,6 +38,8 @@ class GooStrand : public Entity {
 	public:
 		GooStrand() : Entity(EntityType::GOO_STRAND) {}
 		~GooStrand() override;
+		std::expected<void, Error> setup(GooStrandInfo* info, GooBall* ball1, GooBall* ball2);
+		std::expected<void, Error> refresh() override;
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 	private:

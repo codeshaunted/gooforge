@@ -30,6 +30,7 @@
 #include "error.hh"
 #include "goo_ball.hh"
 #include "item.hh"
+#include "terrain.hh"
 
 namespace gooforge {
 
@@ -76,7 +77,16 @@ class ItemResource : public BaseResource {
         ItemInfoFile* info_file = nullptr;
 };
 
-using Resource = std::variant<SpriteResource, BallTemplateResource, ItemResource>;
+class TerrainTemplatesResource : public BaseResource {
+    public:
+        TerrainTemplatesResource(std::string path) : BaseResource(path) {}
+        std::expected<TerrainTemplateInfoFile*, Error> get();
+        void unload() override;
+    private:
+        TerrainTemplateInfoFile* info_file = nullptr;
+};
+
+using Resource = std::variant<SpriteResource, BallTemplateResource, ItemResource, TerrainTemplatesResource>;
 
 class ResourceManager {
     public:

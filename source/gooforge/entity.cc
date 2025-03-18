@@ -48,4 +48,8 @@ EntityType Entity::getType() {
 	return this->type;
 }
 
+Vector2f Entity::getPosition() {
+	return this->position;
+}
+
 } // namespace gooforge

@@ -42,9 +42,12 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 		this->addEntity(item_instance);
 	}
 
-	size_t goo_ball_i = 0;
+	std::vector<GooBall*> goo_balls;
+	std::unordered_map<int, GooBall*> goo_balls_uid;
 	for (GooBallInfo& ball_info : this->info.balls) {
 		GooBall* goo_ball = new GooBall();
+		goo_balls.push_back(goo_ball);
+		goo_balls_uid.insert({ball_info.uid, goo_ball});
 		auto result = goo_ball->setup(&ball_info);
 		if (!result) {
 			return std::unexpected(result.error());
@@ -53,8 +56,35 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 		this->addEntity(goo_ball);
 	}
 
+	std::vector<TerrainGroup*> terrain_groups;
+	for (TerrainGroupInfo& terrain_group_info : this->info.terrainGroups) {
+		TerrainGroup* terrain_group = new TerrainGroup();
+		terrain_groups.push_back(terrain_group);
+		auto result = terrain_group->setup(&terrain_group_info);
+		if (!result) {
+			return std::unexpected(result.error());
+		}
+
+		this->addEntity(terrain_group);
+	}
+
+	for (size_t i = 0; i < this->info.terrainBalls.size(); ++i) {
+		const TerrainBallInfo& terrain_ball_info = this->info.terrainBalls[i];
+
+		if (terrain_ball_info.group != -1) {
+			terrain_groups[terrain_ball_info.group]->addTerrainBall(goo_balls[i]); // TODO: FIX THIS, THIS IS UNSAFE WE MUST VALIDATE THIS FIRST
+		}
+	}
+
 	for (GooStrandInfo& strand_info : this->info.strands) {
-		//this->addEntity(new GooStrand(&strand_info));
+		GooStrand* goo_strand = new GooStrand();
+		// ONCE AGAIN NOT SAFE, TODO: FIX
+		auto result = goo_strand->setup(&strand_info, goo_balls_uid[strand_info.ball1UID], goo_balls_uid[strand_info.ball2UID]);
+		if (!result) {
+			return std::unexpected(result.error());
+		}
+
+		this->addEntity(goo_strand);
 	}
 	
 	// TODO: MAKE THIS COLLECT ERRORS INSTEAD OF JUST RETURNING A SINGLE ONE

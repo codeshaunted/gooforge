@@ -74,6 +74,7 @@ void ItemInstance::update() {
 }
 
 void ItemInstance::draw(sf::RenderWindow* window) {
+	return;
 	sf::FloatRect bounds = this->display_sprite.getLocalBounds();
 	sf::Vector2f origin(this->object_info->pivot.x * bounds.width, bounds.height - (this->object_info->pivot.y * bounds.height));
 	this->display_sprite.setOrigin(origin);

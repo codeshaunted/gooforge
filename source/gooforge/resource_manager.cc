@@ -90,6 +90,29 @@ void BallTemplateResource::unload() {
     this->info = nullptr;
 }
 
+std::expected<TerrainTemplateInfoFile*, Error> TerrainTemplatesResource::get() {
+    if (!this->info_file) {
+        TerrainTemplateInfoFile* template_info_file = new TerrainTemplateInfoFile();
+        std::string buffer;
+        auto template_info_file_error = glz::read_file_json<glz::opts{ .error_on_unknown_keys = false }>(template_info_file, this->path, buffer);
+
+        if (template_info_file_error) {
+            delete template_info_file;
+            return std::unexpected(JSONDeserializeError(this->path, glz::format_error(template_info_file_error, buffer)));
+        }
+        else {
+            this->info_file = template_info_file;
+        }
+    }
+
+    return this->info_file;
+}
+
+void TerrainTemplatesResource::unload() {
+    delete this->info_file;
+    this->info_file = nullptr;
+}
+
 std::expected<ItemInfoFile*, Error> ItemResource::get() {
     if (!this->info_file) {
         ItemInfoFile* item_info_file = new ItemInfoFile();
@@ -154,6 +177,11 @@ std::expected<void, Error> ResourceManager::takeInventory(std::filesystem::path&
 
         this->resources.insert({ id, new Resource(resource) });
     }
+
+    // load terrain templates
+    std::filesystem::path terrain_path = base_path / "res/terrain/terrain.wog2";
+    TerrainTemplatesResource terrain_templates_resource(terrain_path.string());
+    this->resources.insert({ "GOOFORGE_TERRAIN_TEMPLATES_RESOURCE", new Resource(terrain_templates_resource) });
 
     return std::expected<void, Error>{};
 }
