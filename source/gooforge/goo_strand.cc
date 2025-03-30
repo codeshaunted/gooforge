@@ -40,17 +40,42 @@ std::expected<void, Error> GooStrand::setup(GooStrandInfo* info, GooBall* ball1,
 }
 
 std::expected<void, Error> GooStrand::refresh() {
+	this->depth = -std::numeric_limits<float>::max() + 2;
+
+	std::string resource_id = "GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(this->info->type));
+	auto template_resource = ResourceManager::getInstance()->getResource<BallTemplateResource>(resource_id);
+	if (!template_resource) {
+		return std::unexpected(template_resource.error());
+	}
+
+	auto template_info = template_resource.value()->get();
+	if (!template_info) {
+		return std::unexpected(template_info.error());
+	}
+
+	this->ball_template = *template_info;
+
+	auto sprite_resource = ResourceManager::getInstance()->getResource<SpriteResource>(this->ball_template->strandImageId.imageId);
+	if (!sprite_resource) {
+		return std::unexpected(sprite_resource.error());
+	}
+	
+	auto sprite = sprite_resource.value()->get();
+	if (!sprite) {
+		return std::unexpected(sprite.error());
+	}
+
+	this->display_sprite = *sprite;
+
 	return std::expected<void, Error>{};
 }
 
 void GooStrand::update() {
-	/*
-	this->position.x = (this->ball1->position.x + this->ball2->position.x) / 2.0;
-	this->position.y = (this->ball1->position.y + this->ball2->position.y) / 2.0;*/
 }
 
 // TODO: make this less awful
 void GooStrand::draw(sf::RenderWindow* window) {
+	/*
 	// Create a line using the positions of the two balls
     sf::Vertex line[] =
     {
@@ -63,18 +88,15 @@ void GooStrand::draw(sf::RenderWindow* window) {
     line[1].color = sf::Color::Green;
 
     // Draw the line
-    window->draw(line, 2, sf::Lines);
-	/*
-	Resource sprite_resource = (*ResourceManager::getInstance()->getResource(this->ball_template->strand_image_id));
-	sf::Sprite sprite = *std::get<SpriteResource*>(sprite_resource)->get();
+    window->draw(line, 2, sf::Lines);*/
 
 	// Set the origin to the center of the sprite
-	sf::FloatRect bounds = sprite.getLocalBounds();
-	sprite.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
+	sf::FloatRect bounds = this->display_sprite.getLocalBounds();
+	this->display_sprite.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
 
 	// Calculate the distance between the two balls
-	float dx = this->ball2->position.x - this->ball1->position.x;
-	float dy = (this->ball2->position.y - this->ball1->position.y) * -1.0;
+	float dx = this->ball2->info->pos.x - this->ball1->info->pos.x;
+	float dy = (this->ball2->info->pos.y - this->ball1->info->pos.y) * -1.0;
 	float distance = std::sqrt((dx * dx) + (dy * dy));
 
 	// Set the scale based on the distance
@@ -84,20 +106,27 @@ void GooStrand::draw(sf::RenderWindow* window) {
 	float height_scale = distance / base_height_in_units;
 	float width_scale = this->ball_template->strandThickness / base_width_in_units;
 
-	sprite.setScale(sf::Vector2f(width_scale, height_scale)); // Set x scale to match the distance, y scale is 1.0f for now
+	this->display_sprite.setScale(sf::Vector2f(width_scale, height_scale)); // Set x scale to match the distance, y scale is 1.0f for now
 
-	Vector2f screen_position = this->position.scale(GOOFORGE_PIXELS_PER_UNIT);
-	sprite.setPosition(sf::Vector2f(screen_position.x, -1.0 * screen_position.y));
+	auto screen_position = Level::worldToScreen(Vector2f((this->ball1->info->pos.x + this->ball2->info->pos.x) / 2.0, (this->ball1->info->pos.y + this->ball2->info->pos.y) / 2.0));
+	this->display_sprite.setPosition(screen_position);
 
 	// Calculate angle between the two balls
-	float angle = std::atan2(dy, dx) * 180.0 / 3.14; // Convert radians to degrees
+	float angle = Level::radiansToDegrees(std::atan2(dy, dx));
 
 	// Set the rotation of the sprite
-	sprite.setRotation(angle + 90.0);
+	this->display_sprite.setRotation(angle + 90.0);
 
 	// Draw the sprite
-	window->draw(sprite);*/
+	window->draw(this->display_sprite);
 }
 
+sf::Sprite GooStrand::getThumbnail() {
+	return this->display_sprite;
+}
+
+std::string GooStrand::getDisplayName() {
+	return "GooStrand (" + GooBall::ball_type_to_name.at(this->info->type) + ")";
+}
 
 } // namespace gooforge

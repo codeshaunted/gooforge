@@ -65,16 +65,15 @@ std::expected<void, Error> ItemInstance::refresh() {
 
 	this->display_sprite = *sprite;
 
+	this->depth = -this->info->depth;
+
 	return std::expected<void, Error>{};
 }
 
 void ItemInstance::update() {
-	this->position = this->info->pos;
-	this->rotation = this->info->rotation;
 }
 
 void ItemInstance::draw(sf::RenderWindow* window) {
-	return;
 	sf::FloatRect bounds = this->display_sprite.getLocalBounds();
 	sf::Vector2f origin(this->object_info->pivot.x * bounds.width, bounds.height - (this->object_info->pivot.y * bounds.height));
 	this->display_sprite.setOrigin(origin);
@@ -82,8 +81,8 @@ void ItemInstance::draw(sf::RenderWindow* window) {
 	float scale_x = this->info->scale.x * this->object_info->scale.x * (this->info->flipHorizontal != this->object_info->flipHorizontal ? -1.0f : 1.0f);
 	float scale_y = this->info->scale.y * this->object_info->scale.y * (this->info->flipVertical != this->object_info->flipVertical ? -1.0f : 1.0f);
 	this->display_sprite.setScale(scale_x, scale_y);
-	this->display_sprite.setPosition(Level::worldToScreen(this->position));
-	this->display_sprite.setRotation((this->rotation + this->object_info->rotation) * (-180.0f / std::numbers::pi));
+	this->display_sprite.setPosition(Level::worldToScreen(this->info->pos));
+	this->display_sprite.setRotation((this->info->rotation + this->object_info->rotation) * (-180.0f / std::numbers::pi));
 
 	uint32_t argb = this->object_info->color;
 	uint8_t alpha = (argb >> 24) & 0xFF;

@@ -21,6 +21,7 @@
 #define GOOFORGE_LEVEL_HH
 
 #include <expected>
+#include <set>
 
 #include "error.hh"
 #include "goo_ball.hh"
@@ -90,11 +91,22 @@ struct LevelInfo {
 	int timebugMoves;
 };
 
+struct ItemInstanceComparator {
+	// sort item instances by depth for drawing
+	bool operator()(const ItemInstance* x, const ItemInstance* y) const {
+		if (x->info->depth != y->info->depth) {
+			return x->info->depth < y->info->depth;
+		}
+
+		// if they're at the same depth we need an alternative so they don't get deleted as duplicates
+		return x->info->uid < y->info->uid;
+	}
+};
+
 class Level {
 	public:
 		~Level();
 		std::expected<void, Error> setup(LevelInfo info);
-		void addEntity(Entity* entity);
 		void update();
 		void draw(sf::RenderWindow* window);
 		static sf::Vector2f worldToScreen(Vector2f world);
@@ -102,9 +114,12 @@ class Level {
 		static float radiansToDegrees(float radians);
 		static float degreesToRadians(float degrees);
 	private:
-		void sortEntities();
 		LevelInfo info;
-		std::vector<Entity*> entities;
+		std::unordered_map<GooBall*, std::unordered_map<GooBall*, GooStrand*>> goo_matrix;
+		std::unordered_set<GooBall*> goo_balls;
+		std::unordered_set<GooStrand*> goo_strands;
+		std::unordered_set<TerrainGroup*> terrain_groups;
+		std::set<ItemInstance*, ItemInstanceComparator> item_instances;
 		bool entities_dirty = false;
 
 	friend class Editor;

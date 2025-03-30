@@ -21,12 +21,16 @@
 #define GOOFORGE_GOO_BALL_HH
 
 #include <unordered_map>
+#include <unordered_set>
 
 #include "SFML/Graphics.hpp"
 
 #include "entity.hh"
+#include "terrain.hh"
 
 namespace gooforge {
+
+class GooStrand;
 
 enum class GooBallType {
 	INVALID = 0,
@@ -293,8 +297,9 @@ struct BallTemplateInfo {
 	float maxCompressForce;
 	float maxStrandAngle;
 	float maxStrandSeparation;
-	float strandDensity;
+	float strandDensity;*/
 	float strandThickness;
+	/*
 	float strandGrowMultiplier;
 	bool isSingleStrandAllowed;
 	bool isSingleStrandAllowedEvenForOneStrand;
@@ -302,8 +307,9 @@ struct BallTemplateInfo {
 	bool swallowBall;
 	bool useStrandConnect;
 	bool isStrandWalkable;
-	bool canShrinkStrand;
+	bool canShrinkStrand;*/
 	BallTemplateImageIdInfo strandImageId;
+	/*
 	BallTemplateImageIdInfo strandInactiveImageId;
 	BallTemplateImageIdInfo strandInactiveOverlayImageId;
 	float strandIgniteDelay;
@@ -369,14 +375,17 @@ class GooBall : public Entity {
 		BallTemplateInfo* getTemplate();
 		static std::unordered_map<std::string, GooBallType> ball_name_to_type;
 		static std::unordered_map<GooBallType, std::string> ball_type_to_name;
+		void addStrand(GooStrand* strand);
 	private:
-		static std::unordered_map<unsigned int, GooBall*> balls;
 		GooBallInfo* info;
 		BallTemplateInfo* ball_template = nullptr;
 		BallTemplateBallPartInfo* body_part = nullptr;
+		std::unordered_set<GooStrand*> strands;
 		sf::Sprite display_sprite;
 
 	friend class GooStrand;
+	friend class TerrainGroup;
+	friend class Level;
 };
 
 } // namespace gooforge

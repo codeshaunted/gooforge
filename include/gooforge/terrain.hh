@@ -22,9 +22,11 @@
 
 #include <expected>
 
-#include "goo_ball.hh"
 
 namespace gooforge {
+
+class GooBall;
+class GooStrand;
 
 struct TerrainGroupInfo {
 	Vector2f textureOffset;
@@ -65,12 +67,14 @@ class TerrainGroup : public Entity {
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 		void addTerrainBall(GooBall* goo_ball);
+		void addTerrainStrand(GooStrand* goo_strand);
 		std::string getDisplayName() override;
 		sf::Sprite getThumbnail() override;
 	private:
 		TerrainGroupInfo* info;
 		TerrainTemplateInfo* template_info;
 		std::vector<GooBall*> terrain_balls;
+		std::unordered_set<GooStrand*> terrain_strands;
 		sf::Sprite display_sprite;
 };
 

@@ -39,7 +39,7 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 			return std::unexpected(result.error());
 		}
 
-		this->addEntity(item_instance);
+		this->item_instances.insert(item_instance);
 	}
 
 	std::vector<GooBall*> goo_balls;
@@ -53,27 +53,7 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 			return std::unexpected(result.error());
 		}
 
-		this->addEntity(goo_ball);
-	}
-
-	std::vector<TerrainGroup*> terrain_groups;
-	for (TerrainGroupInfo& terrain_group_info : this->info.terrainGroups) {
-		TerrainGroup* terrain_group = new TerrainGroup();
-		terrain_groups.push_back(terrain_group);
-		auto result = terrain_group->setup(&terrain_group_info);
-		if (!result) {
-			return std::unexpected(result.error());
-		}
-
-		this->addEntity(terrain_group);
-	}
-
-	for (size_t i = 0; i < this->info.terrainBalls.size(); ++i) {
-		const TerrainBallInfo& terrain_ball_info = this->info.terrainBalls[i];
-
-		if (terrain_ball_info.group != -1) {
-			terrain_groups[terrain_ball_info.group]->addTerrainBall(goo_balls[i]); // TODO: FIX THIS, THIS IS UNSAFE WE MUST VALIDATE THIS FIRST
-		}
+		this->goo_balls.insert(goo_ball);
 	}
 
 	for (GooStrandInfo& strand_info : this->info.strands) {
@@ -84,36 +64,66 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 			return std::unexpected(result.error());
 		}
 
-		this->addEntity(goo_strand);
+		this->goo_strands.insert(goo_strand);
+
+		this->goo_matrix[goo_balls_uid[strand_info.ball1UID]][goo_balls_uid[strand_info.ball2UID]] = goo_strand;
+		this->goo_matrix[goo_balls_uid[strand_info.ball2UID]][goo_balls_uid[strand_info.ball1UID]] = goo_strand;
+
+		goo_balls_uid[strand_info.ball1UID]->addStrand(goo_strand);
+		goo_balls_uid[strand_info.ball2UID]->addStrand(goo_strand);
 	}
-	
-	// TODO: MAKE THIS COLLECT ERRORS INSTEAD OF JUST RETURNING A SINGLE ONE
+
+	std::vector<TerrainGroup*> terrain_groups_indexed;
+	for (TerrainGroupInfo& terrain_group_info : this->info.terrainGroups) {
+		TerrainGroup* terrain_group = new TerrainGroup();
+
+		auto result = terrain_group->setup(&terrain_group_info);
+		if (!result) {
+			return std::unexpected(result.error());
+		}
+
+		this->terrain_groups.insert(terrain_group);
+		terrain_groups_indexed.push_back(terrain_group);
+	}
+
+
+	for (size_t i = 0; i < this->info.terrainBalls.size(); ++i) {
+		const TerrainBallInfo& terrain_ball_info = this->info.terrainBalls[i];
+
+		if (terrain_ball_info.group != -1) {
+			terrain_groups_indexed[terrain_ball_info.group]->addTerrainBall(goo_balls[i]); // TODO: FIX THIS, THIS IS UNSAFE WE MUST VALIDATE THIS FIRST
+
+			for (auto strand : goo_balls[i]->strands) {
+				if (strand->info->type == GooBallType::TERRAIN) {
+					terrain_groups_indexed[terrain_ball_info.group]->addTerrainStrand(strand);
+				}
+			}
+		}
+	}
 }
 
 Level::~Level() {
-	for (auto& entity : this->entities) {
-		delete entity;
-	}
-}
 
-// takes ownership of the entity
-void Level::addEntity(Entity* entity) {
-	this->entities.push_back(std::move(entity));
-	this->entities_dirty = true;
 }
 
 void Level::update() {
-	for (auto& entity : this->entities) {
-		entity->update();
-	}
 }
 
 void Level::draw(sf::RenderWindow* window) {
-	this->sortEntities();
+	for (ItemInstance* item_instance : this->item_instances) {
+		item_instance->draw(window);
+	}
 
-	for (auto it = this->entities.rbegin(); it != this->entities.rend(); ++it) {
-    	Entity* entity = *it;
-    	entity->draw(window);
+	for (TerrainGroup* terrain_group : this->terrain_groups) {
+		terrain_group->draw(window);
+	}
+
+	for (GooStrand* goo_strand : this->goo_strands) {
+		goo_strand->draw(window);
+	}
+
+	for (GooBall* goo_ball : this->goo_balls) {
+		goo_ball->draw(window);
 	}
 }
 
@@ -131,18 +141,6 @@ float Level::radiansToDegrees(float radians) {
 
 float Level::degreesToRadians(float degrees) {
 	return degrees * (std::numbers::pi / 180.0f);
-}
-
-void Level::sortEntities() {
-	if (!this->entities_dirty) {
-		return;
-	}
-
-	std::sort(this->entities.begin(), this->entities.end(), [](const Entity* a, const Entity* b) {
-		return a->depth < b->depth;
-	});
-
-	this->entities_dirty = false;
 }
 
 } // namespace gooforge

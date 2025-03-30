@@ -39,7 +39,7 @@ std::expected<void, Error> GooBall::setup(GooBallInfo* info) {
 }
 
 std::expected<void, Error> GooBall::refresh() {
-	this->depth = std::numeric_limits<float>::max();
+	this->depth = -std::numeric_limits<float>::max() + 1;
 
 	std::string resource_id = "GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(this->info->typeEnum));
 	auto template_resource = ResourceManager::getInstance()->getResource<BallTemplateResource>(resource_id);
@@ -108,7 +108,6 @@ std::expected<void, Error> GooBall::refresh() {
 }
 
 void GooBall::update() {
-	this->position = this->info->pos;
 }
 
 // TODO: make this less awful
@@ -234,14 +233,16 @@ std::unordered_map<GooBallType, std::string> GooBall::ball_type_to_name = {
 	{GooBallType::UTIL_ATTACH_WALKABLE, "UtilAttachWalkable"}
 };
 
-std::unordered_map<unsigned int, GooBall*> GooBall::balls;
-
 GooBallInfo* GooBall::getInfo() {
 	return this->info;
 }
 
 BallTemplateInfo* GooBall::getTemplate() {
 	return this->ball_template;
+}
+
+void GooBall::addStrand(GooStrand* strand) {
+	this->strands.insert(strand);
 }
 
 } // namespace gooforge

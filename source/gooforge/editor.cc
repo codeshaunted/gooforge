@@ -124,7 +124,8 @@ void Editor::update(sf::Clock& delta_clock) {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::O)) {
             this->doOpenFile();
         }
-
+        
+        /*
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Z) && this->undo_clock.getElapsedTime() > this->undo_cooldown) {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LShift)) {
                 this->redoLastUndo();
@@ -134,7 +135,7 @@ void Editor::update(sf::Clock& delta_clock) {
             }
 
             this->undo_clock.restart();
-        }
+        }*/
     }
 
     if (!std::filesystem::exists(this->wog2_path)) {
@@ -202,7 +203,7 @@ void Editor::processEvents() {
                     sf::Vector2f screen_click_position = window.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y), this->view);
                     Vector2f world_click_position = Level::screenToWorld(screen_click_position);
 
-                    this->level->sortEntities();
+                    /*
                     bool clicked_entity = false;
                     for (auto& entity : std::ranges::reverse_view(this->level->entities)) {
                         if (entity->wasClicked(world_click_position)) {
@@ -212,10 +213,11 @@ void Editor::processEvents() {
                             break;
                         }
                     }
+                    
 
                     if (!clicked_entity && !this->selected_entities.empty()) {
                         this->doAction(DeselectEditorAction(this->selected_entities));
-                    }
+                    }*/
                 }
             }
         }
@@ -368,6 +370,7 @@ void Editor::registerMainMenuBar() {
             ImGui::EndMenu();
         }
 
+        /*
         if (ImGui::BeginMenu("Edit")) {
             ImGui::BeginDisabled(this->undo_stack.empty());
             if (ImGui::MenuItem("Undo", "Ctrl+Z")) {
@@ -382,7 +385,7 @@ void Editor::registerMainMenuBar() {
             ImGui::EndDisabled();
 
             ImGui::EndMenu();
-        }
+        }*/
 
         ImGui::EndMainMenuBar();
     }
@@ -451,6 +454,13 @@ void Editor::registerLevelWindow() {
     ImGui::Begin("Level");
 
     if (this->level) {
+        size_t item_instance_i = 0;
+        for (auto item_instance : this->level->item_instances) {
+            // AVERY RESUME HERE
+        }
+    }
+    /*
+    if (this->level) {
         size_t entity_i = 0;
         for (auto& entity : this->level->entities) {
             sf::Sprite sprite = entity->getThumbnail();
@@ -471,7 +481,7 @@ void Editor::registerLevelWindow() {
 
             ++entity_i;
         }
-    }
+    }*/
 
     ImGui::End();
 }

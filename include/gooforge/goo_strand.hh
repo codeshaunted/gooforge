@@ -40,6 +40,8 @@ class GooStrand : public Entity {
 		~GooStrand() override;
 		std::expected<void, Error> setup(GooStrandInfo* info, GooBall* ball1, GooBall* ball2);
 		std::expected<void, Error> refresh() override;
+		sf::Sprite getThumbnail() override;
+		std::string getDisplayName() override;
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 	private:
@@ -47,6 +49,10 @@ class GooStrand : public Entity {
 		GooBall* ball2;
 		GooStrandInfo* info;
 		BallTemplateInfo* ball_template = nullptr;
+		sf::Sprite display_sprite;
+
+	friend class TerrainGroup;
+	friend class Level;
 };
 
 } // namespace gooforge
