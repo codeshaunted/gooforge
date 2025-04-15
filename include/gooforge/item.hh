@@ -257,20 +257,21 @@ class ItemInstance : public Entity {
 	public:
 		ItemInstance() : Entity(EntityType::ITEM_INSTANCE) {}
 		~ItemInstance() override;
-		std::expected<void, Error> setup(ItemInstanceInfo* info);
+		std::expected<void, Error> setup(ItemInstanceInfo info);
 		std::expected<void, Error> refresh() override;
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 		sf::Sprite getThumbnail() override;
 		std::string getDisplayName() override;
-		ItemInstanceInfo* getInfo();
+		Vector2f getPosition() override;
+		float getRotation() override;
+		float getDepth() const override;
+		ItemInstanceInfo& getInfo();
 	private:
-		ItemInstanceInfo* info;
+		ItemInstanceInfo info;
 		ItemInfoFile* info_file;
 		ItemObjectInfo* object_info;
 		sf::Sprite display_sprite;
-
-	friend class ItemInstanceComparator;
 };
 
 } // namespace gooforge

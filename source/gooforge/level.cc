@@ -34,12 +34,12 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 
 	for (ItemInstanceInfo& item_instance_info : this->info.items) {
 		ItemInstance* item_instance = new ItemInstance();
-		auto result = item_instance->setup(&item_instance_info);
+		auto result = item_instance->setup(item_instance_info);
 		if (!result) {
 			return std::unexpected(result.error());
 		}
 
-		this->item_instances.insert(item_instance);
+		this->entities.insert(item_instance);
 	}
 
 	std::vector<GooBall*> goo_balls;
@@ -48,26 +48,23 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 		GooBall* goo_ball = new GooBall();
 		goo_balls.push_back(goo_ball);
 		goo_balls_uid.insert({ball_info.uid, goo_ball});
-		auto result = goo_ball->setup(&ball_info);
+		auto result = goo_ball->setup(ball_info);
 		if (!result) {
 			return std::unexpected(result.error());
 		}
 
-		this->goo_balls.insert(goo_ball);
+		this->entities.insert(goo_ball);
 	}
 
 	for (GooStrandInfo& strand_info : this->info.strands) {
 		GooStrand* goo_strand = new GooStrand();
 		// ONCE AGAIN NOT SAFE, TODO: FIX
-		auto result = goo_strand->setup(&strand_info, goo_balls_uid[strand_info.ball1UID], goo_balls_uid[strand_info.ball2UID]);
+		auto result = goo_strand->setup(strand_info, goo_balls_uid[strand_info.ball1UID], goo_balls_uid[strand_info.ball2UID]);
 		if (!result) {
 			return std::unexpected(result.error());
 		}
 
-		this->goo_strands.insert(goo_strand);
-
-		this->goo_matrix[goo_balls_uid[strand_info.ball1UID]][goo_balls_uid[strand_info.ball2UID]] = goo_strand;
-		this->goo_matrix[goo_balls_uid[strand_info.ball2UID]][goo_balls_uid[strand_info.ball1UID]] = goo_strand;
+		this->entities.insert(goo_strand);
 
 		goo_balls_uid[strand_info.ball1UID]->addStrand(goo_strand);
 		goo_balls_uid[strand_info.ball2UID]->addStrand(goo_strand);
@@ -77,12 +74,12 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 	for (TerrainGroupInfo& terrain_group_info : this->info.terrainGroups) {
 		TerrainGroup* terrain_group = new TerrainGroup();
 
-		auto result = terrain_group->setup(&terrain_group_info);
+		auto result = terrain_group->setup(terrain_group_info);
 		if (!result) {
 			return std::unexpected(result.error());
 		}
 
-		this->terrain_groups.insert(terrain_group);
+		this->entities.insert(terrain_group);
 		terrain_groups_indexed.push_back(terrain_group);
 	}
 
@@ -94,7 +91,7 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 			terrain_groups_indexed[terrain_ball_info.group]->addTerrainBall(goo_balls[i]); // TODO: FIX THIS, THIS IS UNSAFE WE MUST VALIDATE THIS FIRST
 
 			for (auto strand : goo_balls[i]->strands) {
-				if (strand->info->type == GooBallType::TERRAIN) {
+				if (strand->info.type == GooBallType::TERRAIN) {
 					terrain_groups_indexed[terrain_ball_info.group]->addTerrainStrand(strand);
 				}
 			}
@@ -110,6 +107,11 @@ void Level::update() {
 }
 
 void Level::draw(sf::RenderWindow* window) {
+	for (Entity* entity : this->entities) {
+		entity->draw(window);
+	}
+
+	/*
 	for (ItemInstance* item_instance : this->item_instances) {
 		item_instance->draw(window);
 	}
@@ -124,7 +126,7 @@ void Level::draw(sf::RenderWindow* window) {
 
 	for (GooBall* goo_ball : this->goo_balls) {
 		goo_ball->draw(window);
-	}
+	}*/
 }
 
 sf::Vector2f Level::worldToScreen(Vector2f world) {
@@ -141,6 +143,11 @@ float Level::radiansToDegrees(float radians) {
 
 float Level::degreesToRadians(float degrees) {
 	return degrees * (std::numbers::pi / 180.0f);
+}
+
+void Level::deleteEntity(Entity* entity) {
+	this->entities.erase(entity);
+	delete entity;
 }
 
 } // namespace gooforge

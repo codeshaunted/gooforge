@@ -83,6 +83,16 @@ std::expected<void, Error> DeselectEditorAction::revert(Editor* editor) {
     return std::expected<void, Error>{};
 }
 
+std::expected<void, Error> DeleteEditorAction::execute(Editor* editor) {
+    for (auto entity : this->entities) {
+        editor->level->deleteEntity(entity);
+    }
+
+    editor->selected_entities.clear();
+
+    return std::expected<void, Error>{};
+}
+
 Editor::~Editor() {
     delete this->level;
 }
@@ -119,6 +129,8 @@ void Editor::update(sf::Clock& delta_clock) {
     this->registerMainMenuBar();
     this->registerLevelWindow();
     this->registerPropertiesWindow();
+    this->registerResourcesWindow();
+    this->registerToolbarWindow();
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::O)) {
@@ -136,6 +148,10 @@ void Editor::update(sf::Clock& delta_clock) {
 
             this->undo_clock.restart();
         }*/
+    }
+
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Delete)) {
+        this->doAction(DeleteEditorAction(this->selected_entities));
     }
 
     if (!std::filesystem::exists(this->wog2_path)) {
@@ -203,9 +219,8 @@ void Editor::processEvents() {
                     sf::Vector2f screen_click_position = window.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y), this->view);
                     Vector2f world_click_position = Level::screenToWorld(screen_click_position);
 
-                    /*
                     bool clicked_entity = false;
-                    for (auto& entity : std::ranges::reverse_view(this->level->entities)) {
+                    for (auto entity : std::ranges::reverse_view(this->level->entities)) {
                         if (entity->wasClicked(world_click_position)) {
                             this->doEntitySelection(entity);
                             
@@ -217,7 +232,7 @@ void Editor::processEvents() {
 
                     if (!clicked_entity && !this->selected_entities.empty()) {
                         this->doAction(DeselectEditorAction(this->selected_entities));
-                    }*/
+                    }
                 }
             }
         }
@@ -354,7 +369,8 @@ void Editor::registerMainMenuBar() {
                     auto ec = glz::write_file_json < glz::opts{ .prettify = true } > (this->level->info, this->level_file_path, std::string{});
                 }
             }
-
+            
+            //ImGui::BeginDisabled(); // todo: make work
             if (ImGui::MenuItem("Save As", "Ctrl+Shift+S")) {
                 auto ec = glz::write_file_json<glz::opts{ .prettify = true }>(this->level->info, "./obj.json", std::string{});
             }
@@ -370,8 +386,11 @@ void Editor::registerMainMenuBar() {
             ImGui::EndMenu();
         }
 
-        /*
         if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Delete", "Del")) {
+                this->doAction(DeleteEditorAction(this->selected_entities));
+            }
+            /*
             ImGui::BeginDisabled(this->undo_stack.empty());
             if (ImGui::MenuItem("Undo", "Ctrl+Z")) {
                 this->undoLastAction();
@@ -382,10 +401,10 @@ void Editor::registerMainMenuBar() {
             if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z")) {
                 this->redoLastUndo();
             }
-            ImGui::EndDisabled();
+            ImGui::EndDisabled();*/
 
             ImGui::EndMenu();
-        }*/
+        }
 
         ImGui::EndMainMenuBar();
     }
@@ -454,13 +473,6 @@ void Editor::registerLevelWindow() {
     ImGui::Begin("Level");
 
     if (this->level) {
-        size_t item_instance_i = 0;
-        for (auto item_instance : this->level->item_instances) {
-            // AVERY RESUME HERE
-        }
-    }
-    /*
-    if (this->level) {
         size_t entity_i = 0;
         for (auto& entity : this->level->entities) {
             sf::Sprite sprite = entity->getThumbnail();
@@ -481,7 +493,7 @@ void Editor::registerLevelWindow() {
 
             ++entity_i;
         }
-    }*/
+    }
 
     ImGui::End();
 }
@@ -501,7 +513,7 @@ void Editor::registerPropertiesWindow() {
 
             if (entity->getType() == EntityType::GOO_BALL) {
                 GooBall* goo_ball = static_cast<GooBall*>(entity);
-                GooBallInfo* info = goo_ball->getInfo();
+                GooBallInfo& info = goo_ball->getInfo();
                 
                 ImGui::SeparatorText("General Properties");
                 if (ImGui::BeginTable("General Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
@@ -510,7 +522,7 @@ void Editor::registerPropertiesWindow() {
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Type");
                     ImGui::TableSetColumnIndex(2);
-                    this->registerGooBallTypeCombo("", &info->typeEnum, goo_ball);
+                    this->registerGooBallTypeCombo("", &info.typeEnum, goo_ball);
 
                     // position x
                     ImGui::TableNextRow();
@@ -519,9 +531,9 @@ void Editor::registerPropertiesWindow() {
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("X");
                     ImGui::TableSetColumnIndex(2);
-                    float pos_x = info->pos.x;
+                    float pos_x = info.pos.x;
                     if (ImGui::InputFloat("##positionx", &pos_x, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue)) {
-                        this->doAction(ModifyPropertyEditorAction<float>(&info->pos.x, pos_x));
+                        this->doAction(ModifyPropertyEditorAction<float>(&info.pos.x, pos_x));
                     }
 
                     // position y
@@ -529,135 +541,135 @@ void Editor::registerPropertiesWindow() {
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("Y");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##positiony", &info->pos.y);
+                    ImGui::InputFloat("##positiony", &info.pos.y);
 
                     // rotation
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Rotation");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##rotation", &info->angle);
+                    ImGui::InputFloat("##rotation", &info.angle);
 
                     // max velocity
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Maximum Velocity");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##maxvelocity", &info->maxVelocity);
+                    ImGui::InputFloat("##maxvelocity", &info.maxVelocity);
 
                     // stiffness
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Stiffness");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##stiffness", &info->stiffness);
+                    ImGui::InputFloat("##stiffness", &info.stiffness);
 
                     // detonation radius
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Detonation Radius");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##detonationradius", &info->detonationRadius);
+                    ImGui::InputFloat("##detonationradius", &info.detonationRadius);
 
                     // detonation force
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Detonation Force");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##detonationforce", &info->detonationForce);
+                    ImGui::InputFloat("##detonationforce", &info.detonationForce);
 
                     // discovered
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Discovered");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##discovered", &info->discovered);
+                    ImGui::Checkbox("##discovered", &info.discovered);
 
                     // floating while asleep
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Float While Asleep");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##floatingwhileasleep", &info->floatingWhileAsleep);
+                    ImGui::Checkbox("##floatingwhileasleep", &info.floatingWhileAsleep);
 
                     // interactive
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Interactive");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##interactive", &info->interactive);
+                    ImGui::Checkbox("##interactive", &info.interactive);
 
                     // wake with liquid
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Wake With Liquid");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##wakewithliquid", &info->wakeWithLiquid);
+                    ImGui::Checkbox("##wakewithliquid", &info.wakeWithLiquid);
 
                     // exit pipe alert
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Exit Pipe Alert");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##exitpipealert", &info->exitPipeAlert);
+                    ImGui::Checkbox("##exitpipealert", &info.exitPipeAlert);
 
                     // affects auto bounds
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Affects Auto Bounds");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##affectsautobounds", &info->affectsAutoBounds);
+                    ImGui::Checkbox("##affectsautobounds", &info.affectsAutoBounds);
 
                     // filled
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Filled");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##filled", &info->filled);
+                    ImGui::Checkbox("##filled", &info.filled);
 
                     ImGui::EndTable();
                 }
 
-                if (info->typeEnum == GooBallType::LAUNCHER_L2B || info->typeEnum == GooBallType::LAUNCHER_L2L) {
+                if (info.typeEnum == GooBallType::LAUNCHER_L2B || info.typeEnum == GooBallType::LAUNCHER_L2L) {
                     ImGui::SeparatorText("Launcher Properties");
                     if (ImGui::BeginTable("Launcher Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
-                        if (info->typeEnum == GooBallType::LAUNCHER_L2L) {
+                        if (info.typeEnum == GooBallType::LAUNCHER_L2L) {
                             ImGui::TableNextRow();
                             ImGui::TableSetColumnIndex(0);
                             ImGui::Text("Ball Type To Generate");
                             ImGui::TableSetColumnIndex(2);
-                            this->registerGooBallTypeCombo("", &info->launcherBallTypeToGenerate);
+                            this->registerGooBallTypeCombo("", &info.launcherBallTypeToGenerate);
                         }
 
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text("Minimum Lifespan");
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat("##launcherlifespanmin", &info->launcherLifespanMin);
+                        ImGui::InputFloat("##launcherlifespanmin", &info.launcherLifespanMin);
 
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text("Maximum Lifespan");
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat("##launcherlifespanmax", &info->launcherLifespanMax);
+                        ImGui::InputFloat("##launcherlifespanmax", &info.launcherLifespanMax);
 
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text("Knockback Factor");
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat("##knockbackfactor", &info->launcherKnockbackFactor);
+                        ImGui::InputFloat("##knockbackfactor", &info.launcherKnockbackFactor);
 
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text("Can Use Balls");
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::Checkbox("##launchercanuseballs", &info->launcherCanUseBalls);
+                        ImGui::Checkbox("##launchercanuseballs", &info.launcherCanUseBalls);
 
                         ImGui::EndTable();
                     }
                 }
                 
-                if (info->typeEnum == GooBallType::THRUSTER) {
+                if (info.typeEnum == GooBallType::THRUSTER) {
                     ImGui::SeparatorText("Thruster Properties");
                     if (ImGui::BeginTable("Thruster Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
                         ImGui::TableNextRow();
@@ -665,26 +677,57 @@ void Editor::registerPropertiesWindow() {
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text("Thrust Force");
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat("##thrustforce", &info->thrustForce);
+                        ImGui::InputFloat("##thrustforce", &info.thrustForce);
 
                         ImGui::EndTable();
                     }
                 }
             } else if (entity->getType() == EntityType::ITEM_INSTANCE) {
                 ItemInstance* item_instance = static_cast<ItemInstance*>(entity);
-                ItemInstanceInfo* info = item_instance->getInfo();
+                ItemInstanceInfo& info = item_instance->getInfo();
 
                 if (ImGui::BeginTable("General Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Depth");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##depth", &info->depth);
+                    ImGui::InputFloat("##depth", &info.depth);
 
                     ImGui::EndTable();
                 }
             }
         }
+    }
+
+    ImGui::End();
+}
+
+void Editor::registerResourcesWindow() {
+    ImGui::Begin("Resources");
+
+    ImGui::End();
+}
+
+void Editor::registerToolbarWindow() {
+    ImGui::Begin("Toolbar");
+
+    const char* tools[] = {"Move", "Scale", "Rotate"};
+    const size_t tool_count = IM_ARRAYSIZE(tools);
+    static size_t selected_tool = 0;
+
+    for (size_t i = 0; i < tool_count; ++i) {
+        if (i == selected_tool) {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 1.0f, 1.0f));
+        }
+        else {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
+        }
+
+        if (ImGui::Button(tools[i])) selected_tool = i;
+
+        ImGui::PopStyleColor();
+
+        if (i < tool_count - 1) ImGui::SameLine();
     }
 
     ImGui::End();

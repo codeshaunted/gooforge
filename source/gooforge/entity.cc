@@ -28,7 +28,29 @@ bool Entity::wasClicked(Vector2f point) {
 
 	if (this->click_bounds->type == EntityClickBoundShapeType::CIRCLE) {
 		EntityClickBoundCircle* circle = static_cast<EntityClickBoundCircle*>(this->click_bounds);
-		if (this->position.distance(point) <= circle->radius) {
+		if (this->getPosition().distance(point) <= circle->radius) {
+			return true;
+		}
+	}
+	else if (this->click_bounds->type == EntityClickBoundShapeType::RECTANGLE) {
+		EntityClickBoundRectangle* rectangle = static_cast<EntityClickBoundRectangle*>(this->click_bounds);
+		Vector2f pos = this->getPosition();
+		float rot = this->getRotation();
+
+		Vector2f local = point - pos;
+
+		float cosine = cos(-rot);
+		float sine = sin(-rot);
+		Vector2f rotated_local(local.x * cosine - local.y * sine, local.x * sine + local.y * cosine);
+
+		Vector2f pivot_offset = Vector2f(
+			(rectangle->pivot.x - 0.5f) * rectangle->size.x,
+			(rectangle->pivot.y - 0.5f) * rectangle->size.y
+		);
+
+		Vector2f adjusted_local = rotated_local + pivot_offset;
+
+		if (std::abs(adjusted_local.x) <= rectangle->size.x / 2.0f && std::abs(adjusted_local.y) <= rectangle->size.y / 2.0f) {
 			return true;
 		}
 	}
@@ -46,10 +68,6 @@ void Entity::setSelected(bool selected) {
 
 EntityType Entity::getType() {
 	return this->type;
-}
-
-Vector2f Entity::getPosition() {
-	return this->position;
 }
 
 } // namespace gooforge

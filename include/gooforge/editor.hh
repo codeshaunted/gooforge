@@ -35,11 +35,12 @@ namespace gooforge {
 // and then use the variant in BaseEditorAction
 struct SelectEditorAction;
 struct DeselectEditorAction;
+struct DeleteEditorAction;
 template <typename T>
 struct ModifyPropertyEditorAction;
 
 // this template shit is horrendous but whatever
-using EditorAction = std::variant<SelectEditorAction, DeselectEditorAction, ModifyPropertyEditorAction<GooBallType>, ModifyPropertyEditorAction<float>>;
+using EditorAction = std::variant<SelectEditorAction, DeselectEditorAction, ModifyPropertyEditorAction<GooBallType>, ModifyPropertyEditorAction<float>, DeleteEditorAction>;
 
 struct BaseEditorAction {
 	// we define implicit actions as actions executed before the main action is to be executed
@@ -62,6 +63,13 @@ struct DeselectEditorAction : public BaseEditorAction {
 	DeselectEditorAction(std::vector<Entity*> entities, std::vector<EditorAction> implicit_actions = {}) : BaseEditorAction(implicit_actions), entities(entities) {}
 	std::expected<void, Error> execute(Editor* editor) override;
 	std::expected<void, Error> revert(Editor* editor) override;
+	std::vector<Entity*> entities;
+};
+
+struct DeleteEditorAction : public BaseEditorAction {
+	DeleteEditorAction(std::vector<Entity*> entities, std::vector<EditorAction> implicit_actions = {}) : BaseEditorAction(implicit_actions), entities(entities) {}
+	std::expected<void, Error> execute(Editor* editor) override;
+	//std::expected<void, Error> revert(Editor* editor) override;
 	std::vector<Entity*> entities;
 };
 
@@ -124,6 +132,7 @@ class Editor {
 		void undoLastAction();
 		void redoLastUndo();
 		void doEntitySelection(Entity* entity);
+		void doEntityDeletion(Entity* entity);
 		void doOpenFile();
 		void doCloseFile();
 		void registerMainMenuBar();
@@ -133,6 +142,8 @@ class Editor {
 		void showSelectWOG2DirectoryDialog();
 		void registerLevelWindow();
 		void registerPropertiesWindow();
+		void registerResourcesWindow();
+		void registerToolbarWindow();
 		bool registerGooBallTypeCombo(const char* label, GooBallType* type, GooBall* refresh_goo_ball = nullptr);
 
 	// we either make everything public or declare every
@@ -140,6 +151,7 @@ class Editor {
 	// your poison, or maybe just structure it better? :P
 	friend struct SelectEditorAction;
 	friend struct DeselectEditorAction;
+	friend struct DeleteEditorAction;
 };
 
 } // namespace gooforge

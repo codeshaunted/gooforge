@@ -38,16 +38,17 @@ class GooStrand : public Entity {
 	public:
 		GooStrand() : Entity(EntityType::GOO_STRAND) {}
 		~GooStrand() override;
-		std::expected<void, Error> setup(GooStrandInfo* info, GooBall* ball1, GooBall* ball2);
+		std::expected<void, Error> setup(GooStrandInfo info, GooBall* ball1, GooBall* ball2);
 		std::expected<void, Error> refresh() override;
 		sf::Sprite getThumbnail() override;
 		std::string getDisplayName() override;
+		Vector2f getPosition() override;
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 	private:
 		GooBall* ball1;
 		GooBall* ball2;
-		GooStrandInfo* info;
+		GooStrandInfo info;
 		BallTemplateInfo* ball_template = nullptr;
 		sf::Sprite display_sprite;
 

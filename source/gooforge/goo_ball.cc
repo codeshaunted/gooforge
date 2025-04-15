@@ -33,15 +33,13 @@ GooBall::~GooBall() {
 	delete this->click_bounds;
 }
 
-std::expected<void, Error> GooBall::setup(GooBallInfo* info) {
+std::expected<void, Error> GooBall::setup(GooBallInfo info) {
 	this->info = info;
 	return this->refresh();
 }
 
 std::expected<void, Error> GooBall::refresh() {
-	this->depth = -std::numeric_limits<float>::max() + 1;
-
-	std::string resource_id = "GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(this->info->typeEnum));
+	std::string resource_id = "GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(this->info.typeEnum));
 	auto template_resource = ResourceManager::getInstance()->getResource<BallTemplateResource>(resource_id);
 	if (!template_resource) {
 		return std::unexpected(template_resource.error());
@@ -61,20 +59,20 @@ std::expected<void, Error> GooBall::refresh() {
 			// hardcoded cases for balls that require flash animations
 			// TODO: implement flash
 			if (part.images.empty()) {
-				if (this->info->typeEnum == GooBallType::THRUSTER) {
+				if (this->info.typeEnum == GooBallType::THRUSTER) {
 					sprite_resource_id = "FlashAnim_BallThruster_body";
 				}
-				else if (this->info->typeEnum == GooBallType::LAUNCHER_L2L) {
+				else if (this->info.typeEnum == GooBallType::LAUNCHER_L2L) {
 					sprite_resource_id = "FlashAnim_LiquidLauncher_body";
 				}
-				else if (this->info->typeEnum == GooBallType::LAUNCHER_L2B) {
+				else if (this->info.typeEnum == GooBallType::LAUNCHER_L2B) {
 					sprite_resource_id = "FlashAnim_BallLauncher_body";
 				}
-				else if (this->info->typeEnum == GooBallType::LIGHTBALL) {
+				else if (this->info.typeEnum == GooBallType::LIGHTBALL) {
 					sprite_resource_id = "FlashAnim_Lightball_ball";
 				}
 				else {
-					return std::unexpected(GooBallSetupError(this->info->uid, "failed to find body part image"));
+					return std::unexpected(GooBallSetupError(this->info.uid, "failed to find body part image"));
 				}
 			}
 			else {
@@ -101,7 +99,7 @@ std::expected<void, Error> GooBall::refresh() {
 	}
 	
 	if (!found_body_part) {
-		return std::unexpected(GooBallSetupError(this->info->uid, "failed to find specified body part"));
+		return std::unexpected(GooBallSetupError(this->info.uid, "failed to find specified body part"));
 	}
 
 	return std::expected<void, Error>{};
@@ -118,8 +116,8 @@ void GooBall::draw(sf::RenderWindow* window) {
 	// we don't actually randomize the variance because this is an editor
 	float scale = 0.5 * this->ball_template->width * (1.0 + this->ball_template->sizeVariance) * this->body_part->scale;
 	this->display_sprite.setScale(sf::Vector2f(scale, scale));
-	this->display_sprite.setPosition(Level::worldToScreen(this->info->pos));
-	this->display_sprite.setRotation(-1.0f * Level::radiansToDegrees(this->info->angle));
+	this->display_sprite.setPosition(Level::worldToScreen(this->info.pos));
+	this->display_sprite.setRotation(-1.0f * Level::radiansToDegrees(this->info.angle));
 
 	window->draw(this->display_sprite);
 
@@ -152,7 +150,15 @@ sf::Sprite GooBall::getThumbnail() {
 }
 
 std::string GooBall::getDisplayName() {
-	return "GooBall (" + GooBall::ball_type_to_name.at(this->info->typeEnum) + ")";
+	return "GooBall (" + GooBall::ball_type_to_name.at(this->info.typeEnum) + ")";
+}
+
+Vector2f GooBall::getPosition() {
+	return this->info.pos;
+}
+
+float GooBall::getRotation() {
+	return this->info.angle;
 }
 
 std::unordered_map<std::string, GooBallType> GooBall::ball_name_to_type = {
@@ -233,7 +239,7 @@ std::unordered_map<GooBallType, std::string> GooBall::ball_type_to_name = {
 	{GooBallType::UTIL_ATTACH_WALKABLE, "UtilAttachWalkable"}
 };
 
-GooBallInfo* GooBall::getInfo() {
+GooBallInfo& GooBall::getInfo() {
 	return this->info;
 }
 

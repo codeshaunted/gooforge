@@ -62,7 +62,7 @@ struct TerrainTemplateInfoFile {
 class TerrainGroup : public Entity {
 	public:
 		TerrainGroup() : Entity(EntityType::TERRAIN_GROUP) {}
-		std::expected<void, Error> setup(TerrainGroupInfo* info);
+		std::expected<void, Error> setup(TerrainGroupInfo info);
 		std::expected<void, Error> refresh();
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
@@ -70,8 +70,9 @@ class TerrainGroup : public Entity {
 		void addTerrainStrand(GooStrand* goo_strand);
 		std::string getDisplayName() override;
 		sf::Sprite getThumbnail() override;
+		float getDepth() const override;
 	private:
-		TerrainGroupInfo* info;
+		TerrainGroupInfo info;
 		TerrainTemplateInfo* template_info;
 		std::vector<GooBall*> terrain_balls;
 		std::unordered_set<GooStrand*> terrain_strands;

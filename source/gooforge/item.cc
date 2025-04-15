@@ -32,13 +32,13 @@ ItemInstance::~ItemInstance() {
 
 }
 
-std::expected<void, Error> ItemInstance::setup(ItemInstanceInfo* info) {
+std::expected<void, Error> ItemInstance::setup(ItemInstanceInfo info) {
 	this->info = info;
 	return this->refresh();
 }
 
 std::expected<void, Error> ItemInstance::refresh() {
-	auto item_resource = ResourceManager::getInstance()->getResource<ItemResource>("GOOFORGE_ITEM_RESOURCE_" + this->info->type);
+	auto item_resource = ResourceManager::getInstance()->getResource<ItemResource>("GOOFORGE_ITEM_RESOURCE_" + this->info.type);
 	if (!item_resource) {
 		return std::unexpected(item_resource.error());
 	}
@@ -50,7 +50,7 @@ std::expected<void, Error> ItemInstance::refresh() {
 
 	this->info_file = *info_file_result;
 	
-	size_t index = this->info->forcedRandomizationIndex != -1 ? this->info->forcedRandomizationIndex : 0;
+	size_t index = this->info.forcedRandomizationIndex != -1 ? this->info.forcedRandomizationIndex : 0;
 	this->object_info = &this->info_file->items[0].objects[index];
 
 	auto sprite_resource = ResourceManager::getInstance()->getResource<SpriteResource>(this->object_info->name);
@@ -65,7 +65,14 @@ std::expected<void, Error> ItemInstance::refresh() {
 
 	this->display_sprite = *sprite;
 
-	this->depth = -this->info->depth;
+	sf::Vector2u sprite_size_screen = this->display_sprite.getTexture()->getSize();
+	Vector2f sprite_size_world = Level::screenToWorld(sf::Vector2f(sprite_size_screen));
+	sprite_size_world.y *= -1.0f; // correct for flipped y-coordinate compensation
+	float scale_x = this->info.scale.x * this->object_info->scale.x * (this->info.flipHorizontal != this->object_info->flipHorizontal ? -1.0f : 1.0f);
+	float scale_y = this->info.scale.y * this->object_info->scale.y * (this->info.flipVertical != this->object_info->flipVertical ? -1.0f : 1.0f);
+	sprite_size_world.x *= scale_x;
+	sprite_size_world.y *= scale_y;
+	this->click_bounds = static_cast<EntityClickBoundShape*>(new EntityClickBoundRectangle(sprite_size_world, this->object_info->pivot));
 
 	return std::expected<void, Error>{};
 }
@@ -78,11 +85,11 @@ void ItemInstance::draw(sf::RenderWindow* window) {
 	sf::Vector2f origin(this->object_info->pivot.x * bounds.width, bounds.height - (this->object_info->pivot.y * bounds.height));
 	this->display_sprite.setOrigin(origin);
 
-	float scale_x = this->info->scale.x * this->object_info->scale.x * (this->info->flipHorizontal != this->object_info->flipHorizontal ? -1.0f : 1.0f);
-	float scale_y = this->info->scale.y * this->object_info->scale.y * (this->info->flipVertical != this->object_info->flipVertical ? -1.0f : 1.0f);
+	float scale_x = this->info.scale.x * this->object_info->scale.x * (this->info.flipHorizontal != this->object_info->flipHorizontal ? -1.0f : 1.0f);
+	float scale_y = this->info.scale.y * this->object_info->scale.y * (this->info.flipVertical != this->object_info->flipVertical ? -1.0f : 1.0f);
 	this->display_sprite.setScale(scale_x, scale_y);
-	this->display_sprite.setPosition(Level::worldToScreen(this->info->pos));
-	this->display_sprite.setRotation((this->info->rotation + this->object_info->rotation) * (-180.0f / std::numbers::pi));
+	this->display_sprite.setPosition(Level::worldToScreen(this->info.pos));
+	this->display_sprite.setRotation((this->info.rotation + this->object_info->rotation) * (-180.0f / std::numbers::pi));
 
 	uint32_t argb = this->object_info->color;
 	uint8_t alpha = (argb >> 24) & 0xFF;
@@ -95,49 +102,20 @@ void ItemInstance::draw(sf::RenderWindow* window) {
 	window->draw(this->display_sprite);
 
 	if (this->selected) {
-		sf::RectangleShape outline;
+		sf::FloatRect bounds = this->display_sprite.getLocalBounds();
 
-		// Set the size to match the scaled size of the sprite
-		outline.setSize(sf::Vector2f(bounds.width * scale_x, bounds.height * scale_y));
+		sf::RectangleShape rect;
+		rect.setSize(sf::Vector2f(bounds.width, bounds.height));
+		rect.setOrigin(this->display_sprite.getOrigin());
+		rect.setScale(this->display_sprite.getScale());
+		rect.setPosition(this->display_sprite.getPosition());
+		rect.setRotation(this->display_sprite.getRotation());
+		rect.setFillColor(sf::Color::Transparent);
+		rect.setOutlineColor(sf::Color::Blue);
+		rect.setOutlineThickness(2.0f);
 
-		// Set the origin to the center of the rectangle
-		outline.setOrigin(bounds.width * scale_x / 2.0f, bounds.height * scale_y / 2.0f);
-
-		// Position the outline at the same location as the sprite
-		outline.setPosition(this->display_sprite.getPosition());
-		outline.setRotation(this->display_sprite.getRotation());
-
-		// Set the outline color and thickness
-		outline.setOutlineColor(sf::Color::Blue); // Change to desired outline color
-		outline.setOutlineThickness(2.0f); // Change to desired outline thickness
-
-		// Set the fill color to transparent
-		outline.setFillColor(sf::Color::Transparent);
-
-		// Draw the outline
-		window->draw(outline);
+		window->draw(rect);
 	}
-	/*
-	sf::RectangleShape outline(sf::Vector2f(bounds.width, bounds.height));
-	outline.setOrigin(sprite.getOrigin());
-	outline.setScale(sprite.getScale());
-	outline.setPosition(sprite.getPosition());
-	outline.setRotation(sprite.getRotation());
-
-	// Set the outline color and thickness
-	outline.setOutlineColor(sf::Color::Red);  // Choose your desired outline color
-	outline.setOutlineThickness(1.0f);        // Adjust the thickness as needed
-	outline.setFillColor(sf::Color::Transparent); // No fill
-
-	// Draw the outline
-	window->draw(outline);
-
-	// Draw a circle at the origin
-	sf::CircleShape originCircle(5.0f); // Radius of 5.0f
-	originCircle.setFillColor(sf::Color::Blue); // Color the circle blue
-	originCircle.setOrigin(5.0f, 5.0f); // Center the circle at its origin
-	originCircle.setPosition(sprite.getPosition()); // Position it at the sprite's origin
-	window->draw(originCircle);*/
 }
 
 sf::Sprite ItemInstance::getThumbnail() {
@@ -148,7 +126,19 @@ std::string ItemInstance::getDisplayName() {
 	return "ItemInstance (" + this->info_file->items[0].name + ")";
 }
 
-ItemInstanceInfo* ItemInstance::getInfo() {
+Vector2f ItemInstance::getPosition() {
+	return this->info.pos;
+}
+
+float ItemInstance::getRotation() {
+	return this->info.rotation + this->object_info->rotation;
+}
+
+float ItemInstance::getDepth() const {
+	return this->info.depth;
+}
+
+ItemInstanceInfo& ItemInstance::getInfo() {
 	return this->info;
 }
 

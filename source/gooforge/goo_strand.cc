@@ -31,7 +31,7 @@ GooStrand::~GooStrand() {
 
 }
 
-std::expected<void, Error> GooStrand::setup(GooStrandInfo* info, GooBall* ball1, GooBall* ball2) {
+std::expected<void, Error> GooStrand::setup(GooStrandInfo info, GooBall* ball1, GooBall* ball2) {
 	this->info = info;
 	this->ball1 = ball1;
 	this->ball2 = ball2;
@@ -40,9 +40,7 @@ std::expected<void, Error> GooStrand::setup(GooStrandInfo* info, GooBall* ball1,
 }
 
 std::expected<void, Error> GooStrand::refresh() {
-	this->depth = -std::numeric_limits<float>::max() + 2;
-
-	std::string resource_id = "GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(this->info->type));
+	std::string resource_id = "GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(this->info.type));
 	auto template_resource = ResourceManager::getInstance()->getResource<BallTemplateResource>(resource_id);
 	if (!template_resource) {
 		return std::unexpected(template_resource.error());
@@ -95,8 +93,8 @@ void GooStrand::draw(sf::RenderWindow* window) {
 	this->display_sprite.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
 
 	// Calculate the distance between the two balls
-	float dx = this->ball2->info->pos.x - this->ball1->info->pos.x;
-	float dy = (this->ball2->info->pos.y - this->ball1->info->pos.y) * -1.0;
+	float dx = this->ball2->info.pos.x - this->ball1->info.pos.x;
+	float dy = (this->ball2->info.pos.y - this->ball1->info.pos.y) * -1.0;
 	float distance = std::sqrt((dx * dx) + (dy * dy));
 
 	// Set the scale based on the distance
@@ -108,7 +106,7 @@ void GooStrand::draw(sf::RenderWindow* window) {
 
 	this->display_sprite.setScale(sf::Vector2f(width_scale, height_scale)); // Set x scale to match the distance, y scale is 1.0f for now
 
-	auto screen_position = Level::worldToScreen(Vector2f((this->ball1->info->pos.x + this->ball2->info->pos.x) / 2.0, (this->ball1->info->pos.y + this->ball2->info->pos.y) / 2.0));
+	auto screen_position = Level::worldToScreen(Vector2f((this->ball1->info.pos.x + this->ball2->info.pos.x) / 2.0, (this->ball1->info.pos.y + this->ball2->info.pos.y) / 2.0));
 	this->display_sprite.setPosition(screen_position);
 
 	// Calculate angle between the two balls
@@ -126,7 +124,11 @@ sf::Sprite GooStrand::getThumbnail() {
 }
 
 std::string GooStrand::getDisplayName() {
-	return "GooStrand (" + GooBall::ball_type_to_name.at(this->info->type) + ")";
+	return "GooStrand (" + GooBall::ball_type_to_name.at(this->info.type) + ")";
+}
+
+Vector2f GooStrand::getPosition() {
+	return (this->ball1->getPosition() + this->ball2->getPosition()) * 0.5f;
 }
 
 } // namespace gooforge

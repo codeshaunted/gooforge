@@ -91,15 +91,15 @@ struct LevelInfo {
 	int timebugMoves;
 };
 
-struct ItemInstanceComparator {
-	// sort item instances by depth for drawing
-	bool operator()(const ItemInstance* x, const ItemInstance* y) const {
-		if (x->info->depth != y->info->depth) {
-			return x->info->depth < y->info->depth;
+struct EntityDepthComparator {
+	// sort by depth for drawing
+	bool operator()(const Entity* x, const Entity* y) const {
+		if (x->getDepth() != y->getDepth()) {
+			return x->getDepth() < y->getDepth();
 		}
 
 		// if they're at the same depth we need an alternative so they don't get deleted as duplicates
-		return x->info->uid < y->info->uid;
+		return x < y; // cry about it
 	}
 };
 
@@ -113,13 +113,10 @@ class Level {
 		static Vector2f screenToWorld(sf::Vector2f screen);
 		static float radiansToDegrees(float radians);
 		static float degreesToRadians(float degrees);
+		void deleteEntity(Entity* entity);
 	private:
 		LevelInfo info;
-		std::unordered_map<GooBall*, std::unordered_map<GooBall*, GooStrand*>> goo_matrix;
-		std::unordered_set<GooBall*> goo_balls;
-		std::unordered_set<GooStrand*> goo_strands;
-		std::unordered_set<TerrainGroup*> terrain_groups;
-		std::set<ItemInstance*, ItemInstanceComparator> item_instances;
+		std::set<Entity*, EntityDepthComparator> entities;
 		bool entities_dirty = false;
 
 	friend class Editor;

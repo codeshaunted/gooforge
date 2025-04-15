@@ -365,19 +365,21 @@ class GooBall : public Entity {
 	public:
 		GooBall() : Entity(EntityType::GOO_BALL) {}
 		~GooBall() override;
-		std::expected<void, Error> setup(GooBallInfo* info);
+		std::expected<void, Error> setup(GooBallInfo info);
 		std::expected<void, Error> refresh() override;
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 		sf::Sprite getThumbnail() override;
 		std::string getDisplayName() override;
-		GooBallInfo* getInfo();
+		Vector2f getPosition() override;
+		float getRotation() override;
+		GooBallInfo& getInfo();
 		BallTemplateInfo* getTemplate();
 		static std::unordered_map<std::string, GooBallType> ball_name_to_type;
 		static std::unordered_map<GooBallType, std::string> ball_type_to_name;
 		void addStrand(GooStrand* strand);
 	private:
-		GooBallInfo* info;
+		GooBallInfo info;
 		BallTemplateInfo* ball_template = nullptr;
 		BallTemplateBallPartInfo* body_part = nullptr;
 		std::unordered_set<GooStrand*> strands;

@@ -1,7 +1,7 @@
 // codeshaunted - gooforge
-// include/gooforge/vector.hh
-// contains Vector declarations
-// Copyright (C) 2024 codeshaunted
+// include/gooforge/goo_ball.hh
+// contains GooBall declarations
+// Copyright (C) 2025 codeshaunted
 //
 // This file is part of gooforge.
 // gooforge is free software: you can redistribute it and/or modify
@@ -17,26 +17,22 @@
 // You should have received a copy of the GNU General Public License
 // along with gooforge. If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef GOOFORGE_VECTOR_HH
-#define GOOFORGE_VECTOR_HH
+#ifndef GOOFORGE_GOO_EVENT_HH
+#define GOOFORGE_GOO_EVENT_HH
 
-#include <expected>
-
-#include "error.hh"
+class GooBall;
+class GooStrand;
 
 namespace gooforge {
 
-struct Vector2f {
-	float x;
-	float y;
-
-	float distance(const Vector2f& other) const;
-	Vector2f operator+(const Vector2f& other) const;
-	Vector2f operator-(const Vector2f& other) const;
-	Vector2f operator*(float scalar) const;
-	Vector2f operator*=(float scalar);
+struct GooEventHandler {
+	protected:
+		virtual void notifyAddBall(GooBall* ball) {};
+		virtual void notifyRemoveBall(GooBall* ball) {};
+		virtual void notifyAddStrand(GooStrand* strand) {};
+		virtual void notifyRemoveStrand(GooStrand strand) {};
 };
 
 } // namespace gooforge
 
-#endif // GOOFORGE_VECTOR_HH
+#endif // GOOFORGE_GOO_EVENT_HH

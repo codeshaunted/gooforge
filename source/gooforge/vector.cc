@@ -34,8 +34,19 @@ Vector2f Vector2f::operator+(const Vector2f& other) const {
     return { this->x + other.x, this->y + other.y };
 }
 
+Vector2f Vector2f::operator-(const Vector2f& other) const {
+    return { this->x - other.x, this->y - other.y };
+}
+
 Vector2f Vector2f::operator*(float scalar) const {
     return { this->x * scalar, this->y * scalar };
+}
+
+Vector2f Vector2f::operator*=(float scalar) {
+    this->x *= scalar;
+    this->y *= scalar;
+
+    return *this;
 }
 
 } // namespace gooforge

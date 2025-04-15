@@ -29,15 +29,13 @@
 
 namespace gooforge {
 
-std::expected<void, Error> TerrainGroup::setup(TerrainGroupInfo* info) {
+std::expected<void, Error> TerrainGroup::setup(TerrainGroupInfo info) {
     this->info = info;
 
     return this->refresh();
 }
 
 std::expected<void, Error> TerrainGroup::refresh() {
-    this->depth = -std::numeric_limits<float>::max();
-
     auto template_resource = ResourceManager::getInstance()->getResource<TerrainTemplatesResource>("GOOFORGE_TERRAIN_TEMPLATES_RESOURCE");
 	if (!template_resource) {
 		return std::unexpected(template_resource.error());
@@ -50,7 +48,7 @@ std::expected<void, Error> TerrainGroup::refresh() {
 
     // TODO: handle not found case
     for (auto& terrain_template : (*template_info_file)->terrainTypes) {
-        if (terrain_template.uuid == this->info->typeUuid) {
+        if (terrain_template.uuid == this->info.typeUuid) {
             this->template_info = &terrain_template;
             break;
         }
@@ -97,9 +95,9 @@ void TerrainGroup::draw(sf::RenderWindow* window) {
                 sf::VertexArray tri(sf::PrimitiveType::Triangles, 3);
 
                 // Set positions
-                tri[0].position = Level::worldToScreen(u->info->pos);
-                tri[1].position = Level::worldToScreen(v->info->pos);
-                tri[2].position = Level::worldToScreen(w->info->pos);
+                tri[0].position = Level::worldToScreen(u->info.pos);
+                tri[1].position = Level::worldToScreen(v->info.pos);
+                tri[2].position = Level::worldToScreen(w->info.pos);
                 
                 // Set texture coordinates based on world positions
                 tri[0].texCoords = tri[0].position;
@@ -119,9 +117,9 @@ void TerrainGroup::draw(sf::RenderWindow* window) {
 
     for (auto strand : this->terrain_strands) {
         sf::VertexArray line(sf::Lines, 2);
-        line[0].position = Level::worldToScreen(strand->ball1->info->pos);
+        line[0].position = Level::worldToScreen(strand->ball1->info.pos);
         line[0].color = sf::Color::Green;
-        line[1].position = Level::worldToScreen(strand->ball2->info->pos);
+        line[1].position = Level::worldToScreen(strand->ball2->info.pos);
         line[1].color = sf::Color::Green;
         window->draw(line);
     }
@@ -141,6 +139,10 @@ std::string TerrainGroup::getDisplayName() {
 
 sf::Sprite TerrainGroup::getThumbnail() {
     return this->display_sprite;
+}
+
+float TerrainGroup::getDepth() const {
+    return this->info.depth;
 }
 
 } // namespace gooforge

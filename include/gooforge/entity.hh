@@ -36,7 +36,8 @@ enum class Layer {
 };
 
 enum class EntityClickBoundShapeType {
-	CIRCLE
+	CIRCLE,
+	RECTANGLE
 };
 
 struct EntityClickBoundShape {
@@ -49,10 +50,14 @@ struct EntityClickBoundCircle : public EntityClickBoundShape {
 	float radius;
 };
 
-// i wanted to do runtime polymorphism here with using Entity = std::variant<...>
-// but it got too complicated with the pointers... TODO: maybe try it again?
+struct EntityClickBoundRectangle : public EntityClickBoundShape {
+	EntityClickBoundRectangle(Vector2f size, Vector2f pivot) : EntityClickBoundShape(EntityClickBoundShapeType::RECTANGLE), size(size), pivot(pivot) {}
+	Vector2f size;
+	Vector2f pivot;
+};
+
 enum class EntityType {
-	GOO_BALL,
+	GOO_BALL = 0,
 	GOO_STRAND,
 	ITEM_INSTANCE,
 	TERRAIN_GROUP
@@ -71,17 +76,18 @@ class Entity {
 		bool getSelected();
 		void setSelected(bool selected);
 		EntityType getType();
-		Vector2f getPosition();
+		virtual Vector2f getPosition() { return Vector2f(0.0f, 0.0f); }
+		virtual float getRotation() { return 0.0f; }
+		virtual float getDepth() const { return 0.0f; }
 	protected:
 		EntityType type;
 		EntityClickBoundShape* click_bounds = nullptr;
 		bool selected = false;
-		Vector2f position;
 		Layer layer;
-		float depth;
 		float rotation;
 
 	friend class Level;
+	friend struct EntityDepthComparator;
 };
 
 } // namespace gooforge
