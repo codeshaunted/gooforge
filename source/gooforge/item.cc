@@ -138,6 +138,10 @@ float ItemInstance::getDepth() const {
 	return this->info.depth;
 }
 
+void ItemInstance::setPosition(Vector2f position) {
+	this->info.pos = position;
+}
+
 ItemInstanceInfo& ItemInstance::getInfo() {
 	return this->info;
 }

@@ -161,6 +161,10 @@ float GooBall::getRotation() {
 	return this->info.angle;
 }
 
+void GooBall::setPosition(Vector2f position) {
+	this->info.pos = position;
+}
+
 std::unordered_map<std::string, GooBallType> GooBall::ball_name_to_type = {
 	{"Invalid", GooBallType::INVALID},
 	{"Common", GooBallType::COMMON},

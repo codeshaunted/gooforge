@@ -132,6 +132,31 @@ void Editor::update(sf::Clock& delta_clock) {
     this->registerResourcesWindow();
     this->registerToolbarWindow();
 
+    static bool dragging = false;
+    static sf::Vector2i drag_start;
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+        sf::Vector2i mouse_pos = sf::Mouse::getPosition();
+        if (!dragging) {
+            dragging = true;
+            drag_start = mouse_pos;
+        }
+        else {
+            sf::Vector2i drag_delta = drag_start - mouse_pos;
+            drag_start = mouse_pos;
+
+            if (this->selected_tool == EditorToolType::MOVE) {
+                Vector2f world_drag_delta = Level::screenToWorld(sf::Vector2f(drag_delta)) * this->zoom;
+
+                for (Entity* entity : this->selected_entities) {
+                    entity->setPosition(entity->getPosition() - world_drag_delta);
+                }
+            }
+        }
+    }
+    else if (dragging) {
+        dragging = false;
+    }
+
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::O)) {
             this->doOpenFile();
@@ -366,14 +391,15 @@ void Editor::registerMainMenuBar() {
 
             if (ImGui::MenuItem("Save", "Ctrl+S")) {
                 if (this->level) {
-                    auto ec = glz::write_file_json < glz::opts{ .prettify = true } > (this->level->info, this->level_file_path, std::string{});
+                    auto ec = glz::write_file_json < glz::opts{ .prettify = true } > (this->level->getInfo(), this->level_file_path, std::string{});
                 }
             }
             
-            //ImGui::BeginDisabled(); // todo: make work
+            ImGui::BeginDisabled(); // todo: make work
             if (ImGui::MenuItem("Save As", "Ctrl+Shift+S")) {
                 auto ec = glz::write_file_json<glz::opts{ .prettify = true }>(this->level->info, "./obj.json", std::string{});
             }
+            ImGui::EndDisabled();
 
             if (ImGui::MenuItem("Close")) {
                 this->doCloseFile();
@@ -387,9 +413,12 @@ void Editor::registerMainMenuBar() {
         }
 
         if (ImGui::BeginMenu("Edit")) {
+            ImGui::BeginDisabled(this->selected_entities.empty());
             if (ImGui::MenuItem("Delete", "Del")) {
                 this->doAction(DeleteEditorAction(this->selected_entities));
             }
+            ImGui::EndDisabled();
+
             /*
             ImGui::BeginDisabled(this->undo_stack.empty());
             if (ImGui::MenuItem("Undo", "Ctrl+Z")) {
@@ -514,6 +543,9 @@ void Editor::registerPropertiesWindow() {
             if (entity->getType() == EntityType::GOO_BALL) {
                 GooBall* goo_ball = static_cast<GooBall*>(entity);
                 GooBallInfo& info = goo_ball->getInfo();
+                GooBallInfo editor_info = info;
+                bool modified = false;
+                bool refresh = false;
                 
                 ImGui::SeparatorText("General Properties");
                 if (ImGui::BeginTable("General Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
@@ -522,7 +554,9 @@ void Editor::registerPropertiesWindow() {
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Type");
                     ImGui::TableSetColumnIndex(2);
-                    this->registerGooBallTypeCombo("", &info.typeEnum, goo_ball);
+                    bool type_updated = this->registerGooBallTypeCombo("", &editor_info.typeEnum, goo_ball);
+                    modified |= type_updated;
+                    refresh |= type_updated;
 
                     // position x
                     ImGui::TableNextRow();
@@ -531,101 +565,98 @@ void Editor::registerPropertiesWindow() {
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("X");
                     ImGui::TableSetColumnIndex(2);
-                    float pos_x = info.pos.x;
-                    if (ImGui::InputFloat("##positionx", &pos_x, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue)) {
-                        this->doAction(ModifyPropertyEditorAction<float>(&info.pos.x, pos_x));
-                    }
+                    modified |= ImGui::InputFloat("##positionx", &editor_info.pos.x, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
 
                     // position y
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("Y");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##positiony", &info.pos.y);
+                    modified |= ImGui::InputFloat("##positiony", &editor_info.pos.y, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
 
                     // rotation
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Rotation");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##rotation", &info.angle);
+                    modified |= ImGui::InputFloat("##rotation", &editor_info.angle);
 
                     // max velocity
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Maximum Velocity");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##maxvelocity", &info.maxVelocity);
+                    modified |= ImGui::InputFloat("##maxvelocity", &editor_info.maxVelocity);
 
                     // stiffness
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Stiffness");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##stiffness", &info.stiffness);
+                    modified |= ImGui::InputFloat("##stiffness", &editor_info.stiffness);
 
                     // detonation radius
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Detonation Radius");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##detonationradius", &info.detonationRadius);
+                    modified |= ImGui::InputFloat("##detonationradius", &editor_info.detonationRadius);
 
                     // detonation force
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Detonation Force");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##detonationforce", &info.detonationForce);
+                    modified |= ImGui::InputFloat("##detonationforce", &editor_info.detonationForce);
 
                     // discovered
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Discovered");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##discovered", &info.discovered);
+                    modified |= ImGui::Checkbox("##discovered", &editor_info.discovered);
 
                     // floating while asleep
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Float While Asleep");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##floatingwhileasleep", &info.floatingWhileAsleep);
+                    modified |= ImGui::Checkbox("##floatingwhileasleep", &editor_info.floatingWhileAsleep);
 
                     // interactive
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Interactive");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##interactive", &info.interactive);
+                    modified |= ImGui::Checkbox("##interactive", &editor_info.interactive);
 
                     // wake with liquid
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Wake With Liquid");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##wakewithliquid", &info.wakeWithLiquid);
+                    modified |= ImGui::Checkbox("##wakewithliquid", &editor_info.wakeWithLiquid);
 
                     // exit pipe alert
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Exit Pipe Alert");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##exitpipealert", &info.exitPipeAlert);
+                    modified |= ImGui::Checkbox("##exitpipealert", &editor_info.exitPipeAlert);
 
                     // affects auto bounds
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Affects Auto Bounds");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##affectsautobounds", &info.affectsAutoBounds);
+                    modified |= ImGui::Checkbox("##affectsautobounds", &editor_info.affectsAutoBounds);
 
                     // filled
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Filled");
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Checkbox("##filled", &info.filled);
+                    modified |= ImGui::Checkbox("##filled", &editor_info.filled);
 
                     ImGui::EndTable();
                 }
@@ -682,6 +713,10 @@ void Editor::registerPropertiesWindow() {
                         ImGui::EndTable();
                     }
                 }
+
+                if (modified) {
+                    this->doAction(MutateInfoEditorAction(info, editor_info, refresh ? entity : nullptr));
+                }
             } else if (entity->getType() == EntityType::ITEM_INSTANCE) {
                 ItemInstance* item_instance = static_cast<ItemInstance*>(entity);
                 ItemInstanceInfo& info = item_instance->getInfo();
@@ -711,19 +746,18 @@ void Editor::registerResourcesWindow() {
 void Editor::registerToolbarWindow() {
     ImGui::Begin("Toolbar");
 
-    const char* tools[] = {"Move", "Scale", "Rotate"};
-    const size_t tool_count = IM_ARRAYSIZE(tools);
-    static size_t selected_tool = 0;
-
+    const size_t tool_count = Editor::tool_type_to_name.size();
     for (size_t i = 0; i < tool_count; ++i) {
-        if (i == selected_tool) {
+        EditorToolType tool = static_cast<EditorToolType>(i);
+
+        if (tool == this->selected_tool) {
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 1.0f, 1.0f));
         }
         else {
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
         }
 
-        if (ImGui::Button(tools[i])) selected_tool = i;
+        if (ImGui::Button(Editor::tool_type_to_name[tool])) this->selected_tool = tool;
 
         ImGui::PopStyleColor();
 
@@ -758,5 +792,10 @@ bool Editor::registerGooBallTypeCombo(const char* label, GooBallType* type, GooB
 
     return changed;
 }
+
+std::unordered_map<EditorToolType, const char*> Editor::tool_type_to_name = {
+    {EditorToolType::MOVE, "Move"},
+    {EditorToolType::SCALE, "Scale"}
+};
 
 } // namespace gooforge

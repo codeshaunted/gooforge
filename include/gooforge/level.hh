@@ -113,6 +113,7 @@ class Level {
 		static Vector2f screenToWorld(sf::Vector2f screen);
 		static float radiansToDegrees(float radians);
 		static float degreesToRadians(float degrees);
+		LevelInfo& getInfo();
 		void deleteEntity(Entity* entity);
 	private:
 		LevelInfo info;

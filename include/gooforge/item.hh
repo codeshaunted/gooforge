@@ -266,6 +266,7 @@ class ItemInstance : public Entity {
 		Vector2f getPosition() override;
 		float getRotation() override;
 		float getDepth() const override;
+		void setPosition(Vector2f position) override;
 		ItemInstanceInfo& getInfo();
 	private:
 		ItemInstanceInfo info;

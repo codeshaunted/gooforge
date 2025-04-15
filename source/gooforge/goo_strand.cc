@@ -124,11 +124,19 @@ sf::Sprite GooStrand::getThumbnail() {
 }
 
 std::string GooStrand::getDisplayName() {
-	return "GooStrand (" + GooBall::ball_type_to_name.at(this->info.type) + ")";
+	return "GooStrand (" + std::string(GooBall::ball_type_to_name.at(this->info.type)) + ")";
 }
 
 Vector2f GooStrand::getPosition() {
 	return (this->ball1->getPosition() + this->ball2->getPosition()) * 0.5f;
+}
+
+GooBall* GooStrand::getBall1() {
+	return this->ball1;
+}
+
+GooBall* GooStrand::getBall2() {
+	return this->ball2;
 }
 
 } // namespace gooforge

@@ -38,9 +38,11 @@ struct DeselectEditorAction;
 struct DeleteEditorAction;
 template <typename T>
 struct ModifyPropertyEditorAction;
+template <typename T>
+struct MutateInfoEditorAction;
 
 // this template shit is horrendous but whatever
-using EditorAction = std::variant<SelectEditorAction, DeselectEditorAction, ModifyPropertyEditorAction<GooBallType>, ModifyPropertyEditorAction<float>, DeleteEditorAction>;
+using EditorAction = std::variant<MutateInfoEditorAction<GooBallInfo>, SelectEditorAction, DeselectEditorAction, ModifyPropertyEditorAction<GooBallType>, ModifyPropertyEditorAction<float>, DeleteEditorAction>;
 
 struct BaseEditorAction {
 	// we define implicit actions as actions executed before the main action is to be executed
@@ -71,6 +73,25 @@ struct DeleteEditorAction : public BaseEditorAction {
 	std::expected<void, Error> execute(Editor* editor) override;
 	//std::expected<void, Error> revert(Editor* editor) override;
 	std::vector<Entity*> entities;
+};
+
+template<typename T>
+struct MutateInfoEditorAction : public BaseEditorAction {
+	MutateInfoEditorAction(T& info, T new_info, Entity* refresh_entity = nullptr) : BaseEditorAction({}), info(info), new_info(new_info), refresh_entity(refresh_entity) {}
+	std::expected<void, Error> execute(Editor* editor) override {
+		this->info = this->new_info;
+		
+		if (this->refresh_entity) {
+			auto result = this->refresh_entity->refresh();
+			if (!result) {
+				return std::unexpected(result.error());
+			}
+		}
+	}
+	//std::expected<void, Error> revert(Editor* editor) override;
+	Entity* refresh_entity;
+	T& info;
+	T new_info;
 };
 
 template<typename T>
@@ -105,11 +126,17 @@ struct ModifyPropertyEditorAction : public BaseEditorAction {
 	Entity* refresh_entity;
 };
 
+enum class EditorToolType {
+	MOVE = 0,
+	SCALE
+};
+
 class Editor {
 	public:
 		~Editor();
 		void initialize();
 	private:
+		static std::unordered_map<EditorToolType, const char*> tool_type_to_name;
 		sf::RenderWindow window;
 		sf::View view;
 		float zoom = 1.0f;
@@ -124,6 +151,7 @@ class Editor {
 		sf::Clock undo_clock;
 		sf::Time undo_cooldown = sf::milliseconds(200);
 		std::deque<EditorAction> redo_stack;
+		EditorToolType selected_tool = EditorToolType::MOVE;
 		void update(sf::Clock& delta_clock);
 		void draw();
 		void processEvents();
