@@ -172,7 +172,7 @@ class Editor {
 		void registerPropertiesWindow();
 		void registerResourcesWindow();
 		void registerToolbarWindow();
-		bool registerGooBallTypeCombo(const char* label, GooBallType* type, GooBall* refresh_goo_ball = nullptr);
+		bool registerGooBallTypeCombo(const char* label, GooBallType* type);
 
 	// we either make everything public or declare every
 	// single derived action as a friend class, pick

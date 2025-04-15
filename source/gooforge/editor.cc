@@ -554,7 +554,7 @@ void Editor::registerPropertiesWindow() {
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Type");
                     ImGui::TableSetColumnIndex(2);
-                    bool type_updated = this->registerGooBallTypeCombo("", &editor_info.typeEnum, goo_ball);
+                    bool type_updated = this->registerGooBallTypeCombo("", &editor_info.typeEnum);
                     modified |= type_updated;
                     refresh |= type_updated;
 
@@ -768,7 +768,7 @@ void Editor::registerToolbarWindow() {
 }
 
 // returns true if changed
-bool Editor::registerGooBallTypeCombo(const char* label, GooBallType* type, GooBall* refresh_goo_ball) {
+bool Editor::registerGooBallTypeCombo(const char* label, GooBallType* type) {
     bool changed = false;
     if (ImGui::BeginCombo(label, GooBall::ball_type_to_name.at(*type).c_str())) {
         for (auto& [name, id] : GooBall::ball_name_to_type) {
@@ -778,7 +778,7 @@ bool Editor::registerGooBallTypeCombo(const char* label, GooBallType* type, GooB
 
             bool selected = id == *type;
             if (ImGui::Selectable(name.c_str(), selected)) {
-                this->doAction(ModifyPropertyEditorAction<GooBallType>(type, id, refresh_goo_ball));
+                *type = id;
                 changed = true;
             }
 
