@@ -43,6 +43,8 @@ class GooStrand : public Entity {
 		sf::Sprite getThumbnail() override;
 		std::string getDisplayName() override;
 		Vector2f getPosition() override;
+		GooBall* getBall1();
+		GooBall* getBall2();
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
 	private:

@@ -366,7 +366,7 @@ void Editor::registerMainMenuBar() {
 
             if (ImGui::MenuItem("Save", "Ctrl+S")) {
                 if (this->level) {
-                    auto ec = glz::write_file_json < glz::opts{ .prettify = true } > (this->level->info, this->level_file_path, std::string{});
+                    auto ec = glz::write_file_json < glz::opts{ .prettify = true } > (this->level->getInfo(), this->level_file_path, std::string{});
                 }
             }
             
@@ -387,9 +387,12 @@ void Editor::registerMainMenuBar() {
         }
 
         if (ImGui::BeginMenu("Edit")) {
+            ImGui::BeginDisabled(this->selected_entities.empty());
             if (ImGui::MenuItem("Delete", "Del")) {
                 this->doAction(DeleteEditorAction(this->selected_entities));
             }
+            ImGui::EndDisabled();
+
             /*
             ImGui::BeginDisabled(this->undo_stack.empty());
             if (ImGui::MenuItem("Undo", "Ctrl+Z")) {

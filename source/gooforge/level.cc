@@ -99,6 +99,52 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 	}
 }
 
+LevelInfo& Level::getInfo() {
+	// rebuilds info before returning
+	this->info.items.clear();
+	this->info.balls.clear();
+	this->info.strands.clear();
+	this->info.terrainBalls.clear();
+
+	int next_uid = 0;
+	for (Entity* entity : this->entities) {
+		switch (entity->getType()) {
+			case EntityType::GOO_BALL: {
+				GooBall* ball = static_cast<GooBall*>(entity);
+				GooBallInfo& ball_info = ball->getInfo();
+				ball_info.uid = next_uid;
+				++next_uid;
+
+				this->info.balls.push_back(ball_info);
+				break;
+			}
+			case EntityType::ITEM_INSTANCE: {
+				ItemInstance* item = static_cast<ItemInstance*>(entity);
+				ItemInstanceInfo& item_info = item->getInfo();
+				item_info.uid = next_uid;
+				++next_uid;
+
+				this->info.items.push_back(item_info);
+				break;
+			}
+		}
+	}
+
+	// we need to build strands after the balls have been assigned their uids
+	for (Entity* entity : this->entities) {
+		if (entity->getType() != EntityType::GOO_STRAND) continue;
+
+		GooStrand* strand = static_cast<GooStrand*>(entity);
+		
+		strand->info.ball1UID = strand->getBall1()->getInfo().uid;
+		strand->info.ball2UID = strand->getBall2()->getInfo().uid;
+
+		this->info.strands.push_back(strand->info);
+	}
+
+	return this->info;
+}
+
 Level::~Level() {
 
 }

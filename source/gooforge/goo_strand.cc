@@ -131,4 +131,12 @@ Vector2f GooStrand::getPosition() {
 	return (this->ball1->getPosition() + this->ball2->getPosition()) * 0.5f;
 }
 
+GooBall* GooStrand::getBall1() {
+	return this->ball1;
+}
+
+GooBall* GooStrand::getBall2() {
+	return this->ball2;
+}
+
 } // namespace gooforge
