@@ -726,6 +726,15 @@ void Editor::registerPropertiesWindow() {
                 if (ImGui::BeginTable("General Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("Type");
+                    ImGui::TableSetColumnIndex(2);
+                    static char type_text[128];
+                    std::strncpy(type_text, info.type.c_str(), sizeof(type_text));
+                    ImGui::InputText("##type", type_text, sizeof(type_text));
+                    info.type = type_text;
+
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Depth");
                     ImGui::TableSetColumnIndex(2);
                     ImGui::InputFloat("##depth", &info.depth);
