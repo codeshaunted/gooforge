@@ -51,7 +51,7 @@ struct EntityClickBoundCircle : public EntityClickBoundShape {
 };
 
 struct EntityClickBoundRectangle : public EntityClickBoundShape {
-	EntityClickBoundRectangle(Vector2f size, Vector2f pivot) : EntityClickBoundShape(EntityClickBoundShapeType::RECTANGLE), size(size), pivot(pivot) {}
+	EntityClickBoundRectangle(Vector2f size, Vector2f pivot = Vector2f(0.5f, 0.5f)) : EntityClickBoundShape(EntityClickBoundShapeType::RECTANGLE), size(size), pivot(pivot) {}
 	Vector2f size;
 	Vector2f pivot;
 };
@@ -75,6 +75,7 @@ class Entity {
 		bool wasClicked(Vector2f point);
 		bool getSelected();
 		void setSelected(bool selected);
+		void drawSelection(sf::RenderWindow* window);
 		EntityType getType();
 		virtual Vector2f getPosition() { return Vector2f(0.0f, 0.0f); }
 		virtual float getRotation() { return 0.0f; }

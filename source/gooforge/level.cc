@@ -157,6 +157,14 @@ void Level::draw(sf::RenderWindow* window) {
 		entity->draw(window);
 	}
 
+	// draw select boxes over everything else
+	// maybe this shouldn't be the case?
+	for (Entity* entity : this->entities) {
+		if (!entity->getSelected()) continue;
+
+		entity->drawSelection(window);
+	}
+
 	/*
 	for (ItemInstance* item_instance : this->item_instances) {
 		item_instance->draw(window);

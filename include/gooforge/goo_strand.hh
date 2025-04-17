@@ -43,6 +43,7 @@ class GooStrand : public Entity {
 		sf::Sprite getThumbnail() override;
 		std::string getDisplayName() override;
 		Vector2f getPosition() override;
+		float getRotation() override;
 		GooBall* getBall1();
 		GooBall* getBall2();
 		void update() override;

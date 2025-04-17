@@ -31,6 +31,7 @@ struct Vector2f {
 	float y;
 
 	float distance(const Vector2f& other) const;
+	Vector2f abs() const;
 	Vector2f operator+(const Vector2f& other) const;
 	Vector2f operator-(const Vector2f& other) const;
 	Vector2f operator*(float scalar) const;

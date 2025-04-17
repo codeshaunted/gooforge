@@ -19,6 +19,9 @@
 
 #include "entity.hh"
 
+#include "constants.hh"
+#include "level.hh"
+
 namespace gooforge {
 
 bool Entity::wasClicked(Vector2f point) {
@@ -31,7 +34,7 @@ bool Entity::wasClicked(Vector2f point) {
 		if (this->getPosition().distance(point) <= circle->radius) {
 			return true;
 		}
-	}
+	} 
 	else if (this->click_bounds->type == EntityClickBoundShapeType::RECTANGLE) {
 		EntityClickBoundRectangle* rectangle = static_cast<EntityClickBoundRectangle*>(this->click_bounds);
 		Vector2f pos = this->getPosition();
@@ -64,6 +67,38 @@ bool Entity::getSelected() {
 
 void Entity::setSelected(bool selected) {
 	this->selected = selected;
+}
+
+void Entity::drawSelection(sf::RenderWindow* window) {
+	if (!this->click_bounds) return;
+
+	if (this->click_bounds->type == EntityClickBoundShapeType::CIRCLE) {
+		EntityClickBoundCircle* circle = static_cast<EntityClickBoundCircle*>(this->click_bounds);
+		float screen_radius = circle->radius * GOOFORGE_PIXELS_PER_UNIT;
+
+		sf::CircleShape shape(screen_radius);
+		shape.setOrigin(screen_radius, screen_radius);
+		shape.setPosition(Level::worldToScreen(this->getPosition()));
+		shape.setOutlineThickness(2.0f);
+		shape.setOutlineColor(sf::Color::Blue);
+		shape.setFillColor(sf::Color::Transparent);
+
+		window->draw(shape);
+	}
+	else if (this->click_bounds->type == EntityClickBoundShapeType::RECTANGLE) {
+		EntityClickBoundRectangle* rectangle = static_cast<EntityClickBoundRectangle*>(this->click_bounds);
+
+		sf::RectangleShape shape;
+		shape.setSize(sf::Vector2f(rectangle->size.x * GOOFORGE_PIXELS_PER_UNIT, rectangle->size.y * GOOFORGE_PIXELS_PER_UNIT));
+		shape.setOrigin(shape.getSize().x * rectangle->pivot.x, shape.getSize().y - (shape.getSize().y * rectangle->pivot.y));
+		shape.setPosition(Level::worldToScreen(this->getPosition()));
+		shape.setRotation(-Level::radiansToDegrees(this->getRotation()));
+		shape.setFillColor(sf::Color::Transparent);
+		shape.setOutlineColor(sf::Color::Blue);
+		shape.setOutlineThickness(2.0f);
+
+		window->draw(shape);
+	}
 }
 
 EntityType Entity::getType() {

@@ -29,7 +29,7 @@
 namespace gooforge {
 
 ItemInstance::~ItemInstance() {
-
+	delete this->click_bounds;
 }
 
 std::expected<void, Error> ItemInstance::setup(ItemInstanceInfo info) {
@@ -72,6 +72,8 @@ std::expected<void, Error> ItemInstance::refresh() {
 	float scale_y = this->info.scale.y * this->object_info->scale.y * (this->info.flipVertical != this->object_info->flipVertical ? -1.0f : 1.0f);
 	sprite_size_world.x *= scale_x;
 	sprite_size_world.y *= scale_y;
+
+	if (this->click_bounds) delete this->click_bounds;
 	this->click_bounds = static_cast<EntityClickBoundShape*>(new EntityClickBoundRectangle(sprite_size_world, this->object_info->pivot));
 
 	return std::expected<void, Error>{};
@@ -101,6 +103,7 @@ void ItemInstance::draw(sf::RenderWindow* window) {
 
 	window->draw(this->display_sprite);
 
+	/*
 	if (this->selected) {
 		sf::FloatRect bounds = this->display_sprite.getLocalBounds();
 
@@ -115,7 +118,7 @@ void ItemInstance::draw(sf::RenderWindow* window) {
 		rect.setOutlineThickness(2.0f);
 
 		window->draw(rect);
-	}
+	}*/
 }
 
 sf::Sprite ItemInstance::getThumbnail() {

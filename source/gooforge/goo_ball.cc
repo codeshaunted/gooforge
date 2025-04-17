@@ -91,6 +91,7 @@ std::expected<void, Error> GooBall::refresh() {
 
 			this->display_sprite = *sprite;
 
+			if (this->click_bounds) delete this->click_bounds;
 			this->click_bounds = static_cast<EntityClickBoundShape*>(new EntityClickBoundCircle(0.5 * this->ball_template->width * (1.0 + this->ball_template->sizeVariance) * part.scale));
 			this->body_part = &part;
 			found_body_part = true;
@@ -120,29 +121,6 @@ void GooBall::draw(sf::RenderWindow* window) {
 	this->display_sprite.setRotation(-1.0f * Level::radiansToDegrees(this->info.angle));
 
 	window->draw(this->display_sprite);
-
-	if (this->selected) {
-		sf::RectangleShape outline;
-
-		// Set the size to match the scaled size of the sprite
-		outline.setSize(sf::Vector2f(bounds.width * scale, bounds.height * scale));
-
-		// Set the origin to the center of the rectangle
-		outline.setOrigin(bounds.width * scale / 2.0f, bounds.height * scale / 2.0f);
-
-		// Position the outline at the same location as the sprite
-		outline.setPosition(this->display_sprite.getPosition());
-
-		// Set the outline color and thickness
-		outline.setOutlineColor(sf::Color::Blue); // Change to desired outline color
-		outline.setOutlineThickness(2.0f); // Change to desired outline thickness
-
-		// Set the fill color to transparent
-		outline.setFillColor(sf::Color::Transparent);
-
-		// Draw the outline
-		window->draw(outline);
-	}
 }
 
 sf::Sprite GooBall::getThumbnail() {
@@ -159,6 +137,12 @@ Vector2f GooBall::getPosition() {
 
 float GooBall::getRotation() {
 	return this->info.angle;
+}
+
+float GooBall::getDepth() const {
+	// make sure they're drawn over strands
+	// todo: do this in a less cursed way
+	return 0.1f;
 }
 
 void GooBall::setPosition(Vector2f position) {
