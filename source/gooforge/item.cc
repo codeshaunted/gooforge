@@ -149,4 +149,70 @@ ItemInstanceInfo& ItemInstance::getInfo() {
 	return this->info;
 }
 
+// these names are not official
+std::unordered_map<ItemType, std::string> ItemInstance::item_type_to_name = {
+	{ItemType::INVALID, "Invalid"},
+	{ItemType::GENERIC, "Generic"},
+	{ItemType::PIPE_IN_LIQUID, "Pipe In Liquid"},
+	{ItemType::CONNECTION, "Connection"},
+	{ItemType::PIPE_IN, "Pipe In"},
+	{ItemType::TILABLE, "Tilable"},
+	{ItemType::GOD_RAY_AREA, "God Ray Area"},
+	{ItemType::LINEAR_FORCE_FIELD, "Linear Force Field"},
+	{ItemType::RADIAL_FORCE_FIELD, "Radial Force Field"},
+	{ItemType::POOL, "Pool"},
+	{ItemType::RANGE_END_CRITERIA, "Range End Criteria"},
+	{ItemType::TORCH, "Torch"},
+	{ItemType::TERRAIN_ATTRIB, "Terrain Attrib"},
+	{ItemType::WATER, "Water"},
+	{ItemType::SWING, "Swing"},
+	{ItemType::FIREBALL, "Fireball"},
+	{ItemType::GEAR, "Gear"},
+	{ItemType::DEBRIS, "Debris"},
+	{ItemType::ROPE, "Rope"},
+	{ItemType::FIREWORKS_BOAT, "Fireworks Boat"},
+	{ItemType::JELLY_CUBES_PIPE, "Jelly Cubes Pipe"},
+	{ItemType::PISTON, "Piston"},
+	{ItemType::DECORATION, "Decoration"},
+	{ItemType::LEVEL_EXIT, "Level Exit"},
+	{ItemType::TIMED_FADE, "Timed Fade"},
+	{ItemType::SIGN_PAINTER_SIGN, "Sign Painter Sign"},
+	{ItemType::TERRAIN_HIDE, "Terrain Hide"},
+	{ItemType::TIMED_ANIMATION, "Timed Animation"},
+	{ItemType::SELECT_ANIMATION, "Select Animation"},
+	{ItemType::BUTTON, "Button"},
+	{ItemType::DRAIN, "Drain"},
+	{ItemType::WINCH, "Winch"},
+	{ItemType::SQUIDDY, "Squiddy"},
+	{ItemType::PIN_TO_JELLY, "Pin To Jelly"},
+	{ItemType::BALL_DEBRIS, "Ball Debris"},
+	{ItemType::RAIL_CONSTRAINT, "Rail Constraint"},
+	{ItemType::SATELLITE_DISH, "Satellite Dish"},
+	{ItemType::CAMERA_CONTROL, "Camera Control"},
+	{ItemType::CAMERA_EOL, "Camera EOL"},
+	{ItemType::ISLAND2, "Island 2"},
+	{ItemType::PARTICLE_EFFECT_IN_LEVEL, "Particle Effect In Level"},
+	{ItemType::EYE, "Eye"},
+	{ItemType::AMBIENT_SOUND_AREA, "Ambient Sound Area"},
+	{ItemType::AUTO_BOUNDS_AREA, "Auto Bounds Area"},
+	{ItemType::ROCKET, "Rocket"},
+	{ItemType::LEVEL_TEXT, "Level Text"},
+	{ItemType::TENTACLE, "Tentacle"},
+	{ItemType::OVERLAY, "Overlay"},
+	{ItemType::OCD_FLAG, "OCD Flag"},
+	{ItemType::ANGLER_HOOK, "Angler Hook"},
+};
+
+ItemType ItemInstance::getItemType() {
+	return this->info_file->items[0].type; // NOT SAFE!!! todo: fix
+}
+
+std::vector<ItemUserVariableInfo> ItemInstance::getUserVariableInfo() {
+	return this->info_file->items[0].userVariables; // NOT SAFE!!! todo: fix
+}
+
+std::vector<ItemInstanceUserVariableInfo>& ItemInstance::getInstanceUserVariableInfo() {
+	return this->info.userVariables;
+}
+
 } // namespace gooforge

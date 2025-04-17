@@ -19,6 +19,7 @@
 
 #include "editor.hh"
 
+#include <format>
 #include <variant>
 
 #include "imgui.h"
@@ -721,12 +722,31 @@ void Editor::registerPropertiesWindow() {
                 ItemInstance* item_instance = static_cast<ItemInstance*>(entity);
                 ItemInstanceInfo& info = item_instance->getInfo();
 
+                ImGui::SeparatorText("General Properties");
                 if (ImGui::BeginTable("General Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Depth");
                     ImGui::TableSetColumnIndex(2);
                     ImGui::InputFloat("##depth", &info.depth);
+
+                    ImGui::EndTable();
+                }
+
+                std::string type_properties_table_name = ItemInstance::item_type_to_name[item_instance->getItemType()] + " Properties";
+
+                ImGui::SeparatorText(type_properties_table_name.c_str());
+                if (ImGui::BeginTable(type_properties_table_name.c_str(), 3, ImGuiTableFlags_SizingStretchProp)) {
+                    std::vector<ItemInstanceUserVariableInfo>& var_data = item_instance->getInstanceUserVariableInfo();
+                    size_t i = 0;
+                    for (ItemUserVariableInfo var : item_instance->getUserVariableInfo()) {
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Text(var.name.c_str());
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::InputFloat(("##" + var.name).c_str(), &var_data[i].value);
+                        ++i;
+                    }
 
                     ImGui::EndTable();
                 }

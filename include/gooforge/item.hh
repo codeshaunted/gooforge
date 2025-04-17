@@ -22,6 +22,8 @@
 
 #include "entity.hh"
 
+#include <unordered_map>
+
 namespace gooforge {
 
 struct ItemInstanceUserVariableInfo {
@@ -213,7 +215,7 @@ struct ItemLimitsInfo {
 struct ItemInfo {
 	std::string name;
 	std::string uuid;
-	int type;
+	ItemType type;
 	std::string category;
 	Layer layer;
 	float minDepth;
@@ -257,6 +259,7 @@ class ItemInstance : public Entity {
 	public:
 		ItemInstance() : Entity(EntityType::ITEM_INSTANCE) {}
 		~ItemInstance() override;
+		static std::unordered_map<ItemType, std::string> item_type_to_name;
 		std::expected<void, Error> setup(ItemInstanceInfo info);
 		std::expected<void, Error> refresh() override;
 		void update() override;
@@ -268,6 +271,9 @@ class ItemInstance : public Entity {
 		float getDepth() const override;
 		void setPosition(Vector2f position) override;
 		ItemInstanceInfo& getInfo();
+		ItemType getItemType();
+		std::vector<ItemUserVariableInfo> getUserVariableInfo();
+		std::vector<ItemInstanceUserVariableInfo>& getInstanceUserVariableInfo();
 	private:
 		ItemInstanceInfo info;
 		ItemInfoFile* info_file;
