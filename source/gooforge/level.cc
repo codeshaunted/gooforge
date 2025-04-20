@@ -97,6 +97,8 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 			}
 		}
 	}
+
+	return std::expected<void, Error>{};
 }
 
 LevelInfo& Level::getInfo() {

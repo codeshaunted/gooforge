@@ -41,6 +41,8 @@ struct ModifyPropertyEditorAction;
 template <typename T>
 struct MutateInfoEditorAction;
 
+class Editor;
+
 // this template shit is horrendous but whatever
 using EditorAction = std::variant<MutateInfoEditorAction<GooBallInfo>, SelectEditorAction, DeselectEditorAction, ModifyPropertyEditorAction<GooBallType>, ModifyPropertyEditorAction<float>, DeleteEditorAction>;
 

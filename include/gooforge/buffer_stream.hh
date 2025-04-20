@@ -20,6 +20,7 @@
 #ifndef GOOFORGE_BUFFER_STREAM_HH
 #define GOOFORGE_BUFFER_STREAM_HH
 
+#include <cstring>
 #include <stdexcept>
 
 namespace gooforge {

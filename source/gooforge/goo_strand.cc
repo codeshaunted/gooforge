@@ -19,6 +19,7 @@
 
 #include "goo_strand.hh"
 
+#include <cmath>
 #include <filesystem>
 
 #include "constants.hh"

@@ -19,6 +19,8 @@
 
 #include "entity.hh"
 
+#include <cmath>
+
 #include "constants.hh"
 #include "level.hh"
 
@@ -42,8 +44,8 @@ bool Entity::wasClicked(Vector2f point) {
 
 		Vector2f local = point - pos;
 
-		float cosine = cos(-rot);
-		float sine = sin(-rot);
+		float cosine = std::cos(-rot);
+		float sine = std::sin(-rot);
 		Vector2f rotated_local(local.x * cosine - local.y * sine, local.x * sine + local.y * cosine);
 
 		Vector2f pivot_offset = Vector2f(
