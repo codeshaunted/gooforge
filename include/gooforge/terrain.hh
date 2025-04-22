@@ -71,6 +71,7 @@ class TerrainGroup : public Entity {
 		std::string getDisplayName() override;
 		sf::Sprite getThumbnail() override;
 		float getDepth() const override;
+		TerrainGroupInfo& getInfo();
 	private:
 		TerrainGroupInfo info;
 		TerrainTemplateInfo* template_info;

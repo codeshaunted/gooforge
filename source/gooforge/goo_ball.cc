@@ -33,8 +33,9 @@ GooBall::~GooBall() {
 	delete this->click_bounds;
 }
 
-std::expected<void, Error> GooBall::setup(GooBallInfo info) {
+std::expected<void, Error> GooBall::setup(GooBallInfo info, TerrainGroup* terrain_group) {
 	this->info = info;
+	this->terrain_group = terrain_group;
 	return this->refresh();
 }
 

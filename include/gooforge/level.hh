@@ -115,6 +115,8 @@ class Level {
 		static float degreesToRadians(float degrees);
 		LevelInfo& getInfo();
 		void deleteEntity(Entity* entity);
+		void addBall(GooBall* ball);
+		void removeBall(GooBall* ball);
 	private:
 		LevelInfo info;
 		std::set<Entity*, EntityDepthComparator> entities;

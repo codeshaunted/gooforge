@@ -26,6 +26,7 @@
 #include "spdlog.h"
 
 #include "constants.hh"
+#include "goo_event_handler.hh"
 
 namespace gooforge {
 
@@ -42,34 +43,6 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 		this->entities.insert(item_instance);
 	}
 
-	std::vector<GooBall*> goo_balls;
-	std::unordered_map<int, GooBall*> goo_balls_uid;
-	for (GooBallInfo& ball_info : this->info.balls) {
-		GooBall* goo_ball = new GooBall();
-		goo_balls.push_back(goo_ball);
-		goo_balls_uid.insert({ball_info.uid, goo_ball});
-		auto result = goo_ball->setup(ball_info);
-		if (!result) {
-			return std::unexpected(result.error());
-		}
-
-		this->entities.insert(goo_ball);
-	}
-
-	for (GooStrandInfo& strand_info : this->info.strands) {
-		GooStrand* goo_strand = new GooStrand();
-		// ONCE AGAIN NOT SAFE, TODO: FIX
-		auto result = goo_strand->setup(strand_info, goo_balls_uid[strand_info.ball1UID], goo_balls_uid[strand_info.ball2UID]);
-		if (!result) {
-			return std::unexpected(result.error());
-		}
-
-		this->entities.insert(goo_strand);
-
-		goo_balls_uid[strand_info.ball1UID]->addStrand(goo_strand);
-		goo_balls_uid[strand_info.ball2UID]->addStrand(goo_strand);
-	}
-
 	std::vector<TerrainGroup*> terrain_groups_indexed;
 	for (TerrainGroupInfo& terrain_group_info : this->info.terrainGroups) {
 		TerrainGroup* terrain_group = new TerrainGroup();
@@ -83,18 +56,47 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 		terrain_groups_indexed.push_back(terrain_group);
 	}
 
+	std::vector<GooBall*> goo_balls;
+	std::unordered_map<int, GooBall*> goo_balls_uid;
+	size_t i = 0;
+	for (GooBallInfo& ball_info : this->info.balls) {
+		GooBall* goo_ball = new GooBall();
+		goo_balls.push_back(goo_ball);
+		goo_balls_uid.insert({ball_info.uid, goo_ball});
 
-	for (size_t i = 0; i < this->info.terrainBalls.size(); ++i) {
-		const TerrainBallInfo& terrain_ball_info = this->info.terrainBalls[i];
+		size_t terrain_group_index = this->info.terrainBalls[i].group;
+		TerrainGroup* terrain_group = terrain_group_index == -1 ? nullptr : terrain_groups_indexed[terrain_group_index];
+		auto result = goo_ball->setup(ball_info, terrain_group);
+		if (!result) {
+			return std::unexpected(result.error());
+		}
 
-		if (terrain_ball_info.group != -1) {
-			terrain_groups_indexed[terrain_ball_info.group]->addTerrainBall(goo_balls[i]); // TODO: FIX THIS, THIS IS UNSAFE WE MUST VALIDATE THIS FIRST
+		if (terrain_group) {
+			terrain_group->addTerrainBall(goo_ball);
+		}
 
-			for (auto strand : goo_balls[i]->strands) {
-				if (strand->info.type == GooBallType::TERRAIN) {
-					terrain_groups_indexed[terrain_ball_info.group]->addTerrainStrand(strand);
-				}
-			}
+		this->entities.insert(goo_ball);
+		++i;
+	}
+
+	for (GooStrandInfo& strand_info : this->info.strands) {
+		GooStrand* goo_strand = new GooStrand();
+		// ONCE AGAIN NOT SAFE, TODO: FIX
+		auto result = goo_strand->setup(strand_info, goo_balls_uid[strand_info.ball1UID], goo_balls_uid[strand_info.ball2UID]);
+		if (!result) {
+			return std::unexpected(result.error());
+		}
+
+		this->entities.insert(goo_strand);
+
+		GooBall* ball1 = goo_balls_uid[strand_info.ball1UID];
+		GooBall* ball2 = goo_balls_uid[strand_info.ball2UID];
+		ball1->addStrand(goo_strand);
+		ball2->addStrand(goo_strand);
+
+		if (ball1->terrain_group || ball2->terrain_group) {
+			ball1->terrain_group->addTerrainStrand(goo_strand);
+			ball2->terrain_group->addTerrainStrand(goo_strand);
 		}
 	}
 
@@ -106,8 +108,12 @@ LevelInfo& Level::getInfo() {
 	this->info.items.clear();
 	this->info.balls.clear();
 	this->info.strands.clear();
+	this->info.terrainGroups.clear();
 	this->info.terrainBalls.clear();
 
+	int terrain_group_i = 0;
+	std::unordered_map<TerrainGroup*, int> terrain_groups;
+	terrain_groups.insert({nullptr, -1});
 	int next_uid = 0;
 	for (Entity* entity : this->entities) {
 		switch (entity->getType()) {
@@ -129,6 +135,13 @@ LevelInfo& Level::getInfo() {
 				this->info.items.push_back(item_info);
 				break;
 			}
+			case EntityType::TERRAIN_GROUP: {
+				TerrainGroup* terrain_group = static_cast<TerrainGroup*>(entity);
+				terrain_groups.insert({terrain_group, terrain_group_i});
+				++terrain_group_i;
+
+				this->info.terrainGroups.push_back(terrain_group->getInfo());
+			}
 		}
 	}
 
@@ -142,6 +155,17 @@ LevelInfo& Level::getInfo() {
 		strand->info.ball2UID = strand->getBall2()->getInfo().uid;
 
 		this->info.strands.push_back(strand->info);
+	}
+
+	// build terrainBalls
+	for (Entity* entity : this->entities) {
+		if (entity->getType() != EntityType::GOO_BALL) continue;
+
+		GooBall* ball = static_cast<GooBall*>(entity);
+
+		int terrain_group_index = terrain_groups[ball->terrain_group]; // not necessarily safe?
+
+		this->info.terrainBalls.push_back(TerrainBallInfo(terrain_group_index));
 	}
 
 	return this->info;
@@ -166,23 +190,6 @@ void Level::draw(sf::RenderWindow* window) {
 
 		entity->drawSelection(window);
 	}
-
-	/*
-	for (ItemInstance* item_instance : this->item_instances) {
-		item_instance->draw(window);
-	}
-
-	for (TerrainGroup* terrain_group : this->terrain_groups) {
-		terrain_group->draw(window);
-	}
-
-	for (GooStrand* goo_strand : this->goo_strands) {
-		goo_strand->draw(window);
-	}
-
-	for (GooBall* goo_ball : this->goo_balls) {
-		goo_ball->draw(window);
-	}*/
 }
 
 sf::Vector2f Level::worldToScreen(Vector2f world) {
@@ -204,6 +211,37 @@ float Level::degreesToRadians(float degrees) {
 void Level::deleteEntity(Entity* entity) {
 	this->entities.erase(entity);
 	delete entity;
+}
+
+void Level::addBall(GooBall* ball) {
+	for (Entity* entity : this->entities) {
+		switch(entity->getType()) {
+			case EntityType::GOO_BALL:
+			case EntityType::GOO_STRAND:
+			case EntityType::TERRAIN_GROUP:
+				GooEventHandler* handler = reinterpret_cast<GooEventHandler*>(entity); // cry about it
+				handler->notifyAddBall(ball);
+				break;
+		}
+	}
+
+	this->entities.insert(ball);
+}
+
+void Level::removeBall(GooBall* ball) {
+	for (Entity* entity : this->entities) {
+		switch(entity->getType()) {
+			case EntityType::GOO_BALL:
+			case EntityType::GOO_STRAND:
+			case EntityType::TERRAIN_GROUP:
+				GooEventHandler* handler = reinterpret_cast<GooEventHandler*>(entity); // cry about it
+				handler->notifyRemoveBall(ball);
+				break;
+		}
+	}
+
+	this->entities.erase(ball);
+	delete ball;
 }
 
 } // namespace gooforge

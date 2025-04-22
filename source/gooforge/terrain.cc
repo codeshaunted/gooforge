@@ -145,4 +145,8 @@ float TerrainGroup::getDepth() const {
     return this->info.depth;
 }
 
+TerrainGroupInfo& TerrainGroup::getInfo() {
+    return this->info;
+}
+
 } // namespace gooforge

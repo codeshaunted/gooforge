@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with gooforge. If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef GOOFORGE_GOO_EVENT_HH
-#define GOOFORGE_GOO_EVENT_HH
+#ifndef GOOFORGE_GOO_EVENT_HANDLER_HH
+#define GOOFORGE_GOO_EVENT_HANDLER_HH
 
 class GooBall;
 class GooStrand;
@@ -26,13 +26,13 @@ class GooStrand;
 namespace gooforge {
 
 struct GooEventHandler {
-	protected:
-		virtual void notifyAddBall(GooBall* ball) {};
-		virtual void notifyRemoveBall(GooBall* ball) {};
-		virtual void notifyAddStrand(GooStrand* strand) {};
-		virtual void notifyRemoveStrand(GooStrand strand) {};
+	public:
+		virtual void notifyAddBall(GooBall* ball) {}
+		virtual void notifyRemoveBall(GooBall* ball) {}
+		virtual void notifyAddStrand(GooStrand* strand) {}
+		virtual void notifyRemoveStrand(GooStrand* strand) {}
 };
 
 } // namespace gooforge
 
-#endif // GOOFORGE_GOO_EVENT_HH
+#endif // GOOFORGE_GOO_EVENT_HANDLER_HH

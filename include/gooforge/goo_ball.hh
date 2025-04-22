@@ -365,7 +365,7 @@ class GooBall : public Entity {
 	public:
 		GooBall() : Entity(EntityType::GOO_BALL) {}
 		~GooBall() override;
-		std::expected<void, Error> setup(GooBallInfo info);
+		std::expected<void, Error> setup(GooBallInfo info, TerrainGroup* terrain_group);
 		std::expected<void, Error> refresh() override;
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
@@ -381,6 +381,7 @@ class GooBall : public Entity {
 		static std::unordered_map<GooBallType, std::string> ball_type_to_name;
 		void addStrand(GooStrand* strand);
 	private:
+		TerrainGroup* terrain_group = nullptr;
 		GooBallInfo info;
 		BallTemplateInfo* ball_template = nullptr;
 		BallTemplateBallPartInfo* body_part = nullptr;
