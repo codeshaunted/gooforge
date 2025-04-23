@@ -377,6 +377,7 @@ class GooBall : public Entity {
 		void setPosition(Vector2f position) override;
 		GooBallInfo& getInfo();
 		BallTemplateInfo* getTemplate();
+		TerrainGroup* getTerrainGroup();
 		static std::unordered_map<std::string, GooBallType> ball_name_to_type;
 		static std::unordered_map<GooBallType, std::string> ball_type_to_name;
 		void addStrand(GooStrand* strand);

@@ -22,7 +22,6 @@
 
 #include <expected>
 
-
 namespace gooforge {
 
 class GooBall;
@@ -66,16 +65,15 @@ class TerrainGroup : public Entity {
 		std::expected<void, Error> refresh();
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
-		void addTerrainBall(GooBall* goo_ball);
 		void addTerrainStrand(GooStrand* goo_strand);
 		std::string getDisplayName() override;
 		sf::Sprite getThumbnail() override;
 		float getDepth() const override;
 		TerrainGroupInfo& getInfo();
+		void notifyAddStrand(GooStrand* strand) override;
 	private:
 		TerrainGroupInfo info;
 		TerrainTemplateInfo* template_info;
-		std::vector<GooBall*> terrain_balls;
 		std::unordered_set<GooStrand*> terrain_strands;
 		sf::Sprite display_sprite;
 };

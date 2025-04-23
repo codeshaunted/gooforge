@@ -117,6 +117,8 @@ class Level {
 		void deleteEntity(Entity* entity);
 		void addBall(GooBall* ball);
 		void removeBall(GooBall* ball);
+		void addStrand(GooStrand* strand);
+		void removeStrand(GooStrand* strand);
 	private:
 		LevelInfo info;
 		std::set<Entity*, EntityDepthComparator> entities;

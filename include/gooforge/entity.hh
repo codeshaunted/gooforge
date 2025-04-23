@@ -26,6 +26,9 @@
 
 namespace gooforge {
 
+class GooBall;
+class GooStrand;
+
 enum class Layer {
 	BACKGROUND = 0,
 	TERRAIN,
@@ -81,6 +84,10 @@ class Entity {
 		virtual float getRotation() { return 0.0f; }
 		virtual float getDepth() const { return 0.0f; }
 		virtual void setPosition(Vector2f position) {}
+		virtual void notifyAddBall(GooBall* ball) {}
+		virtual void notifyRemoveBall(GooBall* ball) {}
+		virtual void notifyAddStrand(GooStrand* strand) {}
+		virtual void notifyRemoveStrand(GooStrand* strand) {}
 	protected:
 		EntityType type;
 		EntityClickBoundShape* click_bounds = nullptr;

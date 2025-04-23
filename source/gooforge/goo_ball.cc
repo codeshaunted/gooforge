@@ -240,4 +240,8 @@ void GooBall::addStrand(GooStrand* strand) {
 	this->strands.insert(strand);
 }
 
+TerrainGroup* GooBall::getTerrainGroup() {
+	return this->terrain_group;
+}
+
 } // namespace gooforge

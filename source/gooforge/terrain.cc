@@ -125,10 +125,6 @@ void TerrainGroup::draw(sf::RenderWindow* window) {
     }
 }
 
-void TerrainGroup::addTerrainBall(GooBall* goo_ball) {
-    this->terrain_balls.push_back(goo_ball);
-}
-
 void TerrainGroup::addTerrainStrand(GooStrand* goo_strand) {
     this->terrain_strands.insert(goo_strand);
 }
@@ -147,6 +143,12 @@ float TerrainGroup::getDepth() const {
 
 TerrainGroupInfo& TerrainGroup::getInfo() {
     return this->info;
+}
+
+void TerrainGroup::notifyAddStrand(GooStrand* strand) {
+    if (strand->getBall1()->getTerrainGroup() == this || strand->getBall2()->getTerrainGroup() == this) {
+        this->terrain_strands.insert(strand);
+    }
 }
 
 } // namespace gooforge

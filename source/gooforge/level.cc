@@ -26,7 +26,6 @@
 #include "spdlog.h"
 
 #include "constants.hh"
-#include "goo_event_handler.hh"
 
 namespace gooforge {
 
@@ -71,10 +70,6 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 			return std::unexpected(result.error());
 		}
 
-		if (terrain_group) {
-			terrain_group->addTerrainBall(goo_ball);
-		}
-
 		this->entities.insert(goo_ball);
 		++i;
 	}
@@ -94,10 +89,7 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 		ball1->addStrand(goo_strand);
 		ball2->addStrand(goo_strand);
 
-		if (ball1->terrain_group || ball2->terrain_group) {
-			ball1->terrain_group->addTerrainStrand(goo_strand);
-			ball2->terrain_group->addTerrainStrand(goo_strand);
-		}
+		this->addStrand(goo_strand);
 	}
 
 	return std::expected<void, Error>{};
@@ -215,14 +207,7 @@ void Level::deleteEntity(Entity* entity) {
 
 void Level::addBall(GooBall* ball) {
 	for (Entity* entity : this->entities) {
-		switch(entity->getType()) {
-			case EntityType::GOO_BALL:
-			case EntityType::GOO_STRAND:
-			case EntityType::TERRAIN_GROUP:
-				GooEventHandler* handler = reinterpret_cast<GooEventHandler*>(entity); // cry about it
-				handler->notifyAddBall(ball);
-				break;
-		}
+		entity->notifyAddBall(ball);
 	}
 
 	this->entities.insert(ball);
@@ -230,18 +215,28 @@ void Level::addBall(GooBall* ball) {
 
 void Level::removeBall(GooBall* ball) {
 	for (Entity* entity : this->entities) {
-		switch(entity->getType()) {
-			case EntityType::GOO_BALL:
-			case EntityType::GOO_STRAND:
-			case EntityType::TERRAIN_GROUP:
-				GooEventHandler* handler = reinterpret_cast<GooEventHandler*>(entity); // cry about it
-				handler->notifyRemoveBall(ball);
-				break;
-		}
+		entity->notifyRemoveBall(ball);
 	}
 
 	this->entities.erase(ball);
 	delete ball;
+}
+
+void Level::addStrand(GooStrand* strand) {
+	for (Entity* entity : this->entities) {
+		entity->notifyAddStrand(strand);
+	}
+
+	this->entities.insert(strand);
+}
+
+void Level::removeStrand(GooStrand* strand) {
+	for (Entity* entity : this->entities) {
+		entity->notifyRemoveStrand(strand);
+	}
+
+	this->entities.erase(strand);
+	delete strand;
 }
 
 } // namespace gooforge
