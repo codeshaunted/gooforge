@@ -236,16 +236,22 @@ BallTemplateInfo* GooBall::getTemplate() {
 	return this->ball_template;
 }
 
-void GooBall::addStrand(std::weak_ptr<GooStrand> strand) {
-	this->strands.insert(strand);
-}
-
 std::weak_ptr<TerrainGroup> GooBall::getTerrainGroup() {
 	return this->terrain_group;
 }
 
 std::set<std::weak_ptr<GooStrand>, std::owner_less<std::weak_ptr<GooStrand>>> GooBall::getStrands() {
 	return this->strands;
+}
+
+void GooBall::notifyAddStrand(std::shared_ptr<GooStrand> strand) {
+	if (strand->getBall1().lock().get() == this || strand->getBall2().lock().get() == this) {
+		this->strands.insert(strand);
+	}
+}
+
+void GooBall::notifyRemoveStrand(std::shared_ptr<GooStrand> strand) {
+	this->strands.erase(strand);
 }
 
 } // namespace gooforge

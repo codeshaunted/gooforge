@@ -380,8 +380,9 @@ class GooBall : public Entity {
 		std::weak_ptr<TerrainGroup> getTerrainGroup();
 		static std::unordered_map<std::string, GooBallType> ball_name_to_type;
 		static std::unordered_map<GooBallType, std::string> ball_type_to_name;
-		void addStrand(std::weak_ptr<GooStrand> strand);
 		std::set<std::weak_ptr<GooStrand>, std::owner_less<std::weak_ptr<GooStrand>>> getStrands();
+		void notifyAddStrand(std::shared_ptr<GooStrand> strand) override;
+		void notifyRemoveStrand(std::shared_ptr<GooStrand> strand) override;
 	private:
 		std::weak_ptr<TerrainGroup> terrain_group;
 		GooBallInfo info;

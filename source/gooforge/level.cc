@@ -84,11 +84,6 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
 
 		this->entities.insert(goo_strand);
 
-		std::shared_ptr<GooBall> ball1 = goo_balls_uid[strand_info.ball1UID];
-		std::shared_ptr<GooBall> ball2 = goo_balls_uid[strand_info.ball2UID];
-		ball1->addStrand(goo_strand);
-		ball2->addStrand(goo_strand);
-
 		this->addStrand(goo_strand);
 	}
 
