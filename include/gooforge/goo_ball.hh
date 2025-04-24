@@ -20,8 +20,8 @@
 #ifndef GOOFORGE_GOO_BALL_HH
 #define GOOFORGE_GOO_BALL_HH
 
+#include <set>
 #include <unordered_map>
-#include <unordered_set>
 
 #include "SFML/Graphics.hpp"
 
@@ -365,7 +365,7 @@ class GooBall : public Entity {
 	public:
 		GooBall() : Entity(EntityType::GOO_BALL) {}
 		~GooBall() override;
-		std::expected<void, Error> setup(GooBallInfo info, TerrainGroup* terrain_group);
+		std::expected<void, Error> setup(GooBallInfo info, std::weak_ptr<TerrainGroup> terrain_group);
 		std::expected<void, Error> refresh() override;
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
@@ -377,16 +377,16 @@ class GooBall : public Entity {
 		void setPosition(Vector2f position) override;
 		GooBallInfo& getInfo();
 		BallTemplateInfo* getTemplate();
-		TerrainGroup* getTerrainGroup();
+		std::weak_ptr<TerrainGroup> getTerrainGroup();
 		static std::unordered_map<std::string, GooBallType> ball_name_to_type;
 		static std::unordered_map<GooBallType, std::string> ball_type_to_name;
-		void addStrand(GooStrand* strand);
+		void addStrand(std::weak_ptr<GooStrand> strand);
 	private:
-		TerrainGroup* terrain_group = nullptr;
+		std::weak_ptr<TerrainGroup> terrain_group;
 		GooBallInfo info;
 		BallTemplateInfo* ball_template = nullptr;
 		BallTemplateBallPartInfo* body_part = nullptr;
-		std::unordered_set<GooStrand*> strands;
+		std::set<std::weak_ptr<GooStrand>, std::owner_less<std::weak_ptr<GooStrand>>> strands;
 		sf::Sprite display_sprite;
 
 	friend class GooStrand;

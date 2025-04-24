@@ -148,7 +148,7 @@ void Editor::update(sf::Clock& delta_clock) {
             if (this->selected_tool == EditorToolType::MOVE) {
                 Vector2f world_drag_delta = Level::screenToWorld(sf::Vector2f(drag_delta)) * this->zoom;
 
-                for (Entity* entity : this->selected_entities) {
+                for (std::shared_ptr<Entity> entity : this->selected_entities) {
                     entity->setPosition(entity->getPosition() - world_drag_delta);
                 }
             }
@@ -325,7 +325,7 @@ void Editor::redoLastUndo() {
     }
 }
 
-void Editor::doEntitySelection(Entity* entity) {
+void Editor::doEntitySelection(std::shared_ptr<Entity> entity) {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
         if (entity->getSelected()) {
             this->doAction(DeselectEditorAction({ entity }));
@@ -533,7 +533,7 @@ void Editor::registerPropertiesWindow() {
 
     if (this->level) {
         if (this->selected_entities.size() == 1) {
-            Entity* entity = this->selected_entities[0];
+            std::shared_ptr<Entity> entity = this->selected_entities[0];
             std::string text = entity->getDisplayName();
             ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
 
@@ -542,7 +542,7 @@ void Editor::registerPropertiesWindow() {
             ImGui::Text(text.c_str());
 
             if (entity->getType() == EntityType::GOO_BALL) {
-                GooBall* goo_ball = static_cast<GooBall*>(entity);
+                std::shared_ptr<GooBall> goo_ball = static_pointer_cast<GooBall>(entity);
                 GooBallInfo& info = goo_ball->getInfo();
                 GooBallInfo editor_info = info;
                 bool modified = false;
@@ -719,7 +719,7 @@ void Editor::registerPropertiesWindow() {
                     this->doAction(MutateInfoEditorAction(info, editor_info, refresh ? entity : nullptr));
                 }
             } else if (entity->getType() == EntityType::ITEM_INSTANCE) {
-                ItemInstance* item_instance = static_cast<ItemInstance*>(entity);
+                std::shared_ptr<ItemInstance> item_instance = static_pointer_cast<ItemInstance>(entity);
                 ItemInstanceInfo& info = item_instance->getInfo();
 
                 ImGui::SeparatorText("General Properties");

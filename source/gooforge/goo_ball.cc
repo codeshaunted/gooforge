@@ -33,7 +33,7 @@ GooBall::~GooBall() {
 	delete this->click_bounds;
 }
 
-std::expected<void, Error> GooBall::setup(GooBallInfo info, TerrainGroup* terrain_group) {
+std::expected<void, Error> GooBall::setup(GooBallInfo info, std::weak_ptr<TerrainGroup> terrain_group) {
 	this->info = info;
 	this->terrain_group = terrain_group;
 	return this->refresh();
@@ -236,11 +236,11 @@ BallTemplateInfo* GooBall::getTemplate() {
 	return this->ball_template;
 }
 
-void GooBall::addStrand(GooStrand* strand) {
+void GooBall::addStrand(std::weak_ptr<GooStrand> strand) {
 	this->strands.insert(strand);
 }
 
-TerrainGroup* GooBall::getTerrainGroup() {
+std::weak_ptr<TerrainGroup> GooBall::getTerrainGroup() {
 	return this->terrain_group;
 }
 

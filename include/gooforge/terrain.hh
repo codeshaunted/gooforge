@@ -21,6 +21,7 @@
 #define GOOFORGE_TERRAIN_HH
 
 #include <expected>
+#include <set>
 
 namespace gooforge {
 
@@ -65,16 +66,15 @@ class TerrainGroup : public Entity {
 		std::expected<void, Error> refresh();
 		void update() override;
 		void draw(sf::RenderWindow* window) override;
-		void addTerrainStrand(GooStrand* goo_strand);
 		std::string getDisplayName() override;
 		sf::Sprite getThumbnail() override;
 		float getDepth() const override;
 		TerrainGroupInfo& getInfo();
-		void notifyAddStrand(GooStrand* strand) override;
+		void notifyAddStrand(std::weak_ptr<GooStrand> strand) override;
 	private:
 		TerrainGroupInfo info;
 		TerrainTemplateInfo* template_info;
-		std::unordered_set<GooStrand*> terrain_strands;
+		std::set<std::weak_ptr<GooStrand>, std::owner_less<std::weak_ptr<GooStrand>>> terrain_strands;
 		sf::Sprite display_sprite;
 };
 
