@@ -70,7 +70,8 @@ class TerrainGroup : public Entity {
 		sf::Sprite getThumbnail() override;
 		float getDepth() const override;
 		TerrainGroupInfo& getInfo();
-		void notifyAddStrand(std::weak_ptr<GooStrand> strand) override;
+		void notifyAddStrand(std::shared_ptr<GooStrand> strand) override;
+		void notifyRemoveStrand(std::shared_ptr<GooStrand> strand) override;
 	private:
 		TerrainGroupInfo info;
 		TerrainTemplateInfo* template_info;

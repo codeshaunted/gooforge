@@ -154,11 +154,14 @@ TerrainGroupInfo& TerrainGroup::getInfo() {
     return this->info;
 }
 
-void TerrainGroup::notifyAddStrand(std::weak_ptr<GooStrand> strand) {
-    auto locked_strand = strand.lock();
-    if (locked_strand->getBall1().lock()->getTerrainGroup().lock().get() == this || locked_strand->getBall2().lock()->getTerrainGroup().lock().get() == this) {
+void TerrainGroup::notifyAddStrand(std::shared_ptr<GooStrand> strand) {
+    if (strand->getBall1().lock()->getTerrainGroup().lock().get() == this || strand->getBall2().lock()->getTerrainGroup().lock().get() == this) {
         this->terrain_strands.insert(strand);
     }
+}
+
+void TerrainGroup::notifyRemoveStrand(std::shared_ptr<GooStrand> strand) {
+    this->terrain_strands.erase(strand);
 }
 
 } // namespace gooforge

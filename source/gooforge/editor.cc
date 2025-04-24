@@ -86,7 +86,7 @@ std::expected<void, Error> DeselectEditorAction::revert(Editor* editor) {
 
 std::expected<void, Error> DeleteEditorAction::execute(Editor* editor) {
     for (auto entity : this->entities) {
-        editor->level->deleteEntity(entity);
+        editor->level->removeEntity(entity);
     }
 
     editor->selected_entities.clear();
@@ -177,7 +177,7 @@ void Editor::update(sf::Clock& delta_clock) {
     }
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Delete)) {
-        this->doAction(DeleteEditorAction(this->selected_entities));
+        this->doEntitiesDeletion(this->selected_entities);
     }
 
     if (!std::filesystem::exists(this->wog2_path)) {
@@ -416,7 +416,7 @@ void Editor::registerMainMenuBar() {
         if (ImGui::BeginMenu("Edit")) {
             ImGui::BeginDisabled(this->selected_entities.empty());
             if (ImGui::MenuItem("Delete", "Del")) {
-                this->doAction(DeleteEditorAction(this->selected_entities));
+                this->doEntitiesDeletion(this->selected_entities);
             }
             ImGui::EndDisabled();
 
@@ -820,6 +820,32 @@ bool Editor::registerGooBallTypeCombo(const char* label, GooBallType* type) {
     }
 
     return changed;
+}
+
+void Editor::doEntitiesDeletion(std::vector<std::shared_ptr<Entity>> entities) {
+    std::set<std::shared_ptr<Entity>> implicit_entities;
+
+    for (auto entity : entities) {
+        if (entity->getType() == EntityType::GOO_BALL) {
+            auto ball = static_pointer_cast<GooBall>(entity);
+
+            for (auto strand : ball->getStrands()) {
+                implicit_entities.insert(strand.lock());
+            }
+        }
+    }
+
+    std::vector<std::shared_ptr<Entity>> deleted;
+
+    for (auto entity : implicit_entities) {
+        deleted.push_back(entity);
+    }
+
+    for (auto entity : entities) {
+        deleted.push_back(entity);
+    }
+
+    this->doAction(DeleteEditorAction(deleted));
 }
 
 std::unordered_map<EditorToolType, const char*> Editor::tool_type_to_name = {

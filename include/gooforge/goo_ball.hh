@@ -381,6 +381,7 @@ class GooBall : public Entity {
 		static std::unordered_map<std::string, GooBallType> ball_name_to_type;
 		static std::unordered_map<GooBallType, std::string> ball_type_to_name;
 		void addStrand(std::weak_ptr<GooStrand> strand);
+		std::set<std::weak_ptr<GooStrand>, std::owner_less<std::weak_ptr<GooStrand>>> getStrands();
 	private:
 		std::weak_ptr<TerrainGroup> terrain_group;
 		GooBallInfo info;

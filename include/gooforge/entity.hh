@@ -84,10 +84,10 @@ class Entity {
 		virtual float getRotation() { return 0.0f; }
 		virtual float getDepth() const { return 0.0f; }
 		virtual void setPosition(Vector2f position) {}
-		virtual void notifyAddBall(std::weak_ptr<GooBall> ball) {}
-		virtual void notifyRemoveBall(std::weak_ptr<GooBall> ball) {}
-		virtual void notifyAddStrand(std::weak_ptr<GooStrand> strand) {}
-		virtual void notifyRemoveStrand(std::weak_ptr<GooStrand> strand) {}
+		virtual void notifyAddBall(std::shared_ptr<GooBall> ball) {}
+		virtual void notifyRemoveBall(std::shared_ptr<GooBall> ball) {}
+		virtual void notifyAddStrand(std::shared_ptr<GooStrand> strand) {}
+		virtual void notifyRemoveStrand(std::shared_ptr<GooStrand> strand) {}
 	protected:
 		EntityType type;
 		EntityClickBoundShape* click_bounds = nullptr;

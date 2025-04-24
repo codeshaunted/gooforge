@@ -162,7 +162,7 @@ class Editor {
 		void undoLastAction();
 		void redoLastUndo();
 		void doEntitySelection(std::shared_ptr<Entity> entity);
-		void doEntityDeletion(std::shared_ptr<Entity> entity);
+		void doEntitiesDeletion(std::vector<std::shared_ptr<Entity>> entities);
 		void doOpenFile();
 		void doCloseFile();
 		void registerMainMenuBar();

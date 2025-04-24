@@ -200,9 +200,20 @@ float Level::degreesToRadians(float degrees) {
 	return degrees * (std::numbers::pi / 180.0f);
 }
 
-void Level::deleteEntity(std::shared_ptr<Entity> entity) {
-	this->entities.erase(entity);
-	//delete entity;
+void Level::removeEntity(std::shared_ptr<Entity> entity) {
+	switch (entity->getType()) {
+		case EntityType::GOO_BALL:
+			this->removeBall(std::static_pointer_cast<GooBall>(entity));
+			break;
+		case EntityType::GOO_STRAND:
+			this->removeStrand(std::static_pointer_cast<GooStrand>(entity));
+			break;
+		case EntityType::ITEM_INSTANCE:
+			this->entities.erase(entity);
+			break;
+		default:
+			break;
+	}
 }
 
 void Level::addBall(std::shared_ptr<GooBall> ball) {

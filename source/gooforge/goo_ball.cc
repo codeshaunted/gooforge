@@ -244,4 +244,8 @@ std::weak_ptr<TerrainGroup> GooBall::getTerrainGroup() {
 	return this->terrain_group;
 }
 
+std::set<std::weak_ptr<GooStrand>, std::owner_less<std::weak_ptr<GooStrand>>> GooBall::getStrands() {
+	return this->strands;
+}
+
 } // namespace gooforge
