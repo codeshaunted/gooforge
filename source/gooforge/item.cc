@@ -74,7 +74,7 @@ std::expected<void, Error> ItemInstance::refresh() {
     Vector2f sprite_size_world =
         Level::screenToWorld(sf::Vector2f(sprite_size_screen));
     sprite_size_world.y *=
-        -1.0f;  // correct for flipped y-coordinate compensation
+        -1.0f; // correct for flipped y-coordinate compensation
     float scale_x =
         this->info.scale.x * this->object_info->scale.x *
         (this->info.flipHorizontal != this->object_info->flipHorizontal ? -1.0f
@@ -218,11 +218,11 @@ std::unordered_map<ItemType, std::string> ItemInstance::item_type_to_name = {
 };
 
 ItemType ItemInstance::getItemType() {
-    return this->info_file->items[0].type;  // NOT SAFE!!! todo: fix
+    return this->info_file->items[0].type; // NOT SAFE!!! todo: fix
 }
 
 std::vector<ItemUserVariableInfo> ItemInstance::getUserVariableInfo() {
-    return this->info_file->items[0].userVariables;  // NOT SAFE!!! todo: fix
+    return this->info_file->items[0].userVariables; // NOT SAFE!!! todo: fix
 }
 
 std::vector<ItemInstanceUserVariableInfo>&
@@ -230,4 +230,4 @@ ItemInstance::getInstanceUserVariableInfo() {
     return this->info.userVariables;
 }
 
-}  // namespace gooforge
+} // namespace gooforge

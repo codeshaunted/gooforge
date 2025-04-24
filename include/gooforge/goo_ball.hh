@@ -374,8 +374,11 @@ class GooBall : public Entity {
         std::string getDisplayName() override;
         Vector2f getPosition() override;
         float getRotation() override;
+		void setRotation(float rotation) override;
         float getDepth() const override;
         void setPosition(Vector2f position) override;
+		GooBallType getBallType();
+		void setBallType(GooBallType type);
         GooBallInfo& getInfo();
         BallTemplateInfo* getTemplate();
         std::weak_ptr<TerrainGroup> getTerrainGroup();

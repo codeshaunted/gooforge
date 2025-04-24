@@ -22,6 +22,7 @@
 
 #include <deque>
 #include <filesystem>
+#include <functional>
 #include <variant>
 
 #include "SFML/Graphics.hpp"
@@ -43,11 +44,15 @@ struct MutateInfoEditorAction;
 
 class Editor;
 
+// you gotta add every template specialization to this variant
 // this template shit is horrendous but whatever
 using EditorAction =
     std::variant<MutateInfoEditorAction<GooBallInfo>, SelectEditorAction,
-                 DeselectEditorAction, ModifyPropertyEditorAction<GooBallType>,
-                 ModifyPropertyEditorAction<float>, DeleteEditorAction>;
+                 DeselectEditorAction, DeleteEditorAction,
+                 ModifyPropertyEditorAction<GooBallType>,
+                 ModifyPropertyEditorAction<Vector2f>,
+                 ModifyPropertyEditorAction<float>,
+                 ModifyPropertyEditorAction<bool>>;
 
 struct BaseEditorAction {
         // we define implicit actions as actions executed before the main action
@@ -109,6 +114,8 @@ struct MutateInfoEditorAction : public BaseEditorAction {
                     return std::unexpected(result.error());
                 }
             }
+
+            return std::expected<void, Error>{};
         }
         // std::expected<void, Error> revert(Editor* editor) override;
         std::shared_ptr<Entity> refresh_entity;
@@ -118,41 +125,24 @@ struct MutateInfoEditorAction : public BaseEditorAction {
 
 template <typename T>
 struct ModifyPropertyEditorAction : public BaseEditorAction {
-        ModifyPropertyEditorAction(
-            T* property, T new_value,
-            std::shared_ptr<Entity> refresh_entity = nullptr)
-            : BaseEditorAction({}),
-              property(property),
-              old_value(*property),
-              new_value(new_value),
-              refresh_entity(refresh_entity) {}
+        ModifyPropertyEditorAction(std::function<T()> get,
+                                   std::function<void(T)> set, T new_value)
+            : BaseEditorAction({}), get(get), set(set), new_value(new_value) {}
         std::expected<void, Error> execute(Editor* editor) override {
-            *this->property = new_value;
-            if (this->refresh_entity) {
-                auto result = this->refresh_entity->refresh();
-                if (!result) {
-                    return std::unexpected(result.error());
-                }
-            }
+            this->original_value = this->get();
+            this->set(this->new_value);
 
             return std::expected<void, Error>{};
         }
         std::expected<void, Error> revert(Editor* editor) override {
-            *this->property = old_value;
-
-            if (this->refresh_entity) {
-                auto result = this->refresh_entity->refresh();
-                if (!result) {
-                    return std::unexpected(result.error());
-                }
-            }
+            this->set(this->original_value);
 
             return std::expected<void, Error>{};
         }
-        T* property;
-        T old_value;
+        std::function<T()> get;
+        std::function<void(T)> set;
         T new_value;
-        std::shared_ptr<Entity> refresh_entity;
+        T original_value;
 };
 
 enum class EditorToolType { MOVE = 0, SCALE };
@@ -201,6 +191,9 @@ class Editor {
         void registerResourcesWindow();
         void registerToolbarWindow();
         bool registerGooBallTypeCombo(const char* label, GooBallType* type);
+        template <typename T>
+        void registerPropertiesField(const char* label, std::function<T()> get,
+                                     std::function<void(T)> set);
 
         // we either make everything public or declare every
         // single derived action as a friend class, pick

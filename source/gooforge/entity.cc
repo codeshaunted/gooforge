@@ -110,4 +110,4 @@ void Entity::drawSelection(sf::RenderWindow* window) {
 
 EntityType Entity::getType() { return this->type; }
 
-}  // namespace gooforge
+} // namespace gooforge

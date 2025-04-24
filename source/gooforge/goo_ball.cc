@@ -148,7 +148,13 @@ float GooBall::getDepth() const {
     return 0.1f;
 }
 
-void GooBall::setPosition(Vector2f position) { this->info.pos = position; }
+void GooBall::setPosition(Vector2f position) {
+    this->info.pos = position;
+
+    for (auto strand : this->strands) {
+        strand.lock()->refresh();
+    }
+}
 
 std::unordered_map<std::string, GooBallType> GooBall::ball_name_to_type = {
     {"Invalid", GooBallType::INVALID},
@@ -248,6 +254,19 @@ void GooBall::notifyAddStrand(std::shared_ptr<GooStrand> strand) {
 
 void GooBall::notifyRemoveStrand(std::shared_ptr<GooStrand> strand) {
     this->strands.erase(strand);
+}
+
+GooBallType GooBall::getBallType() {
+    return this->info.typeEnum;
+}
+
+void GooBall::setBallType(GooBallType type) {
+    this->info.typeEnum = type;
+    this->refresh();
+}
+
+void GooBall::setRotation(float rotation) {
+    this->info.angle = rotation;
 }
 
 } // namespace gooforge

@@ -98,4 +98,4 @@ std::string LevelSetupError::getMessage() {
     return "Failed to setup GooBall with error '" + this->setup_error + "'";
 }
 
-}  // namespace gooforge
+} // namespace gooforge

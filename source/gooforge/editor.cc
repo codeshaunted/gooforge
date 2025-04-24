@@ -96,6 +96,91 @@ std::expected<void, Error> DeleteEditorAction::execute(Editor* editor) {
     return std::expected<void, Error>{};
 }
 
+template <>
+void Editor::registerPropertiesField(const char* label,
+                                     std::function<Vector2f()> get,
+                                     std::function<void(Vector2f)> set) {
+    Vector2f value = get();
+    bool modified = false;
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text("%s", label);
+    ImGui::TableSetColumnIndex(1);
+    ImGui::Text("X");
+    ImGui::TableSetColumnIndex(2);
+    modified |=
+        ImGui::InputFloat(std::format("##{}x", label).c_str(), &value.x, 0.0f,
+                          0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::Text("Y");
+    ImGui::TableSetColumnIndex(2);
+    modified |=
+        ImGui::InputFloat(std::format("##{}y", label).c_str(), &value.y, 0.0f,
+                          0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
+
+    if (modified) {
+        this->doAction(ModifyPropertyEditorAction<Vector2f>(get, set, value));
+    }
+}
+
+template <>
+void Editor::registerPropertiesField(const char* label,
+                                     std::function<GooBallType()> get,
+                                     std::function<void(GooBallType)> set) {
+    GooBallType value = get();
+    bool modified = false;
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text(label);
+    ImGui::TableSetColumnIndex(2);
+    if (ImGui::BeginCombo("", GooBall::ball_type_to_name.at(value).c_str())) {
+        for (auto& [name, id] : GooBall::ball_name_to_type) {
+            if (name == "Invalid" || name == "LiquidLevelExit") {
+                continue; // exclude these
+            }
+
+            bool selected = id == value;
+            if (ImGui::Selectable(name.c_str(), selected)) {
+                value = id;
+                modified = true;
+            }
+
+            if (selected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+
+        ImGui::EndCombo();
+    }
+
+    if (modified) {
+        this->doAction(
+            ModifyPropertyEditorAction<GooBallType>(get, set, value));
+    }
+}
+
+template <>
+void Editor::registerPropertiesField(const char* label,
+                                     std::function<float()> get,
+                                     std::function<void(float)> set) {
+    float value = get();
+    bool modified = false;
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text(label);
+    ImGui::TableSetColumnIndex(2);
+    modified |= ImGui::InputFloat(std::format("##{}", label).c_str(), &value, ImGuiInputTextFlags_EnterReturnsTrue);
+
+    if (modified) {
+        this->doAction(ModifyPropertyEditorAction<float>(get, set, value));
+    }
+}
+
 Editor::~Editor() { delete this->level; }
 
 void Editor::initialize() {
@@ -592,43 +677,25 @@ void Editor::registerPropertiesWindow() {
                 ImGui::SeparatorText("General Properties");
                 if (ImGui::BeginTable("General Properties", 3,
                                       ImGuiTableFlags_SizingStretchProp)) {
-                    // type
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Type");
-                    ImGui::TableSetColumnIndex(2);
-                    bool type_updated = this->registerGooBallTypeCombo(
-                        "", &editor_info.typeEnum);
-                    modified |= type_updated;
-                    refresh |= type_updated;
+                    this->registerPropertiesField<GooBallType>(
+                        "Type", [goo_ball] { return goo_ball->getBallType(); },
+                        [goo_ball](GooBallType type) {
+                            goo_ball->setBallType(type);
+                        });
 
-                    // position x
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Position");
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::Text("X");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat(
-                        "##positionx", &editor_info.pos.x, 0.0f, 0.0f, "%.3f",
-                        ImGuiInputTextFlags_EnterReturnsTrue);
+                    this->registerPropertiesField<Vector2f>(
+                        "Position",
+                        [goo_ball] { return goo_ball->getPosition(); },
+                        [goo_ball](Vector2f position) {
+                            goo_ball->setPosition(position);
+                        });
 
-                    // position y
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::Text("Y");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat(
-                        "##positiony", &editor_info.pos.y, 0.0f, 0.0f, "%.3f",
-                        ImGuiInputTextFlags_EnterReturnsTrue);
-
-                    // rotation
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Rotation");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |=
-                        ImGui::InputFloat("##rotation", &editor_info.angle);
+                    this->registerPropertiesField<float>(
+                        "Rotation",
+                        [goo_ball] { return goo_ball->getRotation(); },
+                        [goo_ball](float rotation) {
+                            goo_ball->setRotation(rotation);
+                        });
 
                     // max velocity
                     ImGui::TableNextRow();
@@ -784,8 +851,8 @@ void Editor::registerPropertiesWindow() {
                 }
 
                 if (modified) {
-                    this->doAction(MutateInfoEditorAction(
-                        info, editor_info, refresh ? entity : nullptr));
+                    // this->doAction(MutateInfoEditorAction(
+                    //    info, editor_info, refresh ? entity : nullptr));
                 }
             } else if (entity->getType() == EntityType::ITEM_INSTANCE) {
                 std::shared_ptr<ItemInstance> item_instance =
