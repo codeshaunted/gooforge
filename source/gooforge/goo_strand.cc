@@ -28,57 +28,65 @@
 
 namespace gooforge {
 
-GooStrand::~GooStrand() {
-	delete this->click_bounds;
-}
+GooStrand::~GooStrand() { delete this->click_bounds; }
 
-std::expected<void, Error> GooStrand::setup(GooStrandInfo info, std::weak_ptr<GooBall> ball1, std::weak_ptr<GooBall> ball2) {
-	this->info = info;
-	this->ball1 = ball1;
-	this->ball2 = ball2;
+std::expected<void, Error> GooStrand::setup(GooStrandInfo info,
+                                            std::weak_ptr<GooBall> ball1,
+                                            std::weak_ptr<GooBall> ball2) {
+    this->info = info;
+    this->ball1 = ball1;
+    this->ball2 = ball2;
 
-	return this->refresh();
+    return this->refresh();
 }
 
 std::expected<void, Error> GooStrand::refresh() {
-	std::string resource_id = "GOOFORGE_BALL_TEMPLATE_RESOURCE_" + std::to_string(static_cast<int>(this->info.type));
-	auto template_resource = ResourceManager::getInstance()->getResource<BallTemplateResource>(resource_id);
-	if (!template_resource) {
-		return std::unexpected(template_resource.error());
-	}
+    std::string resource_id = "GOOFORGE_BALL_TEMPLATE_RESOURCE_" +
+                              std::to_string(static_cast<int>(this->info.type));
+    auto template_resource =
+        ResourceManager::getInstance()->getResource<BallTemplateResource>(
+            resource_id);
+    if (!template_resource) {
+        return std::unexpected(template_resource.error());
+    }
 
-	auto template_info = template_resource.value()->get();
-	if (!template_info) {
-		return std::unexpected(template_info.error());
-	}
+    auto template_info = template_resource.value()->get();
+    if (!template_info) {
+        return std::unexpected(template_info.error());
+    }
 
-	this->ball_template = *template_info;
+    this->ball_template = *template_info;
 
-	auto sprite_resource = ResourceManager::getInstance()->getResource<SpriteResource>(this->ball_template->strandImageId.imageId);
-	if (!sprite_resource) {
-		return std::unexpected(sprite_resource.error());
-	}
-	
-	auto sprite = sprite_resource.value()->get();
-	if (!sprite) {
-		return std::unexpected(sprite.error());
-	}
+    auto sprite_resource =
+        ResourceManager::getInstance()->getResource<SpriteResource>(
+            this->ball_template->strandImageId.imageId);
+    if (!sprite_resource) {
+        return std::unexpected(sprite_resource.error());
+    }
 
-	this->display_sprite = *sprite;
+    auto sprite = sprite_resource.value()->get();
+    if (!sprite) {
+        return std::unexpected(sprite.error());
+    }
 
-	if (this->click_bounds) delete this->click_bounds;
-	this->click_bounds = static_cast<EntityClickBoundShape*>(new EntityClickBoundRectangle(Vector2f(this->ball1.lock()->getPosition().distance(this->ball2.lock()->getPosition()), 0.25f)));
+    this->display_sprite = *sprite;
 
-	return std::expected<void, Error>{};
+    if (this->click_bounds) delete this->click_bounds;
+    this->click_bounds =
+        static_cast<EntityClickBoundShape*>(new EntityClickBoundRectangle(
+            Vector2f(this->ball1.lock()->getPosition().distance(
+                         this->ball2.lock()->getPosition()),
+                     0.25f)));
+
+    return std::expected<void, Error>{};
 }
 
-void GooStrand::update() {
-}
+void GooStrand::update() {}
 
 // TODO: make this less awful
 void GooStrand::draw(sf::RenderWindow* window) {
-	/*
-	// Create a line using the positions of the two balls
+    /*
+    // Create a line using the positions of the two balls
     sf::Vertex line[] =
     {
         sf::Vertex(Level::worldToScreen(this->ball1->getPosition())),
@@ -92,64 +100,67 @@ void GooStrand::draw(sf::RenderWindow* window) {
     // Draw the line
     window->draw(line, 2, sf::Lines);*/
 
-	// Set the origin to the center of the sprite
-	sf::FloatRect bounds = this->display_sprite.getLocalBounds();
-	this->display_sprite.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
+    // Set the origin to the center of the sprite
+    sf::FloatRect bounds = this->display_sprite.getLocalBounds();
+    this->display_sprite.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
 
-	auto locked1 = this->ball1.lock();
-	auto locked2 = this->ball2.lock();
+    auto locked1 = this->ball1.lock();
+    auto locked2 = this->ball2.lock();
 
-	// Calculate the distance between the two balls
-	float dx = locked2->info.pos.x - locked1->info.pos.x;
-	float dy = (locked2->info.pos.y - locked1->info.pos.y) * -1.0;
-	float distance = std::sqrt((dx * dx) + (dy * dy));
+    // Calculate the distance between the two balls
+    float dx = locked2->info.pos.x - locked1->info.pos.x;
+    float dy = (locked2->info.pos.y - locked1->info.pos.y) * -1.0;
+    float distance = std::sqrt((dx * dx) + (dy * dy));
 
-	// Set the scale based on the distance
-	float base_scale = 0.5 * this->ball_template->width;
-	float base_height_in_units = (bounds.height / GOOFORGE_PIXELS_PER_UNIT);
-	float base_width_in_units = (bounds.width / GOOFORGE_PIXELS_PER_UNIT);
-	float height_scale = distance / base_height_in_units;
-	float width_scale = this->ball_template->strandThickness / base_width_in_units;
+    // Set the scale based on the distance
+    float base_scale = 0.5 * this->ball_template->width;
+    float base_height_in_units = (bounds.height / GOOFORGE_PIXELS_PER_UNIT);
+    float base_width_in_units = (bounds.width / GOOFORGE_PIXELS_PER_UNIT);
+    float height_scale = distance / base_height_in_units;
+    float width_scale =
+        this->ball_template->strandThickness / base_width_in_units;
 
-	this->display_sprite.setScale(sf::Vector2f(width_scale, height_scale)); // Set x scale to match the distance, y scale is 1.0f for now
+    this->display_sprite.setScale(sf::Vector2f(
+        width_scale, height_scale)); // Set x scale to match the distance, y
+                                     // scale is 1.0f for now
 
-	auto screen_position = Level::worldToScreen(Vector2f((locked1->info.pos.x + locked2->info.pos.x) / 2.0, (locked1->info.pos.y + locked2->info.pos.y) / 2.0));
-	this->display_sprite.setPosition(screen_position);
+    auto screen_position = Level::worldToScreen(
+        Vector2f((locked1->info.pos.x + locked2->info.pos.x) / 2.0,
+                 (locked1->info.pos.y + locked2->info.pos.y) / 2.0));
+    this->display_sprite.setPosition(screen_position);
 
-	// Calculate angle between the two balls
-	float angle = Level::radiansToDegrees(std::atan2(dy, dx));
+    // Calculate angle between the two balls
+    float angle = Level::radiansToDegrees(std::atan2(dy, dx));
 
-	// Set the rotation of the sprite
-	this->display_sprite.setRotation(angle + 90.0);
+    // Set the rotation of the sprite
+    this->display_sprite.setRotation(angle + 90.0);
 
-	// Draw the sprite
-	window->draw(this->display_sprite);
+    // Draw the sprite
+    window->draw(this->display_sprite);
 }
 
-sf::Sprite GooStrand::getThumbnail() {
-	return this->display_sprite;
-}
+sf::Sprite GooStrand::getThumbnail() { return this->display_sprite; }
 
 std::string GooStrand::getDisplayName() {
-	return "GooStrand (" + std::string(GooBall::ball_type_to_name.at(this->info.type)) + ")";
+    return "GooStrand (" +
+           std::string(GooBall::ball_type_to_name.at(this->info.type)) + ")";
 }
 
 Vector2f GooStrand::getPosition() {
-	return (this->ball1.lock()->getPosition() + this->ball2.lock()->getPosition()) * 0.5f;
+    return (this->ball1.lock()->getPosition() +
+            this->ball2.lock()->getPosition()) *
+           0.5f;
 }
 
 float GooStrand::getRotation() {
-	Vector2f delta = this->ball1.lock()->getPosition() - this->ball2.lock()->getPosition();
+    Vector2f delta =
+        this->ball1.lock()->getPosition() - this->ball2.lock()->getPosition();
 
-	return std::atan2f(delta.y, delta.x);
+    return std::atan2f(delta.y, delta.x);
 }
 
-std::weak_ptr<GooBall> GooStrand::getBall1() {
-	return this->ball1;
-}
+std::weak_ptr<GooBall> GooStrand::getBall1() { return this->ball1; }
 
-std::weak_ptr<GooBall> GooStrand::getBall2() {
-	return this->ball2;
-}
+std::weak_ptr<GooBall> GooStrand::getBall2() { return this->ball2; }
 
 } // namespace gooforge

@@ -22,12 +22,12 @@
 #include <format>
 #include <variant>
 
-#include "imgui.h"
-#include "imgui-SFML.h"
-#include "nfd.h"
-#include "spdlog.h"
 #include "glaze/json/read.hpp"
 #include "glaze/json/write.hpp"
+#include "imgui-SFML.h"
+#include "imgui.h"
+#include "nfd.h"
+#include "spdlog.h"
 
 #include "constants.hh"
 #include "resource_manager.hh"
@@ -39,7 +39,7 @@ std::expected<void, Error> SelectEditorAction::execute(Editor* editor) {
         entity->setSelected(true);
         editor->selected_entities.push_back(entity);
     }
-    
+
     return std::expected<void, Error>{};
 }
 
@@ -50,7 +50,8 @@ std::expected<void, Error> SelectEditorAction::revert(Editor* editor) {
         // TODO: use an std::unordered_map so we don't have O(n) deletion
         for (size_t i = 0; i < editor->selected_entities.size(); ++i) {
             if (editor->selected_entities.at(i) == entity) {
-                editor->selected_entities.erase(editor->selected_entities.begin() + i);
+                editor->selected_entities.erase(
+                    editor->selected_entities.begin() + i);
                 break;
             }
         }
@@ -66,7 +67,8 @@ std::expected<void, Error> DeselectEditorAction::execute(Editor* editor) {
         // TODO: use an std::unordered_map so we don't have O(n) deletion
         for (size_t i = 0; i < editor->selected_entities.size(); ++i) {
             if (editor->selected_entities.at(i) == entity) {
-                editor->selected_entities.erase(editor->selected_entities.begin() + i);
+                editor->selected_entities.erase(
+                    editor->selected_entities.begin() + i);
                 break;
             }
         }
@@ -94,9 +96,7 @@ std::expected<void, Error> DeleteEditorAction::execute(Editor* editor) {
     return std::expected<void, Error>{};
 }
 
-Editor::~Editor() {
-    delete this->level;
-}
+Editor::~Editor() { delete this->level; }
 
 void Editor::initialize() {
     this->window.create(sf::VideoMode(1920, 1080), "gooforge");
@@ -123,7 +123,8 @@ void Editor::update(sf::Clock& delta_clock) {
 
     ImGui::SFML::Update(this->window, delta_clock.restart());
 
-    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(),
+                                 ImGuiDockNodeFlags_PassthruCentralNode);
 
     this->registerErrorDialog();
     this->registerSelectWOG2DirectoryDialog();
@@ -140,21 +141,21 @@ void Editor::update(sf::Clock& delta_clock) {
         if (!dragging) {
             dragging = true;
             drag_start = mouse_pos;
-        }
-        else {
+        } else {
             sf::Vector2i drag_delta = drag_start - mouse_pos;
             drag_start = mouse_pos;
 
             if (this->selected_tool == EditorToolType::MOVE) {
-                Vector2f world_drag_delta = Level::screenToWorld(sf::Vector2f(drag_delta)) * this->zoom;
+                Vector2f world_drag_delta =
+                    Level::screenToWorld(sf::Vector2f(drag_delta)) * this->zoom;
 
                 for (std::shared_ptr<Entity> entity : this->selected_entities) {
-                    entity->setPosition(entity->getPosition() - world_drag_delta);
+                    entity->setPosition(entity->getPosition() -
+                                        world_drag_delta);
                 }
             }
         }
-    }
-    else if (dragging) {
+    } else if (dragging) {
         dragging = false;
     }
 
@@ -162,10 +163,11 @@ void Editor::update(sf::Clock& delta_clock) {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::O)) {
             this->doOpenFile();
         }
-        
+
         /*
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Z) && this->undo_clock.getElapsedTime() > this->undo_cooldown) {
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LShift)) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Z) &&
+        this->undo_clock.getElapsedTime() > this->undo_cooldown) { if
+        (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LShift)) {
                 this->redoLastUndo();
             }
             else {
@@ -213,7 +215,8 @@ void Editor::processEvents() {
         }
 
         if (event.type == sf::Event::Resized) {
-            sf::FloatRect visible_area(0.f, 0.f, event.size.width, event.size.height);
+            sf::FloatRect visible_area(0.f, 0.f, event.size.width,
+                                       event.size.height);
             this->view = sf::View(visible_area);
         }
 
@@ -222,12 +225,12 @@ void Editor::processEvents() {
         }
 
         if (event.type == sf::Event::MouseWheelScrolled) {
-            if (event.mouseWheelScroll.wheel == sf::Mouse::Wheel::VerticalWheel) {
+            if (event.mouseWheelScroll.wheel ==
+                sf::Mouse::Wheel::VerticalWheel) {
                 if (event.mouseWheelScroll.delta > 0) {
                     this->view.zoom(0.9f);
                     this->zoom *= 0.9f;
-                }
-                else if (event.mouseWheelScroll.delta < 0) {
+                } else if (event.mouseWheelScroll.delta < 0) {
                     view.zoom(1.1f);
                     this->zoom *= 1.1f;
                 }
@@ -237,27 +240,34 @@ void Editor::processEvents() {
         if (event.type == sf::Event::MouseButtonPressed) {
             if (event.mouseButton.button == sf::Mouse::Middle) {
                 this->panning = true;
-                this->pan_start_position = this->window.mapPixelToCoords(sf::Mouse::getPosition(this->window), this->view);
+                this->pan_start_position = this->window.mapPixelToCoords(
+                    sf::Mouse::getPosition(this->window), this->view);
             }
 
             if (event.mouseButton.button == sf::Mouse::Left) {
                 if (this->level) {
-                    sf::Vector2f screen_click_position = window.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y), this->view);
-                    Vector2f world_click_position = Level::screenToWorld(screen_click_position);
+                    sf::Vector2f screen_click_position =
+                        window.mapPixelToCoords(
+                            sf::Vector2i(event.mouseButton.x,
+                                         event.mouseButton.y),
+                            this->view);
+                    Vector2f world_click_position =
+                        Level::screenToWorld(screen_click_position);
 
                     bool clicked_entity = false;
-                    for (auto entity : std::ranges::reverse_view(this->level->entities)) {
+                    for (auto entity :
+                         std::ranges::reverse_view(this->level->entities)) {
                         if (entity->wasClicked(world_click_position)) {
                             this->doEntitySelection(entity);
-                            
+
                             clicked_entity = true;
                             break;
                         }
                     }
-                    
 
                     if (!clicked_entity && !this->selected_entities.empty()) {
-                        this->doAction(DeselectEditorAction(this->selected_entities));
+                        this->doAction(
+                            DeselectEditorAction(this->selected_entities));
                     }
                 }
             }
@@ -272,8 +282,10 @@ void Editor::processEvents() {
         // Handle mouse movement for panning
         if (event.type == sf::Event::MouseMoved) {
             if (this->panning) {
-                sf::Vector2f pan_position = this->window.mapPixelToCoords(sf::Mouse::getPosition(this->window), this->view);
-                sf::Vector2f delta_pan = this->pan_start_position - pan_position;
+                sf::Vector2f pan_position = this->window.mapPixelToCoords(
+                    sf::Mouse::getPosition(this->window), this->view);
+                sf::Vector2f delta_pan =
+                    this->pan_start_position - pan_position;
                 view.move(delta_pan);
             }
         }
@@ -282,11 +294,19 @@ void Editor::processEvents() {
 
 void Editor::doAction(EditorAction action) {
     this->undo_stack.push_front(action);
-    BaseEditorAction* base_action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, action);
+    BaseEditorAction* base_action = std::visit(
+        [](auto& derived_action) -> BaseEditorAction* {
+            return &derived_action;
+        },
+        action);
 
     // execute all implicit actions first
     for (EditorAction implicit_action : base_action->implicit_actions) {
-        BaseEditorAction* base_implicit_action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, implicit_action);
+        BaseEditorAction* base_implicit_action = std::visit(
+            [](auto& derived_action) -> BaseEditorAction* {
+                return &derived_action;
+            },
+            implicit_action);
         base_implicit_action->execute(this);
     }
 
@@ -296,14 +316,22 @@ void Editor::doAction(EditorAction action) {
 
 void Editor::undoAction(EditorAction action) {
     this->redo_stack.push_front(action);
-    BaseEditorAction* base_action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, action);
+    BaseEditorAction* base_action = std::visit(
+        [](auto& derived_action) -> BaseEditorAction* {
+            return &derived_action;
+        },
+        action);
 
     // revert the main (final) action first
     base_action->revert(this);
 
     // revert all implicit actions after
     for (EditorAction implicit_action : base_action->implicit_actions) {
-        BaseEditorAction* base_implicit_action = std::visit([](auto& derived_action) -> BaseEditorAction* { return &derived_action; }, implicit_action);
+        BaseEditorAction* base_implicit_action = std::visit(
+            [](auto& derived_action) -> BaseEditorAction* {
+                return &derived_action;
+            },
+            implicit_action);
         base_implicit_action->revert(this);
     }
 }
@@ -328,34 +356,35 @@ void Editor::redoLastUndo() {
 void Editor::doEntitySelection(std::shared_ptr<Entity> entity) {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
         if (entity->getSelected()) {
-            this->doAction(DeselectEditorAction({ entity }));
+            this->doAction(DeselectEditorAction({entity}));
+        } else {
+            this->doAction(SelectEditorAction({entity}));
         }
-        else {
-            this->doAction(SelectEditorAction({ entity }));
-        }
-    }
-    else {
-        this->doAction(SelectEditorAction({ entity }, { DeselectEditorAction(this->selected_entities) }));
+    } else {
+        this->doAction(SelectEditorAction(
+            {entity}, {DeselectEditorAction(this->selected_entities)}));
     }
 }
 
 void Editor::doOpenFile() {
     NFD_Init();
     nfdu8char_t* out_path;
-    nfdu8filteritem_t filters[2] = { {"World Of Goo 2", "wog2"} };
-    nfdopendialogu8args_t args = { 0 };
+    nfdu8filteritem_t filters[2] = {{"World Of Goo 2", "wog2"}};
+    nfdopendialogu8args_t args = {0};
     args.filterList = filters;
     args.filterCount = 1;
     nfdresult_t result = NFD_OpenDialogU8_With(&out_path, &args);
     if (result == NFD_OKAY) {
         LevelInfo level_info;
         std::string buffer;
-        auto level_info_error = glz::read_file_json < glz::opts{ .error_on_unknown_keys = false } > (level_info, out_path, buffer);
+        auto level_info_error =
+            glz::read_file_json<glz::opts{.error_on_unknown_keys = false}>(
+                level_info, out_path, buffer);
 
         if (level_info_error) {
-            this->errors.push_back(JSONDeserializeError(out_path, glz::format_error(level_info_error, buffer)));
-        }
-        else {
+            this->errors.push_back(JSONDeserializeError(
+                out_path, glz::format_error(level_info_error, buffer)));
+        } else {
             this->level_file_path = out_path;
             this->level = new Level();
             auto setup_result = this->level->setup(level_info);
@@ -392,13 +421,16 @@ void Editor::registerMainMenuBar() {
 
             if (ImGui::MenuItem("Save", "Ctrl+S")) {
                 if (this->level) {
-                    auto ec = glz::write_file_json < glz::opts{ .prettify = true } > (this->level->getInfo(), this->level_file_path, std::string{});
+                    auto ec = glz::write_file_json<glz::opts{.prettify = true}>(
+                        this->level->getInfo(), this->level_file_path,
+                        std::string{});
                 }
             }
-            
+
             ImGui::BeginDisabled(); // todo: make work
             if (ImGui::MenuItem("Save As", "Ctrl+Shift+S")) {
-                auto ec = glz::write_file_json<glz::opts{ .prettify = true }>(this->level->info, "./obj.json", std::string{});
+                auto ec = glz::write_file_json<glz::opts{.prettify = true}>(
+                    this->level->info, "./obj.json", std::string{});
             }
             ImGui::EndDisabled();
 
@@ -441,11 +473,16 @@ void Editor::registerMainMenuBar() {
 }
 
 void Editor::registerErrorDialog() {
-    if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (ImGui::BeginPopupModal("Error", nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize)) {
         std::string message = "";
         if (!this->errors.empty()) {
             Error error_value = this->errors.back();
-            BaseError* base_error = std::visit([](auto& derived_error) -> BaseError* { return &derived_error; }, error_value);
+            BaseError* base_error = std::visit(
+                [](auto& derived_error) -> BaseError* {
+                    return &derived_error;
+                },
+                error_value);
             message = base_error->getMessage();
         }
 
@@ -461,13 +498,14 @@ void Editor::registerErrorDialog() {
     }
 }
 
-void Editor::showErrorDialog() {
-    ImGui::OpenPopup("Error");
-}
+void Editor::showErrorDialog() { ImGui::OpenPopup("Error"); }
 
 void Editor::registerSelectWOG2DirectoryDialog() {
-    if (ImGui::BeginPopupModal("Select World of Goo 2 Install", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("Please select the 'game' directory in your World of Goo 2 install:");
+    if (ImGui::BeginPopupModal("Select World of Goo 2 Install", nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text(
+            "Please select the 'game' directory in your World of Goo 2 "
+            "install:");
 
         static char directory_path[512] = "";
         ImGui::InputText(" ", directory_path, IM_ARRAYSIZE(directory_path));
@@ -510,7 +548,8 @@ void Editor::registerLevelWindow() {
             ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
 
             ImGui::PushID(static_cast<int>(entity_i));
-            if (ImGui::Selectable("", entity->getSelected(), ImGuiSelectableFlags_SpanAllColumns)) {
+            if (ImGui::Selectable("", entity->getSelected(),
+                                  ImGuiSelectableFlags_SpanAllColumns)) {
                 this->doEntitySelection(entity);
             }
 
@@ -537,25 +576,29 @@ void Editor::registerPropertiesWindow() {
             std::string text = entity->getDisplayName();
             ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
 
-            ImGui::Image(entity->getThumbnail(), ImVec2(textSize.y * 2.0f, textSize.y * 2.0f));
+            ImGui::Image(entity->getThumbnail(),
+                         ImVec2(textSize.y * 2.0f, textSize.y * 2.0f));
             ImGui::SameLine();
             ImGui::Text(text.c_str());
 
             if (entity->getType() == EntityType::GOO_BALL) {
-                std::shared_ptr<GooBall> goo_ball = static_pointer_cast<GooBall>(entity);
+                std::shared_ptr<GooBall> goo_ball =
+                    static_pointer_cast<GooBall>(entity);
                 GooBallInfo& info = goo_ball->getInfo();
                 GooBallInfo editor_info = info;
                 bool modified = false;
                 bool refresh = false;
-                
+
                 ImGui::SeparatorText("General Properties");
-                if (ImGui::BeginTable("General Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
+                if (ImGui::BeginTable("General Properties", 3,
+                                      ImGuiTableFlags_SizingStretchProp)) {
                     // type
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Type");
                     ImGui::TableSetColumnIndex(2);
-                    bool type_updated = this->registerGooBallTypeCombo("", &editor_info.typeEnum);
+                    bool type_updated = this->registerGooBallTypeCombo(
+                        "", &editor_info.typeEnum);
                     modified |= type_updated;
                     refresh |= type_updated;
 
@@ -566,144 +609,169 @@ void Editor::registerPropertiesWindow() {
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("X");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat("##positionx", &editor_info.pos.x, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
+                    modified |= ImGui::InputFloat(
+                        "##positionx", &editor_info.pos.x, 0.0f, 0.0f, "%.3f",
+                        ImGuiInputTextFlags_EnterReturnsTrue);
 
                     // position y
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("Y");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat("##positiony", &editor_info.pos.y, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
+                    modified |= ImGui::InputFloat(
+                        "##positiony", &editor_info.pos.y, 0.0f, 0.0f, "%.3f",
+                        ImGuiInputTextFlags_EnterReturnsTrue);
 
                     // rotation
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Rotation");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat("##rotation", &editor_info.angle);
+                    modified |=
+                        ImGui::InputFloat("##rotation", &editor_info.angle);
 
                     // max velocity
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Maximum Velocity");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat("##maxvelocity", &editor_info.maxVelocity);
+                    modified |= ImGui::InputFloat("##maxvelocity",
+                                                  &editor_info.maxVelocity);
 
                     // stiffness
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Stiffness");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat("##stiffness", &editor_info.stiffness);
+                    modified |= ImGui::InputFloat("##stiffness",
+                                                  &editor_info.stiffness);
 
                     // detonation radius
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Detonation Radius");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat("##detonationradius", &editor_info.detonationRadius);
+                    modified |= ImGui::InputFloat(
+                        "##detonationradius", &editor_info.detonationRadius);
 
                     // detonation force
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Detonation Force");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat("##detonationforce", &editor_info.detonationForce);
+                    modified |= ImGui::InputFloat("##detonationforce",
+                                                  &editor_info.detonationForce);
 
                     // discovered
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Discovered");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::Checkbox("##discovered", &editor_info.discovered);
+                    modified |= ImGui::Checkbox("##discovered",
+                                                &editor_info.discovered);
 
                     // floating while asleep
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Float While Asleep");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::Checkbox("##floatingwhileasleep", &editor_info.floatingWhileAsleep);
+                    modified |=
+                        ImGui::Checkbox("##floatingwhileasleep",
+                                        &editor_info.floatingWhileAsleep);
 
                     // interactive
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Interactive");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::Checkbox("##interactive", &editor_info.interactive);
+                    modified |= ImGui::Checkbox("##interactive",
+                                                &editor_info.interactive);
 
                     // wake with liquid
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Wake With Liquid");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::Checkbox("##wakewithliquid", &editor_info.wakeWithLiquid);
+                    modified |= ImGui::Checkbox("##wakewithliquid",
+                                                &editor_info.wakeWithLiquid);
 
                     // exit pipe alert
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Exit Pipe Alert");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::Checkbox("##exitpipealert", &editor_info.exitPipeAlert);
+                    modified |= ImGui::Checkbox("##exitpipealert",
+                                                &editor_info.exitPipeAlert);
 
                     // affects auto bounds
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Affects Auto Bounds");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::Checkbox("##affectsautobounds", &editor_info.affectsAutoBounds);
+                    modified |= ImGui::Checkbox("##affectsautobounds",
+                                                &editor_info.affectsAutoBounds);
 
                     // filled
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Filled");
                     ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::Checkbox("##filled", &editor_info.filled);
+                    modified |=
+                        ImGui::Checkbox("##filled", &editor_info.filled);
 
                     ImGui::EndTable();
                 }
 
-                if (info.typeEnum == GooBallType::LAUNCHER_L2B || info.typeEnum == GooBallType::LAUNCHER_L2L) {
+                if (info.typeEnum == GooBallType::LAUNCHER_L2B ||
+                    info.typeEnum == GooBallType::LAUNCHER_L2L) {
                     ImGui::SeparatorText("Launcher Properties");
-                    if (ImGui::BeginTable("Launcher Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
+                    if (ImGui::BeginTable("Launcher Properties", 3,
+                                          ImGuiTableFlags_SizingStretchProp)) {
                         if (info.typeEnum == GooBallType::LAUNCHER_L2L) {
                             ImGui::TableNextRow();
                             ImGui::TableSetColumnIndex(0);
                             ImGui::Text("Ball Type To Generate");
                             ImGui::TableSetColumnIndex(2);
-                            this->registerGooBallTypeCombo("", &info.launcherBallTypeToGenerate);
+                            this->registerGooBallTypeCombo(
+                                "", &info.launcherBallTypeToGenerate);
                         }
 
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text("Minimum Lifespan");
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat("##launcherlifespanmin", &info.launcherLifespanMin);
+                        ImGui::InputFloat("##launcherlifespanmin",
+                                          &info.launcherLifespanMin);
 
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text("Maximum Lifespan");
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat("##launcherlifespanmax", &info.launcherLifespanMax);
+                        ImGui::InputFloat("##launcherlifespanmax",
+                                          &info.launcherLifespanMax);
 
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text("Knockback Factor");
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat("##knockbackfactor", &info.launcherKnockbackFactor);
+                        ImGui::InputFloat("##knockbackfactor",
+                                          &info.launcherKnockbackFactor);
 
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text("Can Use Balls");
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::Checkbox("##launchercanuseballs", &info.launcherCanUseBalls);
+                        ImGui::Checkbox("##launchercanuseballs",
+                                        &info.launcherCanUseBalls);
 
                         ImGui::EndTable();
                     }
                 }
-                
+
                 if (info.typeEnum == GooBallType::THRUSTER) {
                     ImGui::SeparatorText("Thruster Properties");
-                    if (ImGui::BeginTable("Thruster Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
+                    if (ImGui::BeginTable("Thruster Properties", 3,
+                                          ImGuiTableFlags_SizingStretchProp)) {
                         ImGui::TableNextRow();
                         ImGui::SeparatorText("Thruster");
                         ImGui::TableSetColumnIndex(0);
@@ -716,20 +784,24 @@ void Editor::registerPropertiesWindow() {
                 }
 
                 if (modified) {
-                    this->doAction(MutateInfoEditorAction(info, editor_info, refresh ? entity : nullptr));
+                    this->doAction(MutateInfoEditorAction(
+                        info, editor_info, refresh ? entity : nullptr));
                 }
             } else if (entity->getType() == EntityType::ITEM_INSTANCE) {
-                std::shared_ptr<ItemInstance> item_instance = static_pointer_cast<ItemInstance>(entity);
+                std::shared_ptr<ItemInstance> item_instance =
+                    static_pointer_cast<ItemInstance>(entity);
                 ItemInstanceInfo& info = item_instance->getInfo();
 
                 ImGui::SeparatorText("General Properties");
-                if (ImGui::BeginTable("General Properties", 3, ImGuiTableFlags_SizingStretchProp)) {
+                if (ImGui::BeginTable("General Properties", 3,
+                                      ImGuiTableFlags_SizingStretchProp)) {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("Type");
                     ImGui::TableSetColumnIndex(2);
                     static char type_text[128];
-                    std::strncpy(type_text, info.type.c_str(), sizeof(type_text));
+                    std::strncpy(type_text, info.type.c_str(),
+                                 sizeof(type_text));
                     ImGui::InputText("##type", type_text, sizeof(type_text));
                     info.type = type_text;
 
@@ -742,18 +814,25 @@ void Editor::registerPropertiesWindow() {
                     ImGui::EndTable();
                 }
 
-                std::string type_properties_table_name = ItemInstance::item_type_to_name[item_instance->getItemType()] + " Properties";
+                std::string type_properties_table_name =
+                    ItemInstance::item_type_to_name[item_instance
+                                                        ->getItemType()] +
+                    " Properties";
 
                 ImGui::SeparatorText(type_properties_table_name.c_str());
-                if (ImGui::BeginTable(type_properties_table_name.c_str(), 3, ImGuiTableFlags_SizingStretchProp)) {
-                    std::vector<ItemInstanceUserVariableInfo>& var_data = item_instance->getInstanceUserVariableInfo();
+                if (ImGui::BeginTable(type_properties_table_name.c_str(), 3,
+                                      ImGuiTableFlags_SizingStretchProp)) {
+                    std::vector<ItemInstanceUserVariableInfo>& var_data =
+                        item_instance->getInstanceUserVariableInfo();
                     size_t i = 0;
-                    for (ItemUserVariableInfo var : item_instance->getUserVariableInfo()) {
+                    for (ItemUserVariableInfo var :
+                         item_instance->getUserVariableInfo()) {
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text(var.name.c_str());
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat(("##" + var.name).c_str(), &var_data[i].value);
+                        ImGui::InputFloat(("##" + var.name).c_str(),
+                                          &var_data[i].value);
                         ++i;
                     }
 
@@ -780,13 +859,15 @@ void Editor::registerToolbarWindow() {
         EditorToolType tool = static_cast<EditorToolType>(i);
 
         if (tool == this->selected_tool) {
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 1.0f, 1.0f));
-        }
-        else {
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_Button,
+                                  ImVec4(0.3f, 0.6f, 1.0f, 1.0f));
+        } else {
+            ImGui::PushStyleColor(ImGuiCol_Button,
+                                  ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
         }
 
-        if (ImGui::Button(Editor::tool_type_to_name[tool])) this->selected_tool = tool;
+        if (ImGui::Button(Editor::tool_type_to_name[tool]))
+            this->selected_tool = tool;
 
         ImGui::PopStyleColor();
 
@@ -799,7 +880,8 @@ void Editor::registerToolbarWindow() {
 // returns true if changed
 bool Editor::registerGooBallTypeCombo(const char* label, GooBallType* type) {
     bool changed = false;
-    if (ImGui::BeginCombo(label, GooBall::ball_type_to_name.at(*type).c_str())) {
+    if (ImGui::BeginCombo(label,
+                          GooBall::ball_type_to_name.at(*type).c_str())) {
         for (auto& [name, id] : GooBall::ball_name_to_type) {
             if (name == "Invalid" || name == "LiquidLevelExit") {
                 continue; // exclude these
@@ -849,8 +931,6 @@ void Editor::doEntitiesDeletion(std::vector<std::shared_ptr<Entity>> entities) {
 }
 
 std::unordered_map<EditorToolType, const char*> Editor::tool_type_to_name = {
-    {EditorToolType::MOVE, "Move"},
-    {EditorToolType::SCALE, "Scale"}
-};
+    {EditorToolType::MOVE, "Move"}, {EditorToolType::SCALE, "Scale"}};
 
 } // namespace gooforge

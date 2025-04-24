@@ -28,35 +28,38 @@
 namespace gooforge {
 
 struct GooStrandInfo {
-	unsigned int ball1UID;
-	unsigned int ball2UID;
-	GooBallType type;
-	bool filled;
+        unsigned int ball1UID;
+        unsigned int ball2UID;
+        GooBallType type;
+        bool filled;
 };
 
 class GooStrand : public Entity {
-	public:
-		GooStrand() : Entity(EntityType::GOO_STRAND) {}
-		~GooStrand() override;
-		std::expected<void, Error> setup(GooStrandInfo info, std::weak_ptr<GooBall> ball1, std::weak_ptr<GooBall> ball2);
-		std::expected<void, Error> refresh() override;
-		sf::Sprite getThumbnail() override;
-		std::string getDisplayName() override;
-		Vector2f getPosition() override;
-		float getRotation() override;
-		std::weak_ptr<GooBall> getBall1();
-		std::weak_ptr<GooBall> getBall2();
-		void update() override;
-		void draw(sf::RenderWindow* window) override;
-	private:
-		std::weak_ptr<GooBall> ball1;
-		std::weak_ptr<GooBall> ball2;
-		GooStrandInfo info;
-		BallTemplateInfo* ball_template = nullptr;
-		sf::Sprite display_sprite;
+    public:
+        GooStrand() : Entity(EntityType::GOO_STRAND) {}
+        ~GooStrand() override;
+        std::expected<void, Error> setup(GooStrandInfo info,
+                                         std::weak_ptr<GooBall> ball1,
+                                         std::weak_ptr<GooBall> ball2);
+        std::expected<void, Error> refresh() override;
+        sf::Sprite getThumbnail() override;
+        std::string getDisplayName() override;
+        Vector2f getPosition() override;
+        float getRotation() override;
+        std::weak_ptr<GooBall> getBall1();
+        std::weak_ptr<GooBall> getBall2();
+        void update() override;
+        void draw(sf::RenderWindow* window) override;
 
-	friend class TerrainGroup;
-	friend class Level;
+    private:
+        std::weak_ptr<GooBall> ball1;
+        std::weak_ptr<GooBall> ball2;
+        GooStrandInfo info;
+        BallTemplateInfo* ball_template = nullptr;
+        sf::Sprite display_sprite;
+
+        friend class TerrainGroup;
+        friend class Level;
 };
 
 } // namespace gooforge

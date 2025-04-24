@@ -20,8 +20,8 @@
 #ifndef GOOFORGE_EDITOR_HH
 #define GOOFORGE_EDITOR_HH
 
-#include <filesystem>
 #include <deque>
+#include <filesystem>
 #include <variant>
 
 #include "SFML/Graphics.hpp"
@@ -44,144 +44,170 @@ struct MutateInfoEditorAction;
 class Editor;
 
 // this template shit is horrendous but whatever
-using EditorAction = std::variant<MutateInfoEditorAction<GooBallInfo>, SelectEditorAction, DeselectEditorAction, ModifyPropertyEditorAction<GooBallType>, ModifyPropertyEditorAction<float>, DeleteEditorAction>;
+using EditorAction =
+    std::variant<MutateInfoEditorAction<GooBallInfo>, SelectEditorAction,
+                 DeselectEditorAction, ModifyPropertyEditorAction<GooBallType>,
+                 ModifyPropertyEditorAction<float>, DeleteEditorAction>;
 
 struct BaseEditorAction {
-	// we define implicit actions as actions executed before the main action is to be executed
-	// this is needed for stuff like selection, where we want to deselect all when a user selects
-	// a single entity in the editor window
-	BaseEditorAction(std::vector<EditorAction> implicit_actions) : implicit_actions(implicit_actions) {}
-	virtual std::expected<void, Error> execute(Editor* editor) { return std::expected<void, Error>{}; }
-	virtual std::expected<void, Error> revert(Editor* editor) { return std::expected<void, Error>{}; }
-	std::vector<EditorAction> implicit_actions;
+        // we define implicit actions as actions executed before the main action
+        // is to be executed this is needed for stuff like selection, where we
+        // want to deselect all when a user selects a single entity in the
+        // editor window
+        BaseEditorAction(std::vector<EditorAction> implicit_actions)
+            : implicit_actions(implicit_actions) {}
+        virtual std::expected<void, Error> execute(Editor* editor) {
+            return std::expected<void, Error>{};
+        }
+        virtual std::expected<void, Error> revert(Editor* editor) {
+            return std::expected<void, Error>{};
+        }
+        std::vector<EditorAction> implicit_actions;
 };
 
 struct SelectEditorAction : public BaseEditorAction {
-	SelectEditorAction(std::vector<std::shared_ptr<Entity>> entities, std::vector<EditorAction> implicit_actions = {}) : BaseEditorAction(implicit_actions), entities(entities) {}
-	std::expected<void, Error> execute(Editor* editor) override;
-	std::expected<void, Error> revert(Editor* editor) override;
-	std::vector<std::shared_ptr<Entity>> entities;
+        SelectEditorAction(std::vector<std::shared_ptr<Entity>> entities,
+                           std::vector<EditorAction> implicit_actions = {})
+            : BaseEditorAction(implicit_actions), entities(entities) {}
+        std::expected<void, Error> execute(Editor* editor) override;
+        std::expected<void, Error> revert(Editor* editor) override;
+        std::vector<std::shared_ptr<Entity>> entities;
 };
 
 struct DeselectEditorAction : public BaseEditorAction {
-	DeselectEditorAction(std::vector<std::shared_ptr<Entity>> entities, std::vector<EditorAction> implicit_actions = {}) : BaseEditorAction(implicit_actions), entities(entities) {}
-	std::expected<void, Error> execute(Editor* editor) override;
-	std::expected<void, Error> revert(Editor* editor) override;
-	std::vector<std::shared_ptr<Entity>> entities;
+        DeselectEditorAction(std::vector<std::shared_ptr<Entity>> entities,
+                             std::vector<EditorAction> implicit_actions = {})
+            : BaseEditorAction(implicit_actions), entities(entities) {}
+        std::expected<void, Error> execute(Editor* editor) override;
+        std::expected<void, Error> revert(Editor* editor) override;
+        std::vector<std::shared_ptr<Entity>> entities;
 };
 
 struct DeleteEditorAction : public BaseEditorAction {
-	DeleteEditorAction(std::vector<std::shared_ptr<Entity>> entities, std::vector<EditorAction> implicit_actions = {}) : BaseEditorAction(implicit_actions), entities(entities) {}
-	std::expected<void, Error> execute(Editor* editor) override;
-	//std::expected<void, Error> revert(Editor* editor) override;
-	std::vector<std::shared_ptr<Entity>> entities;
+        DeleteEditorAction(std::vector<std::shared_ptr<Entity>> entities,
+                           std::vector<EditorAction> implicit_actions = {})
+            : BaseEditorAction(implicit_actions), entities(entities) {}
+        std::expected<void, Error> execute(Editor* editor) override;
+        // std::expected<void, Error> revert(Editor* editor) override;
+        std::vector<std::shared_ptr<Entity>> entities;
 };
 
-template<typename T>
+template <typename T>
 struct MutateInfoEditorAction : public BaseEditorAction {
-	MutateInfoEditorAction(T& info, T new_info, std::shared_ptr<Entity> refresh_entity = nullptr) : BaseEditorAction({}), info(info), new_info(new_info), refresh_entity(refresh_entity) {}
-	std::expected<void, Error> execute(Editor* editor) override {
-		this->info = this->new_info;
-		
-		if (this->refresh_entity) {
-			auto result = this->refresh_entity->refresh();
-			if (!result) {
-				return std::unexpected(result.error());
-			}
-		}
-	}
-	//std::expected<void, Error> revert(Editor* editor) override;
-	std::shared_ptr<Entity> refresh_entity;
-	T& info;
-	T new_info;
+        MutateInfoEditorAction(T& info, T new_info,
+                               std::shared_ptr<Entity> refresh_entity = nullptr)
+            : BaseEditorAction({}),
+              info(info),
+              new_info(new_info),
+              refresh_entity(refresh_entity) {}
+        std::expected<void, Error> execute(Editor* editor) override {
+            this->info = this->new_info;
+
+            if (this->refresh_entity) {
+                auto result = this->refresh_entity->refresh();
+                if (!result) {
+                    return std::unexpected(result.error());
+                }
+            }
+        }
+        // std::expected<void, Error> revert(Editor* editor) override;
+        std::shared_ptr<Entity> refresh_entity;
+        T& info;
+        T new_info;
 };
 
-template<typename T>
+template <typename T>
 struct ModifyPropertyEditorAction : public BaseEditorAction {
-	ModifyPropertyEditorAction(T* property, T new_value, std::shared_ptr<Entity> refresh_entity = nullptr) : BaseEditorAction({}), property(property), old_value(*property), new_value(new_value), refresh_entity(refresh_entity) {}
-	std::expected<void, Error> execute(Editor* editor) override {
-		*this->property = new_value;
-		if (this->refresh_entity) {
-			auto result = this->refresh_entity->refresh();
-			if (!result) {
-				return std::unexpected(result.error());
-			}
-		}
+        ModifyPropertyEditorAction(
+            T* property, T new_value,
+            std::shared_ptr<Entity> refresh_entity = nullptr)
+            : BaseEditorAction({}),
+              property(property),
+              old_value(*property),
+              new_value(new_value),
+              refresh_entity(refresh_entity) {}
+        std::expected<void, Error> execute(Editor* editor) override {
+            *this->property = new_value;
+            if (this->refresh_entity) {
+                auto result = this->refresh_entity->refresh();
+                if (!result) {
+                    return std::unexpected(result.error());
+                }
+            }
 
-		return std::expected<void, Error>{};
-	}
-	std::expected<void, Error> revert(Editor* editor) override {
-		*this->property = old_value;
-		
-		if (this->refresh_entity) {
-			auto result = this->refresh_entity->refresh();
-			if (!result) {
-				return std::unexpected(result.error());
-			}
-		}
+            return std::expected<void, Error>{};
+        }
+        std::expected<void, Error> revert(Editor* editor) override {
+            *this->property = old_value;
 
-		return std::expected<void, Error>{};
-	}
-	T* property;
-	T old_value;
-	T new_value;
-	std::shared_ptr<Entity> refresh_entity;
+            if (this->refresh_entity) {
+                auto result = this->refresh_entity->refresh();
+                if (!result) {
+                    return std::unexpected(result.error());
+                }
+            }
+
+            return std::expected<void, Error>{};
+        }
+        T* property;
+        T old_value;
+        T new_value;
+        std::shared_ptr<Entity> refresh_entity;
 };
 
-enum class EditorToolType {
-	MOVE = 0,
-	SCALE
-};
+enum class EditorToolType { MOVE = 0, SCALE };
 
 class Editor {
-	public:
-		~Editor();
-		void initialize();
-	private:
-		static std::unordered_map<EditorToolType, const char*> tool_type_to_name;
-		sf::RenderWindow window;
-		sf::View view;
-		float zoom = 1.0f;
-		bool panning = false;
-		sf::Vector2f pan_start_position;
-		std::filesystem::path wog2_path;
-		std::vector<Error> errors;
-		Level* level = nullptr;
-		std::string level_file_path;
-		std::vector<std::shared_ptr<Entity>> selected_entities;
-		std::deque<EditorAction> undo_stack;
-		sf::Clock undo_clock;
-		sf::Time undo_cooldown = sf::milliseconds(200);
-		std::deque<EditorAction> redo_stack;
-		EditorToolType selected_tool = EditorToolType::MOVE;
-		void update(sf::Clock& delta_clock);
-		void draw();
-		void processEvents();
-		void doAction(EditorAction action);
-		void undoAction(EditorAction action);
-		void undoLastAction();
-		void redoLastUndo();
-		void doEntitySelection(std::shared_ptr<Entity> entity);
-		void doEntitiesDeletion(std::vector<std::shared_ptr<Entity>> entities);
-		void doOpenFile();
-		void doCloseFile();
-		void registerMainMenuBar();
-		void registerErrorDialog();
-		void showErrorDialog();
-		void registerSelectWOG2DirectoryDialog();
-		void showSelectWOG2DirectoryDialog();
-		void registerLevelWindow();
-		void registerPropertiesWindow();
-		void registerResourcesWindow();
-		void registerToolbarWindow();
-		bool registerGooBallTypeCombo(const char* label, GooBallType* type);
+    public:
+        ~Editor();
+        void initialize();
 
-	// we either make everything public or declare every
-	// single derived action as a friend class, pick
-	// your poison, or maybe just structure it better? :P
-	friend struct SelectEditorAction;
-	friend struct DeselectEditorAction;
-	friend struct DeleteEditorAction;
+    private:
+        static std::unordered_map<EditorToolType, const char*>
+            tool_type_to_name;
+        sf::RenderWindow window;
+        sf::View view;
+        float zoom = 1.0f;
+        bool panning = false;
+        sf::Vector2f pan_start_position;
+        std::filesystem::path wog2_path;
+        std::vector<Error> errors;
+        Level* level = nullptr;
+        std::string level_file_path;
+        std::vector<std::shared_ptr<Entity>> selected_entities;
+        std::deque<EditorAction> undo_stack;
+        sf::Clock undo_clock;
+        sf::Time undo_cooldown = sf::milliseconds(200);
+        std::deque<EditorAction> redo_stack;
+        EditorToolType selected_tool = EditorToolType::MOVE;
+        void update(sf::Clock& delta_clock);
+        void draw();
+        void processEvents();
+        void doAction(EditorAction action);
+        void undoAction(EditorAction action);
+        void undoLastAction();
+        void redoLastUndo();
+        void doEntitySelection(std::shared_ptr<Entity> entity);
+        void doEntitiesDeletion(std::vector<std::shared_ptr<Entity>> entities);
+        void doOpenFile();
+        void doCloseFile();
+        void registerMainMenuBar();
+        void registerErrorDialog();
+        void showErrorDialog();
+        void registerSelectWOG2DirectoryDialog();
+        void showSelectWOG2DirectoryDialog();
+        void registerLevelWindow();
+        void registerPropertiesWindow();
+        void registerResourcesWindow();
+        void registerToolbarWindow();
+        bool registerGooBallTypeCombo(const char* label, GooBallType* type);
+
+        // we either make everything public or declare every
+        // single derived action as a friend class, pick
+        // your poison, or maybe just structure it better? :P
+        friend struct SelectEditorAction;
+        friend struct DeselectEditorAction;
+        friend struct DeleteEditorAction;
 };
 
 } // namespace gooforge

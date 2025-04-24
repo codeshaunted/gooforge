@@ -31,7 +31,8 @@ namespace gooforge {
 
 class BoyImage {
     public:
-        static std::expected<sf::Image, Error> loadFromFile(std::string_view path);
+        static std::expected<sf::Image, Error> loadFromFile(
+            std::string_view path);
 };
 
 } // namespace gooforge

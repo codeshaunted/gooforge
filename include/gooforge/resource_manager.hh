@@ -43,6 +43,7 @@ class BaseResource {
         BaseResource(std::string path) : path(path) {}
         virtual ~BaseResource();
         virtual void unload() {}
+
     protected:
         std::string path;
 };
@@ -50,9 +51,13 @@ class BaseResource {
 class SpriteResource : public BaseResource {
     public:
         SpriteResource(std::string path) : BaseResource(path) {}
-        SpriteResource(std::string atlas_sprite_path, sf::IntRect atlas_rect) : BaseResource(atlas_sprite_path), atlas_sprite(true), atlas_rect(atlas_rect) {}
+        SpriteResource(std::string atlas_sprite_path, sf::IntRect atlas_rect)
+            : BaseResource(atlas_sprite_path),
+              atlas_sprite(true),
+              atlas_rect(atlas_rect) {}
         std::expected<sf::Sprite, Error> get();
         void unload() override;
+
     private:
         sf::Texture* texture = nullptr;
         bool atlas_sprite = false;
@@ -64,6 +69,7 @@ class BallTemplateResource : public BaseResource {
         BallTemplateResource(std::string path) : BaseResource(path) {}
         std::expected<BallTemplateInfo*, Error> get();
         void unload() override;
+
     private:
         BallTemplateInfo* info = nullptr;
 };
@@ -73,6 +79,7 @@ class ItemResource : public BaseResource {
         ItemResource(std::string path) : BaseResource(path) {}
         std::expected<ItemInfoFile*, Error> get();
         void unload() override;
+
     private:
         ItemInfoFile* info_file = nullptr;
 };
@@ -82,28 +89,35 @@ class TerrainTemplatesResource : public BaseResource {
         TerrainTemplatesResource(std::string path) : BaseResource(path) {}
         std::expected<TerrainTemplateInfoFile*, Error> get();
         void unload() override;
+
     private:
         TerrainTemplateInfoFile* info_file = nullptr;
 };
 
-using Resource = std::variant<SpriteResource, BallTemplateResource, ItemResource, TerrainTemplatesResource>;
+using Resource = std::variant<SpriteResource, BallTemplateResource,
+                              ItemResource, TerrainTemplatesResource>;
 
 class ResourceManager {
     public:
         ~ResourceManager();
         static ResourceManager* getInstance();
-        std::expected<void, Error> takeInventory(std::filesystem::path& base_path);
-        std::expected<void, Error> loadResourceManifest(std::filesystem::path& path);
-        std::expected<void, Error> loadAtlasManifest(std::filesystem::path& path);
-        template<typename T> std::expected<T*, Error> getResource(std::string id);
+        std::expected<void, Error> takeInventory(
+            std::filesystem::path& base_path);
+        std::expected<void, Error> loadResourceManifest(
+            std::filesystem::path& path);
+        std::expected<void, Error> loadAtlasManifest(
+            std::filesystem::path& path);
+        template <typename T>
+        std::expected<T*, Error> getResource(std::string id);
         void unloadAll();
+
     private:
         static ResourceManager* instance;
         std::filesystem::path base_path;
         std::unordered_map<std::string, Resource*> resources;
 };
 
-template<typename T>
+template <typename T>
 std::expected<T*, Error> ResourceManager::getResource(std::string id) {
     if (!this->resources.contains(id)) {
         return std::unexpected(ResourceNotFoundError(id));

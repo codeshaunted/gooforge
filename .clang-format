@@ -1,0 +1,14 @@
+BasedOnStyle: Google
+IndentWidth: 4
+UseTab: Never
+# https://github.com/llvm/llvm-project/issues/61631
+IndentAccessModifiers: true
+SpacesBeforeTrailingComments: 1
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<[^>]*>$'
+    Priority: 1
+  - Regex: '^"(.*(pugixml|imgui|nfd|glaze|spdlog|zstd|SFML).*)"$'
+    Priority: 2
+  - Regex: '^"[^"]*"$'
+    Priority: 3

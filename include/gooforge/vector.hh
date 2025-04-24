@@ -27,15 +27,15 @@
 namespace gooforge {
 
 struct Vector2f {
-	float x;
-	float y;
+        float x;
+        float y;
 
-	float distance(const Vector2f& other) const;
-	Vector2f abs() const;
-	Vector2f operator+(const Vector2f& other) const;
-	Vector2f operator-(const Vector2f& other) const;
-	Vector2f operator*(float scalar) const;
-	Vector2f operator*=(float scalar);
+        float distance(const Vector2f& other) const;
+        Vector2f abs() const;
+        Vector2f operator+(const Vector2f& other) const;
+        Vector2f operator-(const Vector2f& other) const;
+        Vector2f operator*(float scalar) const;
+        Vector2f operator*=(float scalar);
 };
 
 } // namespace gooforge

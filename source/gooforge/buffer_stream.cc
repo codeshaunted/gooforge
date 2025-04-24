@@ -31,8 +31,6 @@ void BufferStream::seek(size_t seek_index, bool absolute) {
     this->index = absolute_index;
 }
 
-char* BufferStream::remainder() {
-    return this->buffer + this->index;
-}
+char* BufferStream::remainder() { return this->buffer + this->index; }
 
 } // namespace gooforge

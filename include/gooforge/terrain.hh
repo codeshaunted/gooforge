@@ -29,54 +29,57 @@ class GooBall;
 class GooStrand;
 
 struct TerrainGroupInfo {
-	Vector2f textureOffset;
-	std::string typeUuid;
-	int typeIndex;
-	int sortOffset;
-	float depth;
-	bool foreground;
-	bool collision;
-	bool destructable;
-	bool buildable;
-	bool occluder;
+        Vector2f textureOffset;
+        std::string typeUuid;
+        int typeIndex;
+        int sortOffset;
+        float depth;
+        bool foreground;
+        bool collision;
+        bool destructable;
+        bool buildable;
+        bool occluder;
 };
 
 struct TerrainTemplateImageIdInfo {
-	std::string imageId;
+        std::string imageId;
 };
 
 struct TerrainTemplateBaseSettingsInfo {
-	TerrainTemplateImageIdInfo image;
+        TerrainTemplateImageIdInfo image;
 };
 
 struct TerrainTemplateInfo {
-	std::string uuid;
-	std::string name;
-	TerrainTemplateBaseSettingsInfo baseSettings;
+        std::string uuid;
+        std::string name;
+        TerrainTemplateBaseSettingsInfo baseSettings;
 };
 
 struct TerrainTemplateInfoFile {
-	std::vector<TerrainTemplateInfo> terrainTypes;
+        std::vector<TerrainTemplateInfo> terrainTypes;
 };
 
 class TerrainGroup : public Entity {
-	public:
-		TerrainGroup() : Entity(EntityType::TERRAIN_GROUP) {}
-		std::expected<void, Error> setup(TerrainGroupInfo info);
-		std::expected<void, Error> refresh();
-		void update() override;
-		void draw(sf::RenderWindow* window) override;
-		std::string getDisplayName() override;
-		sf::Sprite getThumbnail() override;
-		float getDepth() const override;
-		TerrainGroupInfo& getInfo();
-		void notifyAddStrand(std::shared_ptr<GooStrand> strand) override;
-		void notifyRemoveStrand(std::shared_ptr<GooStrand> strand) override;
-	private:
-		TerrainGroupInfo info;
-		TerrainTemplateInfo* template_info;
-		std::set<std::weak_ptr<GooStrand>, std::owner_less<std::weak_ptr<GooStrand>>> terrain_strands;
-		sf::Sprite display_sprite;
+    public:
+        TerrainGroup() : Entity(EntityType::TERRAIN_GROUP) {}
+        std::expected<void, Error> setup(TerrainGroupInfo info);
+        std::expected<void, Error> refresh();
+        void update() override;
+        void draw(sf::RenderWindow* window) override;
+        std::string getDisplayName() override;
+        sf::Sprite getThumbnail() override;
+        float getDepth() const override;
+        TerrainGroupInfo& getInfo();
+        void notifyAddStrand(std::shared_ptr<GooStrand> strand) override;
+        void notifyRemoveStrand(std::shared_ptr<GooStrand> strand) override;
+
+    private:
+        TerrainGroupInfo info;
+        TerrainTemplateInfo* template_info;
+        std::set<std::weak_ptr<GooStrand>,
+                 std::owner_less<std::weak_ptr<GooStrand>>>
+            terrain_strands;
+        sf::Sprite display_sprite;
 };
 
 } // namespace gooforge

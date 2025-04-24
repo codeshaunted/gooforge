@@ -17,13 +17,12 @@
 // You should have received a copy of the GNU General Public License
 // along with gooforge. If not, see <https://www.gnu.org/licenses/>.
 
-#include "item.hh"
-
 #include <numbers>
 #include <ranges>
 #include <unordered_set>
 
 #include "constants.hh"
+#include "item.hh"
 #include "level.hh"
 #include "resource_manager.hh"
 
@@ -36,15 +35,17 @@ std::expected<void, Error> TerrainGroup::setup(TerrainGroupInfo info) {
 }
 
 std::expected<void, Error> TerrainGroup::refresh() {
-    auto template_resource = ResourceManager::getInstance()->getResource<TerrainTemplatesResource>("GOOFORGE_TERRAIN_TEMPLATES_RESOURCE");
-	if (!template_resource) {
-		return std::unexpected(template_resource.error());
-	}
+    auto template_resource =
+        ResourceManager::getInstance()->getResource<TerrainTemplatesResource>(
+            "GOOFORGE_TERRAIN_TEMPLATES_RESOURCE");
+    if (!template_resource) {
+        return std::unexpected(template_resource.error());
+    }
 
-	auto template_info_file = template_resource.value()->get();
-	if (!template_info_file) {
-		return std::unexpected(template_info_file.error());
-	}
+    auto template_info_file = template_resource.value()->get();
+    if (!template_info_file) {
+        return std::unexpected(template_info_file.error());
+    }
 
     // TODO: handle not found case
     for (auto& terrain_template : (*template_info_file)->terrainTypes) {
@@ -54,24 +55,24 @@ std::expected<void, Error> TerrainGroup::refresh() {
         }
     }
 
-    auto sprite_resource = ResourceManager::getInstance()->getResource<SpriteResource>(this->template_info->baseSettings.image.imageId);
-	if (!sprite_resource) {
-		return std::unexpected(sprite_resource.error());
-	}
-			
-	auto sprite = sprite_resource.value()->get();
-	if (!sprite) {
-		return std::unexpected(sprite.error());
-	}
+    auto sprite_resource =
+        ResourceManager::getInstance()->getResource<SpriteResource>(
+            this->template_info->baseSettings.image.imageId);
+    if (!sprite_resource) {
+        return std::unexpected(sprite_resource.error());
+    }
 
-	this->display_sprite = *sprite;
+    auto sprite = sprite_resource.value()->get();
+    if (!sprite) {
+        return std::unexpected(sprite.error());
+    }
 
-	return std::expected<void, Error>{};
+    this->display_sprite = *sprite;
+
+    return std::expected<void, Error>{};
 }
 
-void TerrainGroup::update() {
-
-}
+void TerrainGroup::update() {}
 
 void TerrainGroup::draw(sf::RenderWindow* window) {
     // Create a render state with the texture
@@ -79,13 +80,14 @@ void TerrainGroup::draw(sf::RenderWindow* window) {
     sf::Texture texture = *this->display_sprite.getTexture();
     texture.setRepeated(true);
     states.texture = &texture;
-    
+
     for (auto strand : this->terrain_strands) {
         auto locked_strand = strand.lock();
         auto locked1 = locked_strand->ball1.lock();
         auto locked2 = locked_strand->ball2.lock();
 
-        auto u = locked1->strands.size() < locked2->strands.size() ? locked1 : locked2;
+        auto u = locked1->strands.size() < locked2->strands.size() ? locked1
+                                                                   : locked2;
         auto v = u == locked1 ? locked2 : locked1;
         std::unordered_set<std::shared_ptr<GooBall>> v_neighbors;
         for (auto v_strand : v->strands) {
@@ -102,7 +104,7 @@ void TerrainGroup::draw(sf::RenderWindow* window) {
             auto locked_w2 = locked_w_strand->ball2.lock();
 
             auto w = locked_w1 == u ? locked_w2 : locked_w1;
-           
+
             if (w != v && v_neighbors.contains(w)) {
                 sf::VertexArray tri(sf::PrimitiveType::Triangles, 3);
 
@@ -110,17 +112,18 @@ void TerrainGroup::draw(sf::RenderWindow* window) {
                 tri[0].position = Level::worldToScreen(u->info.pos);
                 tri[1].position = Level::worldToScreen(v->info.pos);
                 tri[2].position = Level::worldToScreen(w->info.pos);
-                
+
                 // Set texture coordinates based on world positions
                 tri[0].texCoords = tri[0].position;
                 tri[1].texCoords = tri[1].position;
                 tri[2].texCoords = tri[2].position;
 
-                // Set colors to white to ensure texture is visible with proper coloring
+                // Set colors to white to ensure texture is visible with proper
+                // coloring
                 tri[0].color = sf::Color::White;
                 tri[1].color = sf::Color::White;
                 tri[2].color = sf::Color::White;
-                
+
                 // Draw with texture using render states
                 window->draw(tri, states);
             }
@@ -130,32 +133,29 @@ void TerrainGroup::draw(sf::RenderWindow* window) {
     for (auto strand : this->terrain_strands) {
         auto locked_strand = strand.lock();
         sf::VertexArray line(sf::Lines, 2);
-        line[0].position = Level::worldToScreen(locked_strand->getBall1().lock()->getPosition());
+        line[0].position = Level::worldToScreen(
+            locked_strand->getBall1().lock()->getPosition());
         line[0].color = sf::Color::Green;
-        line[1].position = Level::worldToScreen(locked_strand->getBall2().lock()->getPosition());
+        line[1].position = Level::worldToScreen(
+            locked_strand->getBall2().lock()->getPosition());
         line[1].color = sf::Color::Green;
         window->draw(line);
     }
 }
 
 std::string TerrainGroup::getDisplayName() {
-	return "TerrainGroup (" + this->template_info->name + ")";
+    return "TerrainGroup (" + this->template_info->name + ")";
 }
 
-sf::Sprite TerrainGroup::getThumbnail() {
-    return this->display_sprite;
-}
+sf::Sprite TerrainGroup::getThumbnail() { return this->display_sprite; }
 
-float TerrainGroup::getDepth() const {
-    return this->info.depth;
-}
+float TerrainGroup::getDepth() const { return this->info.depth; }
 
-TerrainGroupInfo& TerrainGroup::getInfo() {
-    return this->info;
-}
+TerrainGroupInfo& TerrainGroup::getInfo() { return this->info; }
 
 void TerrainGroup::notifyAddStrand(std::shared_ptr<GooStrand> strand) {
-    if (strand->getBall1().lock()->getTerrainGroup().lock().get() == this || strand->getBall2().lock()->getTerrainGroup().lock().get() == this) {
+    if (strand->getBall1().lock()->getTerrainGroup().lock().get() == this ||
+        strand->getBall2().lock()->getTerrainGroup().lock().get() == this) {
         this->terrain_strands.insert(strand);
     }
 }

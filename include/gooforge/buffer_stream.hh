@@ -27,18 +27,20 @@ namespace gooforge {
 
 class BufferStream {
     public:
-        BufferStream(char* buffer, size_t buffer_size) : buffer(buffer), buffer_size(buffer_size), index(0) {}
-        template<typename T>
+        BufferStream(char* buffer, size_t buffer_size)
+            : buffer(buffer), buffer_size(buffer_size), index(0) {}
+        template <typename T>
         T read();
         void seek(size_t seek_index, bool absolute = false);
         char* remainder();
+
     private:
         char* buffer;
         size_t buffer_size;
         size_t index;
 };
 
-template<typename T>
+template <typename T>
 T BufferStream::read() {
     if (this->index + sizeof(T) > buffer_size) {
         throw std::out_of_range("BufferStream::read out of range");

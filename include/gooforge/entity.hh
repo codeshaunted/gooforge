@@ -20,6 +20,8 @@
 #ifndef GOOFORGE_ENTITY_HH
 #define GOOFORGE_ENTITY_HH
 
+#include <memory>
+
 #include "SFML/Graphics.hpp"
 
 #include "vector.hh"
@@ -30,73 +32,78 @@ class GooBall;
 class GooStrand;
 
 enum class Layer {
-	BACKGROUND = 0,
-	TERRAIN,
-	GAMEPLAY,
-	FOREGROUND,
-	MISC,
-	DECORATIONS
+    BACKGROUND = 0,
+    TERRAIN,
+    GAMEPLAY,
+    FOREGROUND,
+    MISC,
+    DECORATIONS
 };
 
-enum class EntityClickBoundShapeType {
-	CIRCLE,
-	RECTANGLE
-};
+enum class EntityClickBoundShapeType { CIRCLE, RECTANGLE };
 
 struct EntityClickBoundShape {
-	EntityClickBoundShape(EntityClickBoundShapeType type) : type(type) {}
-	EntityClickBoundShapeType type;
+        EntityClickBoundShape(EntityClickBoundShapeType type) : type(type) {}
+        EntityClickBoundShapeType type;
 };
 
 struct EntityClickBoundCircle : public EntityClickBoundShape {
-	EntityClickBoundCircle(float radius) : EntityClickBoundShape(EntityClickBoundShapeType::CIRCLE), radius(radius) {}
-	float radius;
+        EntityClickBoundCircle(float radius)
+            : EntityClickBoundShape(EntityClickBoundShapeType::CIRCLE),
+              radius(radius) {}
+        float radius;
 };
 
 struct EntityClickBoundRectangle : public EntityClickBoundShape {
-	EntityClickBoundRectangle(Vector2f size, Vector2f pivot = Vector2f(0.5f, 0.5f)) : EntityClickBoundShape(EntityClickBoundShapeType::RECTANGLE), size(size), pivot(pivot) {}
-	Vector2f size;
-	Vector2f pivot;
+        EntityClickBoundRectangle(Vector2f size,
+                                  Vector2f pivot = Vector2f(0.5f, 0.5f))
+            : EntityClickBoundShape(EntityClickBoundShapeType::RECTANGLE),
+              size(size),
+              pivot(pivot) {}
+        Vector2f size;
+        Vector2f pivot;
 };
 
 enum class EntityType {
-	GOO_BALL = 0,
-	GOO_STRAND,
-	ITEM_INSTANCE,
-	TERRAIN_GROUP
+    GOO_BALL = 0,
+    GOO_STRAND,
+    ITEM_INSTANCE,
+    TERRAIN_GROUP
 };
 
 class Entity {
-	public:
-		Entity(EntityType type) : type(type) {}
-		virtual ~Entity() {}
-		virtual std::expected<void, Error> refresh() { return std::expected<void, Error>{}; }
-		virtual void update() {}
-		virtual void draw(sf::RenderWindow* window) {}
-		virtual sf::Sprite getThumbnail() { return sf::Sprite(); }
-		virtual std::string getDisplayName() { return ""; }
-		bool wasClicked(Vector2f point);
-		bool getSelected();
-		void setSelected(bool selected);
-		void drawSelection(sf::RenderWindow* window);
-		EntityType getType();
-		virtual Vector2f getPosition() { return Vector2f(0.0f, 0.0f); }
-		virtual float getRotation() { return 0.0f; }
-		virtual float getDepth() const { return 0.0f; }
-		virtual void setPosition(Vector2f position) {}
-		virtual void notifyAddBall(std::shared_ptr<GooBall> ball) {}
-		virtual void notifyRemoveBall(std::shared_ptr<GooBall> ball) {}
-		virtual void notifyAddStrand(std::shared_ptr<GooStrand> strand) {}
-		virtual void notifyRemoveStrand(std::shared_ptr<GooStrand> strand) {}
-	protected:
-		EntityType type;
-		EntityClickBoundShape* click_bounds = nullptr;
-		bool selected = false;
-		Layer layer;
-		float rotation;
+    public:
+        Entity(EntityType type) : type(type) {}
+        virtual ~Entity() {}
+        virtual std::expected<void, Error> refresh() {
+            return std::expected<void, Error>{};
+        }
+        virtual void update() {}
+        virtual void draw(sf::RenderWindow* window) {}
+        virtual sf::Sprite getThumbnail() { return sf::Sprite(); }
+        virtual std::string getDisplayName() { return ""; }
+        bool wasClicked(Vector2f point);
+        bool getSelected();
+        void setSelected(bool selected);
+        void drawSelection(sf::RenderWindow* window);
+        EntityType getType();
+        virtual Vector2f getPosition() { return Vector2f(0.0f, 0.0f); }
+        virtual float getRotation() { return 0.0f; }
+        virtual float getDepth() const { return 0.0f; }
+        virtual void setPosition(Vector2f position) {}
+        virtual void notifyAddBall(std::shared_ptr<GooBall> ball) {}
+        virtual void notifyRemoveBall(std::shared_ptr<GooBall> ball) {}
+        virtual void notifyAddStrand(std::shared_ptr<GooStrand> strand) {}
+        virtual void notifyRemoveStrand(std::shared_ptr<GooStrand> strand) {}
 
-	friend class Level;
-	friend struct EntityDepthComparator;
+    protected:
+        EntityType type;
+        EntityClickBoundShape* click_bounds = nullptr;
+        bool selected = false;
+        float rotation;
+
+        friend class Level;
+        friend struct EntityDepthComparator;
 };
 
 } // namespace gooforge

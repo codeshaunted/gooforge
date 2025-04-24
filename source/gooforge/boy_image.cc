@@ -42,25 +42,31 @@ std::expected<sf::Image, Error> BoyImage::loadFromFile(std::string_view path) {
 
     file.close();
 
-    size_t decompressed_size = ZSTD_getFrameContentSize(compressed_data, compressed_data_size);
+    size_t decompressed_size =
+        ZSTD_getFrameContentSize(compressed_data, compressed_data_size);
     if (ZSTD_isError(decompressed_size)) {
         delete[] compressed_data;
-        return std::unexpected(FileDecompressionError(std::string(path), decompressed_size));
+        return std::unexpected(
+            FileDecompressionError(std::string(path), decompressed_size));
     }
 
     // some files wont decompress with the getFrameContentSize result...
-    // for now just do decompressed_size * 2, TODO: switch to stream decompression
+    // for now just do decompressed_size * 2, TODO: switch to stream
+    // decompression
     uint8_t* decompressed_data = new uint8_t[decompressed_size * 2];
-    size_t result = ZSTD_decompress(decompressed_data, decompressed_size * 2, compressed_data, compressed_data_size);
+    size_t result = ZSTD_decompress(decompressed_data, decompressed_size * 2,
+                                    compressed_data, compressed_data_size);
     if (ZSTD_isError(result)) {
         delete[] compressed_data;
         delete[] decompressed_data;
-        return std::unexpected(FileDecompressionError(std::string(path), result));
+        return std::unexpected(
+            FileDecompressionError(std::string(path), result));
     }
 
     delete[] compressed_data;
 
-    BufferStream stream(reinterpret_cast<char*>(decompressed_data), decompressed_size);
+    BufferStream stream(reinterpret_cast<char*>(decompressed_data),
+                        decompressed_size);
     stream.seek(36); // skip first part of header
 
     uint32_t pixel_width = stream.read<uint32_t>();
