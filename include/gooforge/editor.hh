@@ -100,6 +100,7 @@ struct DeleteEditorAction : public EditorAction {
         std::expected<void, Error> execute(Editor* editor) override;
         std::expected<void, Error> revert(Editor* editor) override;
         std::vector<Entity*> entities;
+        bool reverted = false;
 };
 
 template <typename T>

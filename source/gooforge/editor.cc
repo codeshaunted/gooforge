@@ -87,6 +87,8 @@ std::expected<void, Error> DeselectEditorAction::revert(Editor* editor) {
 }
 
 DeleteEditorAction::~DeleteEditorAction() {
+    if (reverted) return; // we don't want to run this if the delete was reverted and is getting cleared in the redo stack
+
     // THIS IS WHERE ALL ENTITIES WILL BE ACTUALLY DELETED
     // we keep them around in here so that undo/redo works
     for (auto entity : this->entities) {
@@ -95,6 +97,8 @@ DeleteEditorAction::~DeleteEditorAction() {
 }
 
 std::expected<void, Error> DeleteEditorAction::execute(Editor* editor) {
+    this->reverted = false;
+
     for (auto entity : this->entities) {
         editor->level->removeEntity(entity);
     }
@@ -103,6 +107,8 @@ std::expected<void, Error> DeleteEditorAction::execute(Editor* editor) {
 }
 
 std::expected<void, Error> DeleteEditorAction::revert(Editor* editor) {
+    this->reverted = true;
+
     for (auto entity : std::ranges::reverse_view(this->entities)) {
         editor->level->addEntity(entity);
     }
@@ -331,6 +337,7 @@ void Editor::draw() {
 void Editor::processEvents() {
     sf::Event event;
     while (this->window.pollEvent(event)) {
+        ImGuiIO& io = ImGui::GetIO();
         ImGui::SFML::ProcessEvent(this->window, event);
 
         if (event.type == sf::Event::Closed) {
@@ -343,7 +350,7 @@ void Editor::processEvents() {
             this->view = sf::View(visible_area);
         }
 
-        if (ImGui::IsAnyItemHovered()) {
+        if (io.WantCaptureMouse) {
             continue;
         }
 
