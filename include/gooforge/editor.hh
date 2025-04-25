@@ -39,27 +39,27 @@ struct DeselectEditorAction;
 struct DeleteEditorAction;
 template <typename T>
 struct ModifyPropertyEditorAction;
-template <typename T>
-struct MutateInfoEditorAction;
 
 class Editor;
 
 // you gotta add every template specialization to this variant
 // this template shit is horrendous but whatever
+/*
 using EditorAction =
-    std::variant<MutateInfoEditorAction<GooBallInfo>, SelectEditorAction,
+    std::variant<SelectEditorAction,
                  DeselectEditorAction, DeleteEditorAction,
                  ModifyPropertyEditorAction<GooBallType>,
                  ModifyPropertyEditorAction<Vector2f>,
                  ModifyPropertyEditorAction<float>,
-                 ModifyPropertyEditorAction<bool>>;
+                 ModifyPropertyEditorAction<bool>>;*/
 
-struct BaseEditorAction {
+struct EditorAction {
         // we define implicit actions as actions executed before the main action
         // is to be executed this is needed for stuff like selection, where we
         // want to deselect all when a user selects a single entity in the
         // editor window
-        BaseEditorAction(std::vector<EditorAction> implicit_actions)
+        EditorAction(
+            std::vector<EditorAction*> implicit_actions)
             : implicit_actions(implicit_actions) {}
         virtual std::expected<void, Error> execute(Editor* editor) {
             return std::expected<void, Error>{};
@@ -67,67 +67,44 @@ struct BaseEditorAction {
         virtual std::expected<void, Error> revert(Editor* editor) {
             return std::expected<void, Error>{};
         }
-        std::vector<EditorAction> implicit_actions;
+        std::vector<EditorAction*> implicit_actions;
 };
 
-struct SelectEditorAction : public BaseEditorAction {
-        SelectEditorAction(std::vector<std::shared_ptr<Entity>> entities,
-                           std::vector<EditorAction> implicit_actions = {})
-            : BaseEditorAction(implicit_actions), entities(entities) {}
+struct SelectEditorAction : public EditorAction {
+        SelectEditorAction(
+            std::vector<std::shared_ptr<Entity>> entities,
+            std::vector<EditorAction*> implicit_actions = {})
+            : EditorAction(implicit_actions), entities(entities) {}
         std::expected<void, Error> execute(Editor* editor) override;
         std::expected<void, Error> revert(Editor* editor) override;
         std::vector<std::shared_ptr<Entity>> entities;
 };
 
-struct DeselectEditorAction : public BaseEditorAction {
-        DeselectEditorAction(std::vector<std::shared_ptr<Entity>> entities,
-                             std::vector<EditorAction> implicit_actions = {})
-            : BaseEditorAction(implicit_actions), entities(entities) {}
+struct DeselectEditorAction : public EditorAction {
+        DeselectEditorAction(
+            std::vector<std::shared_ptr<Entity>> entities,
+            std::vector<EditorAction*> implicit_actions = {})
+            : EditorAction(implicit_actions), entities(entities) {}
         std::expected<void, Error> execute(Editor* editor) override;
         std::expected<void, Error> revert(Editor* editor) override;
         std::vector<std::shared_ptr<Entity>> entities;
 };
 
-struct DeleteEditorAction : public BaseEditorAction {
-        DeleteEditorAction(std::vector<std::shared_ptr<Entity>> entities,
-                           std::vector<EditorAction> implicit_actions = {})
-            : BaseEditorAction(implicit_actions), entities(entities) {}
+struct DeleteEditorAction : public EditorAction {
+        DeleteEditorAction(
+            std::vector<std::shared_ptr<Entity>> entities,
+            std::vector<EditorAction*> implicit_actions = {})
+            : EditorAction(implicit_actions), entities(entities) {}
         std::expected<void, Error> execute(Editor* editor) override;
-        // std::expected<void, Error> revert(Editor* editor) override;
+        std::expected<void, Error> revert(Editor* editor) override;
         std::vector<std::shared_ptr<Entity>> entities;
 };
 
 template <typename T>
-struct MutateInfoEditorAction : public BaseEditorAction {
-        MutateInfoEditorAction(T& info, T new_info,
-                               std::shared_ptr<Entity> refresh_entity = nullptr)
-            : BaseEditorAction({}),
-              info(info),
-              new_info(new_info),
-              refresh_entity(refresh_entity) {}
-        std::expected<void, Error> execute(Editor* editor) override {
-            this->info = this->new_info;
-
-            if (this->refresh_entity) {
-                auto result = this->refresh_entity->refresh();
-                if (!result) {
-                    return std::unexpected(result.error());
-                }
-            }
-
-            return std::expected<void, Error>{};
-        }
-        // std::expected<void, Error> revert(Editor* editor) override;
-        std::shared_ptr<Entity> refresh_entity;
-        T& info;
-        T new_info;
-};
-
-template <typename T>
-struct ModifyPropertyEditorAction : public BaseEditorAction {
+struct ModifyPropertyEditorAction : public EditorAction {
         ModifyPropertyEditorAction(std::function<T()> get,
                                    std::function<void(T)> set, T new_value)
-            : BaseEditorAction({}), get(get), set(set), new_value(new_value) {}
+            : EditorAction({}), get(get), set(set), new_value(new_value) {}
         std::expected<void, Error> execute(Editor* editor) override {
             this->original_value = this->get();
             this->set(this->new_value);
@@ -165,16 +142,16 @@ class Editor {
         Level* level = nullptr;
         std::string level_file_path;
         std::vector<std::shared_ptr<Entity>> selected_entities;
-        std::deque<EditorAction> undo_stack;
+        std::deque<EditorAction*> undo_stack;
         sf::Clock undo_clock;
         sf::Time undo_cooldown = sf::milliseconds(200);
-        std::deque<EditorAction> redo_stack;
+        std::deque<EditorAction*> redo_stack;
         EditorToolType selected_tool = EditorToolType::MOVE;
         void update(sf::Clock& delta_clock);
         void draw();
         void processEvents();
-        void doAction(EditorAction action);
-        void undoAction(EditorAction action);
+        void doAction(EditorAction* action);
+        void undoAction(EditorAction* action);
         void undoLastAction();
         void redoLastUndo();
         void doEntitySelection(std::shared_ptr<Entity> entity);

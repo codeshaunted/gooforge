@@ -117,6 +117,7 @@ class Level {
         static float degreesToRadians(float degrees);
         LevelInfo& getInfo();
         void removeEntity(std::shared_ptr<Entity> entity);
+		void addEntity(std::shared_ptr<Entity> entity);
         void addBall(std::shared_ptr<GooBall> ball);
         void removeBall(std::shared_ptr<GooBall> ball);
         void addStrand(std::shared_ptr<GooStrand> strand);

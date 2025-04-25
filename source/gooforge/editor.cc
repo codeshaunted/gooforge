@@ -91,7 +91,13 @@ std::expected<void, Error> DeleteEditorAction::execute(Editor* editor) {
         editor->level->removeEntity(entity);
     }
 
-    editor->selected_entities.clear();
+    return std::expected<void, Error>{};
+}
+
+std::expected<void, Error> DeleteEditorAction::revert(Editor* editor) {
+    for (auto entity : std::ranges::reverse_view(this->entities)) {
+        editor->level->addEntity(entity);
+    }
 
     return std::expected<void, Error>{};
 }
@@ -105,7 +111,7 @@ void Editor::registerPropertiesField(const char* label,
 
     ImGui::TableNextRow();
     ImGui::TableSetColumnIndex(0);
-    ImGui::Text("%s", label);
+    ImGui::Text(label);
     ImGui::TableSetColumnIndex(1);
     ImGui::Text("X");
     ImGui::TableSetColumnIndex(2);
@@ -122,7 +128,8 @@ void Editor::registerPropertiesField(const char* label,
                           0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
 
     if (modified) {
-        this->doAction(ModifyPropertyEditorAction<Vector2f>(get, set, value));
+        this->doAction(
+            new ModifyPropertyEditorAction<Vector2f>(get, set, value));
     }
 }
 
@@ -159,7 +166,7 @@ void Editor::registerPropertiesField(const char* label,
 
     if (modified) {
         this->doAction(
-            ModifyPropertyEditorAction<GooBallType>(get, set, value));
+            new ModifyPropertyEditorAction<GooBallType>(get, set, value));
     }
 }
 
@@ -174,18 +181,30 @@ void Editor::registerPropertiesField(const char* label,
     ImGui::TableSetColumnIndex(0);
     ImGui::Text(label);
     ImGui::TableSetColumnIndex(2);
-    modified |= ImGui::InputFloat(std::format("##{}", label).c_str(), &value, ImGuiInputTextFlags_EnterReturnsTrue);
+    modified |= ImGui::InputFloat(std::format("##{}", label).c_str(), &value,
+                                  ImGuiInputTextFlags_EnterReturnsTrue);
 
     if (modified) {
-        this->doAction(ModifyPropertyEditorAction<float>(get, set, value));
+        this->doAction(new ModifyPropertyEditorAction<float>(get, set, value));
     }
 }
 
-template<>
+template <>
 void Editor::registerPropertiesField(const char* label,
-    std::function<bool()> get,
-    std::function<void(bool)> set) {
+                                     std::function<bool()> get,
+                                     std::function<void(bool)> set) {
+    bool value = get();
+    bool modified = false;
 
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text(label);
+    ImGui::TableSetColumnIndex(2);
+    modified |= ImGui::Checkbox(std::format("##{}", label).c_str(), &value);
+
+    if (modified) {
+        this->doAction(new ModifyPropertyEditorAction<bool>(get, set, value));
+    }
 }
 
 Editor::~Editor() { delete this->level; }
@@ -237,15 +256,20 @@ void Editor::update(sf::Clock& delta_clock) {
             sf::Vector2i drag_delta = drag_start - mouse_pos;
             drag_start = mouse_pos;
 
+            /*
             if (this->selected_tool == EditorToolType::MOVE) {
                 Vector2f world_drag_delta =
                     Level::screenToWorld(sf::Vector2f(drag_delta)) * this->zoom;
 
                 for (std::shared_ptr<Entity> entity : this->selected_entities) {
-                    entity->setPosition(entity->getPosition() -
-                                        world_drag_delta);
+                    this->doAction(ModifyPropertyEditorAction<Vector2f>(
+                        [entity] { return entity->getPosition(); },
+                        [entity](Vector2f new_position) {
+                            entity->setPosition(new_position);
+                        },
+                        entity->getPosition() - world_drag_delta));
                 }
-            }
+            }*/
         }
     } else if (dragging) {
         dragging = false;
@@ -359,7 +383,7 @@ void Editor::processEvents() {
 
                     if (!clicked_entity && !this->selected_entities.empty()) {
                         this->doAction(
-                            DeselectEditorAction(this->selected_entities));
+                            new DeselectEditorAction(this->selected_entities));
                     }
                 }
             }
@@ -384,47 +408,27 @@ void Editor::processEvents() {
     }
 }
 
-void Editor::doAction(EditorAction action) {
+void Editor::doAction(EditorAction* action) {
     this->undo_stack.push_front(action);
-    BaseEditorAction* base_action = std::visit(
-        [](auto& derived_action) -> BaseEditorAction* {
-            return &derived_action;
-        },
-        action);
 
     // execute all implicit actions first
-    for (EditorAction implicit_action : base_action->implicit_actions) {
-        BaseEditorAction* base_implicit_action = std::visit(
-            [](auto& derived_action) -> BaseEditorAction* {
-                return &derived_action;
-            },
-            implicit_action);
-        base_implicit_action->execute(this);
+    for (auto& implicit_action : action->implicit_actions) {
+        implicit_action->execute(this);
     }
 
     // execute the main action
-    base_action->execute(this);
+    action->execute(this);
 }
 
-void Editor::undoAction(EditorAction action) {
+void Editor::undoAction(EditorAction* action) {
     this->redo_stack.push_front(action);
-    BaseEditorAction* base_action = std::visit(
-        [](auto& derived_action) -> BaseEditorAction* {
-            return &derived_action;
-        },
-        action);
 
     // revert the main (final) action first
-    base_action->revert(this);
+    action->revert(this);
 
     // revert all implicit actions after
-    for (EditorAction implicit_action : base_action->implicit_actions) {
-        BaseEditorAction* base_implicit_action = std::visit(
-            [](auto& derived_action) -> BaseEditorAction* {
-                return &derived_action;
-            },
-            implicit_action);
-        base_implicit_action->revert(this);
+    for (auto& implicit_action : action->implicit_actions) {
+        implicit_action->revert(this);
     }
 }
 
@@ -433,10 +437,10 @@ void Editor::undoLastAction() {
         return;
     }
 
-    EditorAction last_action = this->undo_stack.front();
+    auto& last_action = this->undo_stack.front();
     this->undo_stack.pop_front();
 
-    this->undoAction(last_action);
+    this->undoAction(std::move(last_action));
 }
 
 void Editor::redoLastUndo() {
@@ -448,13 +452,13 @@ void Editor::redoLastUndo() {
 void Editor::doEntitySelection(std::shared_ptr<Entity> entity) {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
         if (entity->getSelected()) {
-            this->doAction(DeselectEditorAction({entity}));
+            this->doAction(new DeselectEditorAction({entity}));
         } else {
-            this->doAction(SelectEditorAction({entity}));
+            this->doAction(new SelectEditorAction({entity}));
         }
     } else {
-        this->doAction(SelectEditorAction(
-            {entity}, {DeselectEditorAction(this->selected_entities)}));
+        this->doAction(new SelectEditorAction(
+            {entity}, {new DeselectEditorAction(this->selected_entities)}));
     }
 }
 
@@ -544,7 +548,6 @@ void Editor::registerMainMenuBar() {
             }
             ImGui::EndDisabled();
 
-            /*
             ImGui::BeginDisabled(this->undo_stack.empty());
             if (ImGui::MenuItem("Undo", "Ctrl+Z")) {
                 this->undoLastAction();
@@ -555,7 +558,7 @@ void Editor::registerMainMenuBar() {
             if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z")) {
                 this->redoLastUndo();
             }
-            ImGui::EndDisabled();*/
+            ImGui::EndDisabled();
 
             ImGui::EndMenu();
         }
@@ -704,162 +707,7 @@ void Editor::registerPropertiesWindow() {
                             goo_ball->setRotation(rotation);
                         });
 
-                    // max velocity
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Maximum Velocity");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat("##maxvelocity",
-                                                  &editor_info.maxVelocity);
-
-                    // stiffness
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Stiffness");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat("##stiffness",
-                                                  &editor_info.stiffness);
-
-                    // detonation radius
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Detonation Radius");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat(
-                        "##detonationradius", &editor_info.detonationRadius);
-
-                    // detonation force
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Detonation Force");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::InputFloat("##detonationforce",
-                                                  &editor_info.detonationForce);
-
-                    // discovered
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Discovered");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::Checkbox("##discovered",
-                                                &editor_info.discovered);
-
-                    // floating while asleep
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Float While Asleep");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |=
-                        ImGui::Checkbox("##floatingwhileasleep",
-                                        &editor_info.floatingWhileAsleep);
-
-                    // interactive
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Interactive");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::Checkbox("##interactive",
-                                                &editor_info.interactive);
-
-                    // wake with liquid
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Wake With Liquid");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::Checkbox("##wakewithliquid",
-                                                &editor_info.wakeWithLiquid);
-
-                    // exit pipe alert
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Exit Pipe Alert");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::Checkbox("##exitpipealert",
-                                                &editor_info.exitPipeAlert);
-
-                    // affects auto bounds
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Affects Auto Bounds");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |= ImGui::Checkbox("##affectsautobounds",
-                                                &editor_info.affectsAutoBounds);
-
-                    // filled
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Filled");
-                    ImGui::TableSetColumnIndex(2);
-                    modified |=
-                        ImGui::Checkbox("##filled", &editor_info.filled);
-
                     ImGui::EndTable();
-                }
-
-                if (info.typeEnum == GooBallType::LAUNCHER_L2B ||
-                    info.typeEnum == GooBallType::LAUNCHER_L2L) {
-                    ImGui::SeparatorText("Launcher Properties");
-                    if (ImGui::BeginTable("Launcher Properties", 3,
-                                          ImGuiTableFlags_SizingStretchProp)) {
-                        if (info.typeEnum == GooBallType::LAUNCHER_L2L) {
-                            ImGui::TableNextRow();
-                            ImGui::TableSetColumnIndex(0);
-                            ImGui::Text("Ball Type To Generate");
-                            ImGui::TableSetColumnIndex(2);
-                            this->registerGooBallTypeCombo(
-                                "", &info.launcherBallTypeToGenerate);
-                        }
-
-                        ImGui::TableNextRow();
-                        ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("Minimum Lifespan");
-                        ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat("##launcherlifespanmin",
-                                          &info.launcherLifespanMin);
-
-                        ImGui::TableNextRow();
-                        ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("Maximum Lifespan");
-                        ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat("##launcherlifespanmax",
-                                          &info.launcherLifespanMax);
-
-                        ImGui::TableNextRow();
-                        ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("Knockback Factor");
-                        ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat("##knockbackfactor",
-                                          &info.launcherKnockbackFactor);
-
-                        ImGui::TableNextRow();
-                        ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("Can Use Balls");
-                        ImGui::TableSetColumnIndex(2);
-                        ImGui::Checkbox("##launchercanuseballs",
-                                        &info.launcherCanUseBalls);
-
-                        ImGui::EndTable();
-                    }
-                }
-
-                if (info.typeEnum == GooBallType::THRUSTER) {
-                    ImGui::SeparatorText("Thruster Properties");
-                    if (ImGui::BeginTable("Thruster Properties", 3,
-                                          ImGuiTableFlags_SizingStretchProp)) {
-                        ImGui::TableNextRow();
-                        ImGui::SeparatorText("Thruster");
-                        ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("Thrust Force");
-                        ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat("##thrustforce", &info.thrustForce);
-
-                        ImGui::EndTable();
-                    }
-                }
-
-                if (modified) {
-                    // this->doAction(MutateInfoEditorAction(
-                    //    info, editor_info, refresh ? entity : nullptr));
                 }
             } else if (entity->getType() == EntityType::ITEM_INSTANCE) {
                 std::shared_ptr<ItemInstance> item_instance =
@@ -1001,7 +849,8 @@ void Editor::doEntitiesDeletion(std::vector<std::shared_ptr<Entity>> entities) {
         deleted.push_back(entity);
     }
 
-    this->doAction(DeleteEditorAction(deleted));
+    this->doAction(
+        new DeleteEditorAction(deleted, {new DeselectEditorAction(deleted)}));
 }
 
 std::unordered_map<EditorToolType, const char*> Editor::tool_type_to_name = {

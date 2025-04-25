@@ -219,6 +219,23 @@ void Level::removeEntity(std::shared_ptr<Entity> entity) {
     }
 }
 
+void Level::addEntity(std::shared_ptr<Entity> entity) {
+    switch (entity->getType()) {
+        case EntityType::GOO_BALL:
+            this->addBall(std::static_pointer_cast<GooBall>(entity));
+            break;
+        case EntityType::GOO_STRAND:
+            this->addStrand(std::static_pointer_cast<GooStrand>(entity));
+            break;
+        case EntityType::ITEM_INSTANCE:
+        case EntityType::TERRAIN_GROUP:
+            this->entities.insert(entity);
+            break;
+        default:
+            break;
+    }
+}
+
 void Level::addBall(std::shared_ptr<GooBall> ball) {
     for (std::shared_ptr<Entity> entity : this->entities) {
         entity->notifyAddBall(ball);
