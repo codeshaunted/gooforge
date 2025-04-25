@@ -181,6 +181,13 @@ void Editor::registerPropertiesField(const char* label,
     }
 }
 
+template<>
+void Editor::registerPropertiesField(const char* label,
+    std::function<bool()> get,
+    std::function<void(bool)> set) {
+
+}
+
 Editor::~Editor() { delete this->level; }
 
 void Editor::initialize() {
