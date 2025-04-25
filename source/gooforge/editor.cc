@@ -280,7 +280,6 @@ void Editor::update(sf::Clock& delta_clock) {
             this->doOpenFile();
         }
 
-        /*
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Z) &&
         this->undo_clock.getElapsedTime() > this->undo_cooldown) { if
         (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LShift)) {
@@ -291,10 +290,10 @@ void Editor::update(sf::Clock& delta_clock) {
             }
 
             this->undo_clock.restart();
-        }*/
+        }
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Delete)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Delete) && !this->selected_entities.empty()) {
         this->doEntitiesDeletion(this->selected_entities);
     }
 
@@ -409,10 +408,12 @@ void Editor::processEvents() {
 }
 
 void Editor::doAction(EditorAction* action) {
+    this->clearRedos();
+
     this->undo_stack.push_front(action);
 
     // execute all implicit actions first
-    for (auto& implicit_action : action->implicit_actions) {
+    for (auto implicit_action : action->implicit_actions) {
         implicit_action->execute(this);
     }
 
@@ -427,9 +428,22 @@ void Editor::undoAction(EditorAction* action) {
     action->revert(this);
 
     // revert all implicit actions after
-    for (auto& implicit_action : action->implicit_actions) {
+    for (auto implicit_action : action->implicit_actions) {
         implicit_action->revert(this);
     }
+}
+
+// same as doAction but we don't clear redos
+void Editor::redoAction(EditorAction* action) {
+    this->undo_stack.push_front(action);
+
+    // execute all implicit actions first
+    for (auto implicit_action : action->implicit_actions) {
+        implicit_action->execute(this);
+    }
+
+    // execute the main action
+    action->execute(this);
 }
 
 void Editor::undoLastAction() {
@@ -437,16 +451,37 @@ void Editor::undoLastAction() {
         return;
     }
 
-    auto& last_action = this->undo_stack.front();
+    auto last_action = this->undo_stack.front();
     this->undo_stack.pop_front();
 
-    this->undoAction(std::move(last_action));
+    this->undoAction(last_action);
 }
 
 void Editor::redoLastUndo() {
     if (this->redo_stack.empty()) {
         return;
     }
+
+    auto last_undo = this->redo_stack.front();
+    this->redo_stack.pop_front();
+
+    this->redoAction(last_undo);
+}
+
+void Editor::clearUndos() {
+    for (auto undo : this->undo_stack) {
+        delete undo;
+    }
+
+    this->undo_stack.clear();
+}
+
+void Editor::clearRedos() {
+    for (auto redo : this->redo_stack) {
+        delete redo;
+    }
+
+    this->redo_stack.clear();
 }
 
 void Editor::doEntitySelection(std::shared_ptr<Entity> entity) {
@@ -498,8 +533,8 @@ void Editor::doCloseFile() {
     delete this->level;
     this->level = nullptr;
     this->selected_entities.clear();
-    this->undo_stack.clear();
-    this->redo_stack.clear();
+    this->clearUndos();
+    this->clearRedos();
     ResourceManager::getInstance()->unloadAll();
 }
 
@@ -850,7 +885,7 @@ void Editor::doEntitiesDeletion(std::vector<std::shared_ptr<Entity>> entities) {
     }
 
     this->doAction(
-        new DeleteEditorAction(deleted, {new DeselectEditorAction(deleted)}));
+        new DeleteEditorAction(deleted, {new DeselectEditorAction(entities)}));
 }
 
 std::unordered_map<EditorToolType, const char*> Editor::tool_type_to_name = {

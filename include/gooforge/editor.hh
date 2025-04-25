@@ -152,8 +152,11 @@ class Editor {
         void processEvents();
         void doAction(EditorAction* action);
         void undoAction(EditorAction* action);
+        void redoAction(EditorAction* action);
         void undoLastAction();
         void redoLastUndo();
+        void clearUndos();
+        void clearRedos();
         void doEntitySelection(std::shared_ptr<Entity> entity);
         void doEntitiesDeletion(std::vector<std::shared_ptr<Entity>> entities);
         void doOpenFile();
