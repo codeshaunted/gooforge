@@ -33,7 +33,7 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
     this->info = info;
 
     for (ItemInstanceInfo& item_instance_info : this->info.items) {
-        auto item_instance = std::make_shared<ItemInstance>();
+        auto item_instance = new ItemInstance();
         auto result = item_instance->setup(item_instance_info);
         if (!result) {
             return std::unexpected(result.error());
@@ -42,9 +42,9 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
         this->entities.insert(item_instance);
     }
 
-    std::vector<std::shared_ptr<TerrainGroup>> terrain_groups_indexed;
+    std::vector<TerrainGroup*> terrain_groups_indexed;
     for (TerrainGroupInfo& terrain_group_info : this->info.terrainGroups) {
-        auto terrain_group = std::make_shared<TerrainGroup>();
+        auto terrain_group = new TerrainGroup();
 
         auto result = terrain_group->setup(terrain_group_info);
         if (!result) {
@@ -55,11 +55,11 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
         terrain_groups_indexed.push_back(terrain_group);
     }
 
-    std::vector<std::shared_ptr<GooBall>> goo_balls;
-    std::unordered_map<int, std::shared_ptr<GooBall>> goo_balls_uid;
+    std::vector<GooBall*> goo_balls;
+    std::unordered_map<int, GooBall*> goo_balls_uid;
     size_t i = 0;
     for (GooBallInfo& ball_info : this->info.balls) {
-        auto goo_ball = std::make_shared<GooBall>();
+        auto goo_ball = new GooBall();
         goo_balls.push_back(goo_ball);
         goo_balls_uid.insert({ball_info.uid, goo_ball});
 
@@ -77,7 +77,7 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
     }
 
     for (GooStrandInfo& strand_info : this->info.strands) {
-        auto goo_strand = std::make_shared<GooStrand>();
+        auto goo_strand = new GooStrand();
         // ONCE AGAIN NOT SAFE, TODO: FIX
         auto result =
             goo_strand->setup(strand_info, goo_balls_uid[strand_info.ball1UID],
@@ -103,14 +103,14 @@ LevelInfo& Level::getInfo() {
     this->info.terrainBalls.clear();
 
     int terrain_group_i = 0;
-    std::unordered_map<std::shared_ptr<TerrainGroup>, int> terrain_groups;
+    std::unordered_map<TerrainGroup*, int> terrain_groups;
     terrain_groups.insert({nullptr, -1});
     int next_uid = 0;
-    for (std::shared_ptr<Entity> entity : this->entities) {
+    for (auto entity : this->entities) {
         switch (entity->getType()) {
             case EntityType::GOO_BALL: {
-                std::shared_ptr<GooBall> ball =
-                    static_pointer_cast<GooBall>(entity);
+                GooBall* ball =
+                    static_cast<GooBall*>(entity);
                 GooBallInfo& ball_info = ball->getInfo();
                 ball_info.uid = next_uid;
                 ++next_uid;
@@ -119,8 +119,8 @@ LevelInfo& Level::getInfo() {
                 break;
             }
             case EntityType::ITEM_INSTANCE: {
-                std::shared_ptr<ItemInstance> item =
-                    static_pointer_cast<ItemInstance>(entity);
+                ItemInstance* item =
+                    static_cast<ItemInstance*>(entity);
                 ItemInstanceInfo& item_info = item->getInfo();
                 item_info.uid = next_uid;
                 ++next_uid;
@@ -129,8 +129,8 @@ LevelInfo& Level::getInfo() {
                 break;
             }
             case EntityType::TERRAIN_GROUP: {
-                std::shared_ptr<TerrainGroup> terrain_group =
-                    static_pointer_cast<TerrainGroup>(entity);
+                TerrainGroup* terrain_group =
+                    static_cast<TerrainGroup*>(entity);
                 terrain_groups.insert({terrain_group, terrain_group_i});
                 ++terrain_group_i;
 
@@ -140,25 +140,25 @@ LevelInfo& Level::getInfo() {
     }
 
     // we need to build strands after the balls have been assigned their uids
-    for (std::shared_ptr<Entity> entity : this->entities) {
+    for (auto entity : this->entities) {
         if (entity->getType() != EntityType::GOO_STRAND) continue;
 
-        auto strand = static_pointer_cast<GooStrand>(entity);
+        auto strand = static_cast<GooStrand*>(entity);
 
-        strand->info.ball1UID = strand->getBall1().lock()->getInfo().uid;
-        strand->info.ball2UID = strand->getBall2().lock()->getInfo().uid;
+        strand->info.ball1UID = strand->getBall1()->getInfo().uid;
+        strand->info.ball2UID = strand->getBall2()->getInfo().uid;
 
         this->info.strands.push_back(strand->info);
     }
 
     // build terrainBalls
-    for (std::shared_ptr<Entity> entity : this->entities) {
+    for (auto entity : this->entities) {
         if (entity->getType() != EntityType::GOO_BALL) continue;
 
-        std::shared_ptr<GooBall> ball = static_pointer_cast<GooBall>(entity);
+        GooBall* ball = static_cast<GooBall*>(entity);
 
         int terrain_group_index =
-            terrain_groups[ball->terrain_group.lock()]; // not necessarily
+            terrain_groups[ball->terrain_group]; // not necessarily
                                                         // safe?
 
         this->info.terrainBalls.push_back(TerrainBallInfo(terrain_group_index));
@@ -167,18 +167,22 @@ LevelInfo& Level::getInfo() {
     return this->info;
 }
 
-Level::~Level() {}
+Level::~Level() {
+    for (auto entity : this->entities) {
+        delete entity;
+    }
+}
 
 void Level::update() {}
 
 void Level::draw(sf::RenderWindow* window) {
-    for (std::shared_ptr<Entity> entity : this->entities) {
+    for (auto entity : this->entities) {
         entity->draw(window);
     }
 
     // draw select boxes over everything else
     // maybe this shouldn't be the case?
-    for (std::shared_ptr<Entity> entity : this->entities) {
+    for (auto entity : this->entities) {
         if (!entity->getSelected()) continue;
 
         entity->drawSelection(window);
@@ -203,13 +207,13 @@ float Level::degreesToRadians(float degrees) {
     return degrees * (std::numbers::pi / 180.0f);
 }
 
-void Level::removeEntity(std::shared_ptr<Entity> entity) {
+void Level::removeEntity(Entity* entity) {
     switch (entity->getType()) {
         case EntityType::GOO_BALL:
-            this->removeBall(std::static_pointer_cast<GooBall>(entity));
+            this->removeBall(static_cast<GooBall*>(entity));
             break;
         case EntityType::GOO_STRAND:
-            this->removeStrand(std::static_pointer_cast<GooStrand>(entity));
+            this->removeStrand(static_cast<GooStrand*>(entity));
             break;
         case EntityType::ITEM_INSTANCE:
             this->entities.erase(entity);
@@ -219,13 +223,13 @@ void Level::removeEntity(std::shared_ptr<Entity> entity) {
     }
 }
 
-void Level::addEntity(std::shared_ptr<Entity> entity) {
+void Level::addEntity(Entity* entity) {
     switch (entity->getType()) {
         case EntityType::GOO_BALL:
-            this->addBall(std::static_pointer_cast<GooBall>(entity));
+            this->addBall(static_cast<GooBall*>(entity));
             break;
         case EntityType::GOO_STRAND:
-            this->addStrand(std::static_pointer_cast<GooStrand>(entity));
+            this->addStrand(static_cast<GooStrand*>(entity));
             break;
         case EntityType::ITEM_INSTANCE:
         case EntityType::TERRAIN_GROUP:
@@ -236,32 +240,32 @@ void Level::addEntity(std::shared_ptr<Entity> entity) {
     }
 }
 
-void Level::addBall(std::shared_ptr<GooBall> ball) {
-    for (std::shared_ptr<Entity> entity : this->entities) {
+void Level::addBall(GooBall* ball) {
+    for (auto entity : this->entities) {
         entity->notifyAddBall(ball);
     }
 
     this->entities.insert(ball);
 }
 
-void Level::removeBall(std::shared_ptr<GooBall> ball) {
-    for (std::shared_ptr<Entity> entity : this->entities) {
+void Level::removeBall(GooBall* ball) {
+    for (auto entity : this->entities) {
         entity->notifyRemoveBall(ball);
     }
 
     this->entities.erase(ball);
 }
 
-void Level::addStrand(std::shared_ptr<GooStrand> strand) {
-    for (std::shared_ptr<Entity> entity : this->entities) {
+void Level::addStrand(GooStrand* strand) {
+    for (auto entity : this->entities) {
         entity->notifyAddStrand(strand);
     }
 
     this->entities.insert(strand);
 }
 
-void Level::removeStrand(std::shared_ptr<GooStrand> strand) {
-    for (std::shared_ptr<Entity> entity : this->entities) {
+void Level::removeStrand(GooStrand* strand) {
+    for (auto entity : this->entities) {
         entity->notifyRemoveStrand(strand);
     }
 

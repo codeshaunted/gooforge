@@ -82,26 +82,26 @@ void TerrainGroup::draw(sf::RenderWindow* window) {
     states.texture = &texture;
 
     for (auto strand : this->terrain_strands) {
-        auto locked_strand = strand.lock();
-        auto locked1 = locked_strand->ball1.lock();
-        auto locked2 = locked_strand->ball2.lock();
+        auto locked_strand = strand;
+        auto locked1 = locked_strand->ball1;
+        auto locked2 = locked_strand->ball2;
 
         auto u = locked1->strands.size() < locked2->strands.size() ? locked1
                                                                    : locked2;
         auto v = u == locked1 ? locked2 : locked1;
-        std::unordered_set<std::shared_ptr<GooBall>> v_neighbors;
+        std::unordered_set<GooBall*> v_neighbors;
         for (auto v_strand : v->strands) {
-            auto locked_v_strand = v_strand.lock();
-            auto locked_v1 = locked_v_strand->ball1.lock();
-            auto locked_v2 = locked_v_strand->ball2.lock();
+            auto locked_v_strand = v_strand;
+            auto locked_v1 = locked_v_strand->ball1;
+            auto locked_v2 = locked_v_strand->ball2;
 
             auto neighbor = locked_v1 == v ? locked_v2 : locked_v1;
             v_neighbors.insert(neighbor);
         }
         for (auto w_strand : u->strands) {
-            auto locked_w_strand = w_strand.lock();
-            auto locked_w1 = locked_w_strand->ball1.lock();
-            auto locked_w2 = locked_w_strand->ball2.lock();
+            auto locked_w_strand = w_strand;
+            auto locked_w1 = locked_w_strand->ball1;
+            auto locked_w2 = locked_w_strand->ball2;
 
             auto w = locked_w1 == u ? locked_w2 : locked_w1;
 
@@ -131,13 +131,13 @@ void TerrainGroup::draw(sf::RenderWindow* window) {
     }
 
     for (auto strand : this->terrain_strands) {
-        auto locked_strand = strand.lock();
+        auto locked_strand = strand;
         sf::VertexArray line(sf::Lines, 2);
         line[0].position = Level::worldToScreen(
-            locked_strand->getBall1().lock()->getPosition());
+            locked_strand->getBall1()->getPosition());
         line[0].color = sf::Color::Green;
         line[1].position = Level::worldToScreen(
-            locked_strand->getBall2().lock()->getPosition());
+            locked_strand->getBall2()->getPosition());
         line[1].color = sf::Color::Green;
         window->draw(line);
     }
@@ -153,14 +153,14 @@ float TerrainGroup::getDepth() const { return this->info.depth; }
 
 TerrainGroupInfo& TerrainGroup::getInfo() { return this->info; }
 
-void TerrainGroup::notifyAddStrand(std::shared_ptr<GooStrand> strand) {
-    if (strand->getBall1().lock()->getTerrainGroup().lock().get() == this ||
-        strand->getBall2().lock()->getTerrainGroup().lock().get() == this) {
+void TerrainGroup::notifyAddStrand(GooStrand* strand) {
+    if (strand->getBall1()->getTerrainGroup() == this ||
+        strand->getBall2()->getTerrainGroup() == this) {
         this->terrain_strands.insert(strand);
     }
 }
 
-void TerrainGroup::notifyRemoveStrand(std::shared_ptr<GooStrand> strand) {
+void TerrainGroup::notifyRemoveStrand(GooStrand* strand) {
     this->terrain_strands.erase(strand);
 }
 

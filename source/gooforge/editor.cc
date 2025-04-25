@@ -261,7 +261,7 @@ void Editor::update(sf::Clock& delta_clock) {
                 Vector2f world_drag_delta =
                     Level::screenToWorld(sf::Vector2f(drag_delta)) * this->zoom;
 
-                for (std::shared_ptr<Entity> entity : this->selected_entities) {
+                for (Entity* entity : this->selected_entities) {
                     this->doAction(ModifyPropertyEditorAction<Vector2f>(
                         [entity] { return entity->getPosition(); },
                         [entity](Vector2f new_position) {
@@ -484,7 +484,7 @@ void Editor::clearRedos() {
     this->redo_stack.clear();
 }
 
-void Editor::doEntitySelection(std::shared_ptr<Entity> entity) {
+void Editor::doEntitySelection(Entity* entity) {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
         if (entity->getSelected()) {
             this->doAction(new DeselectEditorAction({entity}));
@@ -702,7 +702,7 @@ void Editor::registerPropertiesWindow() {
 
     if (this->level) {
         if (this->selected_entities.size() == 1) {
-            std::shared_ptr<Entity> entity = this->selected_entities[0];
+            Entity* entity = this->selected_entities[0];
             std::string text = entity->getDisplayName();
             ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
 
@@ -712,8 +712,8 @@ void Editor::registerPropertiesWindow() {
             ImGui::Text(text.c_str());
 
             if (entity->getType() == EntityType::GOO_BALL) {
-                std::shared_ptr<GooBall> goo_ball =
-                    static_pointer_cast<GooBall>(entity);
+                GooBall* goo_ball =
+                    static_cast<GooBall*>(entity);
                 GooBallInfo& info = goo_ball->getInfo();
                 GooBallInfo editor_info = info;
                 bool modified = false;
@@ -745,8 +745,8 @@ void Editor::registerPropertiesWindow() {
                     ImGui::EndTable();
                 }
             } else if (entity->getType() == EntityType::ITEM_INSTANCE) {
-                std::shared_ptr<ItemInstance> item_instance =
-                    static_pointer_cast<ItemInstance>(entity);
+                ItemInstance* item_instance =
+                    static_cast<ItemInstance*>(entity);
                 ItemInstanceInfo& info = item_instance->getInfo();
 
                 ImGui::SeparatorText("General Properties");
@@ -861,20 +861,20 @@ bool Editor::registerGooBallTypeCombo(const char* label, GooBallType* type) {
     return changed;
 }
 
-void Editor::doEntitiesDeletion(std::vector<std::shared_ptr<Entity>> entities) {
-    std::set<std::shared_ptr<Entity>> implicit_entities;
+void Editor::doEntitiesDeletion(std::vector<Entity*> entities) {
+    std::set<Entity*> implicit_entities;
 
     for (auto entity : entities) {
         if (entity->getType() == EntityType::GOO_BALL) {
-            auto ball = static_pointer_cast<GooBall>(entity);
+            auto ball = static_cast<GooBall*>(entity);
 
             for (auto strand : ball->getStrands()) {
-                implicit_entities.insert(strand.lock());
+                implicit_entities.insert(strand);
             }
         }
     }
 
-    std::vector<std::shared_ptr<Entity>> deleted;
+    std::vector<Entity*> deleted;
 
     for (auto entity : implicit_entities) {
         deleted.push_back(entity);

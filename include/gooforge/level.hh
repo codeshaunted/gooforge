@@ -93,8 +93,8 @@ struct LevelInfo {
 
 struct EntityDepthComparator {
         // sort by depth for drawing
-        bool operator()(const std::shared_ptr<Entity> x,
-                        const std::shared_ptr<Entity> y) const {
+        bool operator()(const Entity* x,
+                        const Entity* y) const {
             if (x->getDepth() != y->getDepth()) {
                 return x->getDepth() < y->getDepth();
             }
@@ -116,16 +116,16 @@ class Level {
         static float radiansToDegrees(float radians);
         static float degreesToRadians(float degrees);
         LevelInfo& getInfo();
-        void removeEntity(std::shared_ptr<Entity> entity);
-		void addEntity(std::shared_ptr<Entity> entity);
-        void addBall(std::shared_ptr<GooBall> ball);
-        void removeBall(std::shared_ptr<GooBall> ball);
-        void addStrand(std::shared_ptr<GooStrand> strand);
-        void removeStrand(std::shared_ptr<GooStrand> strand);
+        void removeEntity(Entity* entity);
+		void addEntity(Entity* entity);
+        void addBall(GooBall* ball);
+        void removeBall(GooBall* ball);
+        void addStrand(GooStrand* strand);
+        void removeStrand(GooStrand* strand);
 
     private:
         LevelInfo info;
-        std::set<std::shared_ptr<Entity>, EntityDepthComparator> entities;
+        std::set<Entity*, EntityDepthComparator> entities;
         bool entities_dirty = false;
 
         friend class Editor;

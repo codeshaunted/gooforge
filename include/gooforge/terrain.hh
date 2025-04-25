@@ -70,15 +70,13 @@ class TerrainGroup : public Entity {
         sf::Sprite getThumbnail() override;
         float getDepth() const override;
         TerrainGroupInfo& getInfo();
-        void notifyAddStrand(std::shared_ptr<GooStrand> strand) override;
-        void notifyRemoveStrand(std::shared_ptr<GooStrand> strand) override;
+        void notifyAddStrand(GooStrand* strand) override;
+        void notifyRemoveStrand(GooStrand* strand) override;
 
     private:
         TerrainGroupInfo info;
         TerrainTemplateInfo* template_info;
-        std::set<std::weak_ptr<GooStrand>,
-                 std::owner_less<std::weak_ptr<GooStrand>>>
-            terrain_strands;
+        std::unordered_set<GooStrand*> terrain_strands;
         sf::Sprite display_sprite;
 };
 

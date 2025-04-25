@@ -32,7 +32,7 @@ namespace gooforge {
 GooBall::~GooBall() { delete this->click_bounds; }
 
 std::expected<void, Error> GooBall::setup(
-    GooBallInfo info, std::weak_ptr<TerrainGroup> terrain_group) {
+    GooBallInfo info, TerrainGroup* terrain_group) {
     this->info = info;
     this->terrain_group = terrain_group;
     return this->refresh();
@@ -152,7 +152,7 @@ void GooBall::setPosition(Vector2f position) {
     this->info.pos = position;
 
     for (auto strand : this->strands) {
-        strand.lock()->refresh();
+        strand->refresh();
     }
 }
 
@@ -236,23 +236,22 @@ GooBallInfo& GooBall::getInfo() { return this->info; }
 
 BallTemplateInfo* GooBall::getTemplate() { return this->ball_template; }
 
-std::weak_ptr<TerrainGroup> GooBall::getTerrainGroup() {
+TerrainGroup* GooBall::getTerrainGroup() {
     return this->terrain_group;
 }
 
-std::set<std::weak_ptr<GooStrand>, std::owner_less<std::weak_ptr<GooStrand>>>
-GooBall::getStrands() {
+std::unordered_set<GooStrand*> GooBall::getStrands() {
     return this->strands;
 }
 
-void GooBall::notifyAddStrand(std::shared_ptr<GooStrand> strand) {
-    if (strand->getBall1().lock().get() == this ||
-        strand->getBall2().lock().get() == this) {
+void GooBall::notifyAddStrand(GooStrand* strand) {
+    if (strand->getBall1() == this ||
+        strand->getBall2() == this) {
         this->strands.insert(strand);
     }
 }
 
-void GooBall::notifyRemoveStrand(std::shared_ptr<GooStrand> strand) {
+void GooBall::notifyRemoveStrand(GooStrand* strand) {
     this->strands.erase(strand);
 }
 

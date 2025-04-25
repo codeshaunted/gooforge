@@ -92,10 +92,10 @@ class Entity {
         virtual float getDepth() const { return 0.0f; }
         virtual void setPosition(Vector2f position) {}
 		virtual void setRotation(float rotation) {}
-        virtual void notifyAddBall(std::shared_ptr<GooBall> ball) {}
-        virtual void notifyRemoveBall(std::shared_ptr<GooBall> ball) {}
-        virtual void notifyAddStrand(std::shared_ptr<GooStrand> strand) {}
-        virtual void notifyRemoveStrand(std::shared_ptr<GooStrand> strand) {}
+        virtual void notifyAddBall(GooBall* ball) {}
+        virtual void notifyRemoveBall(GooBall* ball) {}
+        virtual void notifyAddStrand(GooStrand* strand) {}
+        virtual void notifyRemoveStrand(GooStrand* strand) {}
 
     protected:
         EntityType type;

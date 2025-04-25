@@ -72,32 +72,32 @@ struct EditorAction {
 
 struct SelectEditorAction : public EditorAction {
         SelectEditorAction(
-            std::vector<std::shared_ptr<Entity>> entities,
+            std::vector<Entity*> entities,
             std::vector<EditorAction*> implicit_actions = {})
             : EditorAction(implicit_actions), entities(entities) {}
         std::expected<void, Error> execute(Editor* editor) override;
         std::expected<void, Error> revert(Editor* editor) override;
-        std::vector<std::shared_ptr<Entity>> entities;
+        std::vector<Entity*> entities;
 };
 
 struct DeselectEditorAction : public EditorAction {
         DeselectEditorAction(
-            std::vector<std::shared_ptr<Entity>> entities,
+            std::vector<Entity*> entities,
             std::vector<EditorAction*> implicit_actions = {})
             : EditorAction(implicit_actions), entities(entities) {}
         std::expected<void, Error> execute(Editor* editor) override;
         std::expected<void, Error> revert(Editor* editor) override;
-        std::vector<std::shared_ptr<Entity>> entities;
+        std::vector<Entity*> entities;
 };
 
 struct DeleteEditorAction : public EditorAction {
         DeleteEditorAction(
-            std::vector<std::shared_ptr<Entity>> entities,
+            std::vector<Entity*> entities,
             std::vector<EditorAction*> implicit_actions = {})
             : EditorAction(implicit_actions), entities(entities) {}
         std::expected<void, Error> execute(Editor* editor) override;
         std::expected<void, Error> revert(Editor* editor) override;
-        std::vector<std::shared_ptr<Entity>> entities;
+        std::vector<Entity*> entities;
 };
 
 template <typename T>
@@ -141,7 +141,7 @@ class Editor {
         std::vector<Error> errors;
         Level* level = nullptr;
         std::string level_file_path;
-        std::vector<std::shared_ptr<Entity>> selected_entities;
+        std::vector<Entity*> selected_entities;
         std::deque<EditorAction*> undo_stack;
         sf::Clock undo_clock;
         sf::Time undo_cooldown = sf::milliseconds(200);
@@ -157,8 +157,8 @@ class Editor {
         void redoLastUndo();
         void clearUndos();
         void clearRedos();
-        void doEntitySelection(std::shared_ptr<Entity> entity);
-        void doEntitiesDeletion(std::vector<std::shared_ptr<Entity>> entities);
+        void doEntitySelection(Entity* entity);
+        void doEntitiesDeletion(std::vector<Entity*> entities);
         void doOpenFile();
         void doCloseFile();
         void registerMainMenuBar();

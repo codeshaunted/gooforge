@@ -31,8 +31,8 @@ namespace gooforge {
 GooStrand::~GooStrand() { delete this->click_bounds; }
 
 std::expected<void, Error> GooStrand::setup(GooStrandInfo info,
-                                            std::weak_ptr<GooBall> ball1,
-                                            std::weak_ptr<GooBall> ball2) {
+                                            GooBall* ball1,
+                                            GooBall* ball2) {
     this->info = info;
     this->ball1 = ball1;
     this->ball2 = ball2;
@@ -74,8 +74,8 @@ std::expected<void, Error> GooStrand::refresh() {
     if (this->click_bounds) delete this->click_bounds;
     this->click_bounds =
         static_cast<EntityClickBoundShape*>(new EntityClickBoundRectangle(
-            Vector2f(this->ball1.lock()->getPosition().distance(
-                         this->ball2.lock()->getPosition()),
+            Vector2f(this->ball1->getPosition().distance(
+                         this->ball2->getPosition()),
                      0.25f)));
 
     return std::expected<void, Error>{};
@@ -104,12 +104,9 @@ void GooStrand::draw(sf::RenderWindow* window) {
     sf::FloatRect bounds = this->display_sprite.getLocalBounds();
     this->display_sprite.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
 
-    auto locked1 = this->ball1.lock();
-    auto locked2 = this->ball2.lock();
-
     // Calculate the distance between the two balls
-    float dx = locked2->info.pos.x - locked1->info.pos.x;
-    float dy = (locked2->info.pos.y - locked1->info.pos.y) * -1.0;
+    float dx = this->ball2->info.pos.x - this->ball1->info.pos.x;
+    float dy = (this->ball2->info.pos.y - this->ball1->info.pos.y) * -1.0;
     float distance = std::sqrt((dx * dx) + (dy * dy));
 
     // Set the scale based on the distance
@@ -125,8 +122,8 @@ void GooStrand::draw(sf::RenderWindow* window) {
                                      // scale is 1.0f for now
 
     auto screen_position = Level::worldToScreen(
-        Vector2f((locked1->info.pos.x + locked2->info.pos.x) / 2.0,
-                 (locked1->info.pos.y + locked2->info.pos.y) / 2.0));
+        Vector2f((this->ball1->info.pos.x + this->ball2->info.pos.x) / 2.0,
+                 (this->ball1->info.pos.y + this->ball2->info.pos.y) / 2.0));
     this->display_sprite.setPosition(screen_position);
 
     // Calculate angle between the two balls
@@ -147,20 +144,20 @@ std::string GooStrand::getDisplayName() {
 }
 
 Vector2f GooStrand::getPosition() {
-    return (this->ball1.lock()->getPosition() +
-            this->ball2.lock()->getPosition()) *
+    return (this->ball1->getPosition() +
+            this->ball2->getPosition()) *
            0.5f;
 }
 
 float GooStrand::getRotation() {
     Vector2f delta =
-        this->ball1.lock()->getPosition() - this->ball2.lock()->getPosition();
+        this->ball1->getPosition() - this->ball2->getPosition();
 
     return std::atan2f(delta.y, delta.x);
 }
 
-std::weak_ptr<GooBall> GooStrand::getBall1() { return this->ball1; }
+GooBall* GooStrand::getBall1() { return this->ball1; }
 
-std::weak_ptr<GooBall> GooStrand::getBall2() { return this->ball2; }
+GooBall* GooStrand::getBall2() { return this->ball2; }
 
 } // namespace gooforge
