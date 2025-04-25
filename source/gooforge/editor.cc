@@ -86,6 +86,14 @@ std::expected<void, Error> DeselectEditorAction::revert(Editor* editor) {
     return std::expected<void, Error>{};
 }
 
+DeleteEditorAction::~DeleteEditorAction() {
+    // THIS IS WHERE ALL ENTITIES WILL BE ACTUALLY DELETED
+    // we keep them around in here so that undo/redo works
+    for (auto entity : this->entities) {
+        delete entity;
+    }
+}
+
 std::expected<void, Error> DeleteEditorAction::execute(Editor* editor) {
     for (auto entity : this->entities) {
         editor->level->removeEntity(entity);
@@ -410,6 +418,10 @@ void Editor::processEvents() {
 void Editor::doAction(EditorAction* action) {
     this->clearRedos();
 
+    if (this->undo_stack.size() == this->undo_depth) {
+        delete this->undo_stack.back();
+        this->undo_stack.pop_back();
+    }
     this->undo_stack.push_front(action);
 
     // execute all implicit actions first
@@ -435,6 +447,10 @@ void Editor::undoAction(EditorAction* action) {
 
 // same as doAction but we don't clear redos
 void Editor::redoAction(EditorAction* action) {
+    if (this->undo_stack.size() == this->undo_depth) {
+        delete this->undo_stack.back();
+        this->undo_stack.pop_back();
+    }
     this->undo_stack.push_front(action);
 
     // execute all implicit actions first

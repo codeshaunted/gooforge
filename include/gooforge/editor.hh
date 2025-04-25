@@ -58,6 +58,7 @@ struct EditorAction {
         // is to be executed this is needed for stuff like selection, where we
         // want to deselect all when a user selects a single entity in the
         // editor window
+        virtual ~EditorAction() {}
         EditorAction(
             std::vector<EditorAction*> implicit_actions)
             : implicit_actions(implicit_actions) {}
@@ -91,6 +92,7 @@ struct DeselectEditorAction : public EditorAction {
 };
 
 struct DeleteEditorAction : public EditorAction {
+        ~DeleteEditorAction();
         DeleteEditorAction(
             std::vector<Entity*> entities,
             std::vector<EditorAction*> implicit_actions = {})
@@ -147,6 +149,7 @@ class Editor {
         sf::Time undo_cooldown = sf::milliseconds(200);
         std::deque<EditorAction*> redo_stack;
         EditorToolType selected_tool = EditorToolType::MOVE;
+        int undo_depth = 50;
         void update(sf::Clock& delta_clock);
         void draw();
         void processEvents();
