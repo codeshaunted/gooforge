@@ -312,6 +312,41 @@ void ResourceManager::unloadAll() {
     }
 }
 
+template <>
+std::expected<std::vector<ItemResource*>, Error> ResourceManager::getResources(
+    std::string filter, int limit) {
+    std::vector<ItemResource*> filtered_resources;
+
+    std::transform(filter.begin(), filter.end(), filter.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+
+    for (auto& [id, resource] : this->resources) {
+        if (ItemResource* item_resource = std::get_if<ItemResource>(resource)) {
+            auto item_result = item_resource->get();
+            if (!item_result) {
+                continue; // skip this resource if it fails to load, todo: figure out why this is happening
+                //return std::unexpected(item_result.error());
+            }
+
+            ItemInfoFile* item_info = *item_result;
+            std::string item_name = item_info->items[0].name; // not safe bruh
+            std::transform(item_name.begin(), item_name.end(),
+                           item_name.begin(),
+                           [](unsigned char c) { return std::tolower(c); });
+
+            if (filter.empty() || item_name.find(filter) != std::string::npos) {
+                filtered_resources.push_back(item_resource);
+            }
+        }
+
+        if (limit > 0 && filtered_resources.size() >= limit) {
+            break;
+        }
+    }
+
+    return filtered_resources;
+}
+
 ResourceManager* ResourceManager::instance = nullptr;
 
 } // namespace gooforge

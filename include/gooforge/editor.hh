@@ -32,26 +32,7 @@
 
 namespace gooforge {
 
-// forward declare these so we can use them in the variant
-// and then use the variant in BaseEditorAction
-struct SelectEditorAction;
-struct DeselectEditorAction;
-struct DeleteEditorAction;
-template <typename T>
-struct ModifyPropertyEditorAction;
-
 class Editor;
-
-// you gotta add every template specialization to this variant
-// this template shit is horrendous but whatever
-/*
-using EditorAction =
-    std::variant<SelectEditorAction,
-                 DeselectEditorAction, DeleteEditorAction,
-                 ModifyPropertyEditorAction<GooBallType>,
-                 ModifyPropertyEditorAction<Vector2f>,
-                 ModifyPropertyEditorAction<float>,
-                 ModifyPropertyEditorAction<bool>>;*/
 
 struct EditorAction {
         // we define implicit actions as actions executed before the main action
@@ -59,8 +40,7 @@ struct EditorAction {
         // want to deselect all when a user selects a single entity in the
         // editor window
         virtual ~EditorAction() {}
-        EditorAction(
-            std::vector<EditorAction*> implicit_actions)
+        EditorAction(std::vector<EditorAction*> implicit_actions)
             : implicit_actions(implicit_actions) {}
         virtual std::expected<void, Error> execute(Editor* editor) {
             return std::expected<void, Error>{};
@@ -72,9 +52,8 @@ struct EditorAction {
 };
 
 struct SelectEditorAction : public EditorAction {
-        SelectEditorAction(
-            std::vector<Entity*> entities,
-            std::vector<EditorAction*> implicit_actions = {})
+        SelectEditorAction(std::vector<Entity*> entities,
+                           std::vector<EditorAction*> implicit_actions = {})
             : EditorAction(implicit_actions), entities(entities) {}
         std::expected<void, Error> execute(Editor* editor) override;
         std::expected<void, Error> revert(Editor* editor) override;
@@ -82,9 +61,8 @@ struct SelectEditorAction : public EditorAction {
 };
 
 struct DeselectEditorAction : public EditorAction {
-        DeselectEditorAction(
-            std::vector<Entity*> entities,
-            std::vector<EditorAction*> implicit_actions = {})
+        DeselectEditorAction(std::vector<Entity*> entities,
+                             std::vector<EditorAction*> implicit_actions = {})
             : EditorAction(implicit_actions), entities(entities) {}
         std::expected<void, Error> execute(Editor* editor) override;
         std::expected<void, Error> revert(Editor* editor) override;
@@ -93,9 +71,8 @@ struct DeselectEditorAction : public EditorAction {
 
 struct DeleteEditorAction : public EditorAction {
         ~DeleteEditorAction();
-        DeleteEditorAction(
-            std::vector<Entity*> entities,
-            std::vector<EditorAction*> implicit_actions = {})
+        DeleteEditorAction(std::vector<Entity*> entities,
+                           std::vector<EditorAction*> implicit_actions = {})
             : EditorAction(implicit_actions), entities(entities) {}
         std::expected<void, Error> execute(Editor* editor) override;
         std::expected<void, Error> revert(Editor* editor) override;
@@ -126,6 +103,9 @@ struct ModifyPropertyEditorAction : public EditorAction {
 };
 
 enum class EditorToolType { MOVE = 0, SCALE };
+
+struct DefaultPropertyTag {};
+struct ItemTemplatePropertyTag {};
 
 class Editor {
     public:
@@ -175,7 +155,7 @@ class Editor {
         void registerResourcesWindow();
         void registerToolbarWindow();
         bool registerGooBallTypeCombo(const char* label, GooBallType* type);
-        template <typename T>
+        template <typename T, typename Tag = DefaultPropertyTag>
         void registerPropertiesField(const char* label, std::function<T()> get,
                                      std::function<void(T)> set);
 

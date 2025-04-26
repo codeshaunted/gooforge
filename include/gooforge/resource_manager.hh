@@ -109,6 +109,9 @@ class ResourceManager {
             std::filesystem::path& path);
         template <typename T>
         std::expected<T*, Error> getResource(std::string id);
+        template <typename T>
+        std::expected<std::vector<T*>, Error> getResources(
+            std::string filter = "", int limit = -1);
         void unloadAll();
 
     private:
@@ -128,6 +131,8 @@ std::expected<T*, Error> ResourceManager::getResource(std::string id) {
     if (T* t_resource = std::get_if<T>(resource)) {
         return t_resource;
     }
+
+    return std::unexpected(ResourceNotFoundError(id));
 }
 
 } // namespace gooforge

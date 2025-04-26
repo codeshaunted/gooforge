@@ -87,7 +87,9 @@ std::expected<void, Error> DeselectEditorAction::revert(Editor* editor) {
 }
 
 DeleteEditorAction::~DeleteEditorAction() {
-    if (reverted) return; // we don't want to run this if the delete was reverted and is getting cleared in the redo stack
+    if (reverted)
+        return; // we don't want to run this if the delete was reverted and is
+                // getting cleared in the redo stack
 
     // THIS IS WHERE ALL ENTITIES WILL BE ACTUALLY DELETED
     // we keep them around in here so that undo/redo works
@@ -195,8 +197,9 @@ void Editor::registerPropertiesField(const char* label,
     ImGui::TableSetColumnIndex(0);
     ImGui::Text(label);
     ImGui::TableSetColumnIndex(2);
-    modified |= ImGui::InputFloat(std::format("##{}", label).c_str(), &value,
-                                  ImGuiInputTextFlags_EnterReturnsTrue);
+    modified |=
+        ImGui::InputFloat(std::format("##{}", label).c_str(), &value, 0.0f,
+                          0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
 
     if (modified) {
         this->doAction(new ModifyPropertyEditorAction<float>(get, set, value));
@@ -218,6 +221,77 @@ void Editor::registerPropertiesField(const char* label,
 
     if (modified) {
         this->doAction(new ModifyPropertyEditorAction<bool>(get, set, value));
+    }
+}
+
+template <>
+void Editor::registerPropertiesField<std::string, ItemTemplatePropertyTag>(
+    const char* label, std::function<std::string()> get,
+    std::function<void(std::string)> set) {
+    std::string value = get();
+    bool modified = false;
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text(label);
+    ImGui::TableSetColumnIndex(2);
+
+    auto value_resource =
+        ResourceManager::getInstance()->getResource<ItemResource>(
+            std::format("GOOFORGE_ITEM_RESOURCE_{}", value));
+    if (!value_resource) {
+        return; // todo: actually handle this error
+    }
+    auto value_result = value_resource.value()->get();
+    if (!value_result) {
+        return; // todo: actually handle this error
+    }
+    ItemInfo& item_info = value_result.value()->items[0]; // not safe
+
+    if (ImGui::BeginCombo(
+            std::format("##{}", label).c_str(),
+            std::format("{} ({})", item_info.name, value).c_str())) {
+        static char filter[128] = "";
+        ImGui::InputText(std::format("##{}itemfilter", label).c_str(), filter,
+                         IM_ARRAYSIZE(filter));
+        ImGui::Separator();
+
+        auto item_resources =
+            ResourceManager::getInstance()->getResources<ItemResource>(filter,
+                                                                       25);
+
+        if (!item_resources) {
+            ImGui::EndCombo();
+            return; // todo: actually handle this error
+        }
+
+        for (auto item_resource : *item_resources) {
+            auto item_result = item_resource->get();
+            if (!item_result) {
+                continue;
+            }
+
+            ItemInfo& item_info = item_result.value()->items[0]; // NOT SAFE
+            bool selected = item_info.uuid == value;
+            if (ImGui::Selectable(
+                    std::format("{} ({})", item_info.name, item_info.uuid)
+                        .c_str(),
+                    selected)) {
+                value = item_info.uuid;
+                modified = true;
+            }
+
+            if (selected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+
+        ImGui::EndCombo();
+    }
+
+    if (modified) {
+        this->doAction(
+            new ModifyPropertyEditorAction<std::string>(get, set, value));
     }
 }
 
@@ -295,11 +369,10 @@ void Editor::update(sf::Clock& delta_clock) {
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Z) &&
-        this->undo_clock.getElapsedTime() > this->undo_cooldown) { if
-        (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LShift)) {
+            this->undo_clock.getElapsedTime() > this->undo_cooldown) {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LShift)) {
                 this->redoLastUndo();
-            }
-            else {
+            } else {
                 this->undoLastAction();
             }
 
@@ -307,7 +380,8 @@ void Editor::update(sf::Clock& delta_clock) {
         }
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Delete) && !this->selected_entities.empty()) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Delete) &&
+        !this->selected_entities.empty()) {
         this->doEntitiesDeletion(this->selected_entities);
     }
 
@@ -735,8 +809,7 @@ void Editor::registerPropertiesWindow() {
             ImGui::Text(text.c_str());
 
             if (entity->getType() == EntityType::GOO_BALL) {
-                GooBall* goo_ball =
-                    static_cast<GooBall*>(entity);
+                GooBall* goo_ball = static_cast<GooBall*>(entity);
                 GooBallInfo& info = goo_ball->getInfo();
                 GooBallInfo editor_info = info;
                 bool modified = false;
@@ -746,7 +819,8 @@ void Editor::registerPropertiesWindow() {
                 if (ImGui::BeginTable("General Properties", 3,
                                       ImGuiTableFlags_SizingStretchProp)) {
                     this->registerPropertiesField<GooBallType>(
-                        "Type", [goo_ball] { return goo_ball->getBallType(); },
+                        "Template",
+                        [goo_ball] { return goo_ball->getBallType(); },
                         [goo_ball](GooBallType type) {
                             goo_ball->setBallType(type);
                         });
@@ -775,25 +849,52 @@ void Editor::registerPropertiesWindow() {
                 ImGui::SeparatorText("General Properties");
                 if (ImGui::BeginTable("General Properties", 3,
                                       ImGuiTableFlags_SizingStretchProp)) {
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Type");
-                    ImGui::TableSetColumnIndex(2);
-                    static char type_text[128];
-                    std::strncpy(type_text, info.type.c_str(),
-                                 sizeof(type_text));
-                    ImGui::InputText("##type", type_text, sizeof(type_text));
-                    info.type = type_text;
+                    this->registerPropertiesField<std::string,
+                                                  ItemTemplatePropertyTag>(
+                        "Type",
+                        [item_instance] {
+                            return item_instance->getItemTemplateUUID();
+                        },
+                        [item_instance](std::string type) {
+                            item_instance->setItemTemplateUUID(type);
+                        });
 
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("Depth");
-                    ImGui::TableSetColumnIndex(2);
-                    ImGui::InputFloat("##depth", &info.depth);
+                    this->registerPropertiesField<Vector2f>(
+                        "Position",
+                        [item_instance] {
+                            return item_instance->getPosition();
+                        },
+                        [item_instance](Vector2f position) {
+                            item_instance->setPosition(position);
+                        });
+
+                    this->registerPropertiesField<Vector2f>(
+                        "Scale",
+                        [item_instance] { return item_instance->getScale(); },
+                        [item_instance](Vector2f scale) {
+                            item_instance->setScale(scale);
+                        });
+
+                    this->registerPropertiesField<float>(
+                        "Rotation",
+                        [item_instance] {
+                            return item_instance->getRotation();
+                        },
+                        [item_instance](float rotation) {
+                            item_instance->setRotation(rotation);
+                        });
+
+                    this->registerPropertiesField<float>(
+                        "Depth",
+                        [item_instance] { return item_instance->getDepth(); },
+                        [item_instance](float depth) {
+                            item_instance->setDepth(depth);
+                        });
 
                     ImGui::EndTable();
                 }
 
+                /*
                 std::string type_properties_table_name =
                     ItemInstance::item_type_to_name[item_instance
                                                         ->getItemType()] +
@@ -818,6 +919,8 @@ void Editor::registerPropertiesWindow() {
 
                     ImGui::EndTable();
                 }
+
+                */
             }
         }
     }

@@ -83,9 +83,9 @@ std::expected<void, Error> ItemInstance::refresh() {
         this->info.scale.y * this->object_info->scale.y *
         (this->info.flipVertical != this->object_info->flipVertical ? -1.0f
                                                                     : 1.0f);
-    sprite_size_world.x *= scale_x;
-    sprite_size_world.y *= scale_y;
 
+    sprite_size_world.x *= this->info.scale.x * this->object_info->scale.x;
+    sprite_size_world.y *= this->info.scale.y * this->object_info->scale.y;
     if (this->click_bounds) delete this->click_bounds;
     this->click_bounds =
         static_cast<EntityClickBoundShape*>(new EntityClickBoundRectangle(
@@ -228,6 +228,26 @@ std::vector<ItemUserVariableInfo> ItemInstance::getUserVariableInfo() {
 std::vector<ItemInstanceUserVariableInfo>&
 ItemInstance::getInstanceUserVariableInfo() {
     return this->info.userVariables;
+}
+
+std::string ItemInstance::getItemTemplateUUID() { return this->info.type; }
+
+void ItemInstance::setItemTemplateUUID(std::string uuid) {
+    this->info.type = uuid;
+    this->refresh();
+}
+
+void ItemInstance::setDepth(float depth) { this->info.depth = depth; }
+
+Vector2f ItemInstance::getScale() { return this->info.scale; }
+
+void ItemInstance::setScale(Vector2f scale) {
+    this->info.scale = scale;
+    this->refresh();
+}
+
+void ItemInstance::setRotation(float rotation) {
+    this->info.rotation = rotation;
 }
 
 } // namespace gooforge

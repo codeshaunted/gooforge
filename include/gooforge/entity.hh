@@ -90,6 +90,7 @@ class Entity {
         virtual Vector2f getPosition() { return Vector2f(0.0f, 0.0f); }
         virtual float getRotation() { return 0.0f; }
         virtual float getDepth() const { return 0.0f; }
+        virtual void setDepth(float depth) {}
         virtual void setPosition(Vector2f position) {}
 		virtual void setRotation(float rotation) {}
         virtual void notifyAddBall(GooBall* ball) {}

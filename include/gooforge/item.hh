@@ -268,8 +268,14 @@ class ItemInstance : public Entity {
         std::string getDisplayName() override;
         Vector2f getPosition() override;
         float getRotation() override;
+        void setRotation(float rotation) override;
         float getDepth() const override;
+        void setDepth(float depth) override;
         void setPosition(Vector2f position) override;
+        Vector2f getScale();
+        void setScale(Vector2f scale);
+        std::string getItemTemplateUUID();
+        void setItemTemplateUUID(std::string uuid);
         ItemInstanceInfo& getInfo();
         ItemType getItemType();
         std::vector<ItemUserVariableInfo> getUserVariableInfo();
