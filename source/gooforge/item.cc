@@ -250,4 +250,12 @@ void ItemInstance::setRotation(float rotation) {
     this->info.rotation = rotation;
 }
 
+int ItemInstance::getForcedRandomizationIndex() {
+    return this->info.forcedRandomizationIndex;
+}
+
+void ItemInstance::setForcedRandomizationIndex(int index) {
+    this->info.forcedRandomizationIndex = index;
+}
+
 } // namespace gooforge

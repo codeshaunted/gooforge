@@ -276,6 +276,8 @@ class ItemInstance : public Entity {
         void setScale(Vector2f scale);
         std::string getItemTemplateUUID();
         void setItemTemplateUUID(std::string uuid);
+        int getForcedRandomizationIndex();
+        void setForcedRandomizationIndex(int index);
         ItemInstanceInfo& getInfo();
         ItemType getItemType();
         std::vector<ItemUserVariableInfo> getUserVariableInfo();

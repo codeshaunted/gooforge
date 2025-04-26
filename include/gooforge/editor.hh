@@ -39,7 +39,7 @@ struct EditorAction {
         // is to be executed this is needed for stuff like selection, where we
         // want to deselect all when a user selects a single entity in the
         // editor window
-        virtual ~EditorAction() {}
+        virtual ~EditorAction();
         EditorAction(std::vector<EditorAction*> implicit_actions)
             : implicit_actions(implicit_actions) {}
         virtual std::expected<void, Error> execute(Editor* editor) {
@@ -83,8 +83,9 @@ struct DeleteEditorAction : public EditorAction {
 template <typename T>
 struct ModifyPropertyEditorAction : public EditorAction {
         ModifyPropertyEditorAction(std::function<T()> get,
-                                   std::function<void(T)> set, T new_value)
-            : EditorAction({}), get(get), set(set), new_value(new_value) {}
+                                   std::function<void(T)> set, T new_value,
+                                   std::vector<EditorAction*> implicit_actions = {})
+            : EditorAction(implicit_actions), get(get), set(set), new_value(new_value) {}
         std::expected<void, Error> execute(Editor* editor) override {
             this->original_value = this->get();
             this->set(this->new_value);
@@ -157,7 +158,8 @@ class Editor {
         bool registerGooBallTypeCombo(const char* label, GooBallType* type);
         template <typename T, typename Tag = DefaultPropertyTag>
         void registerPropertiesField(const char* label, std::function<T()> get,
-                                     std::function<void(T)> set);
+            std::function<void(T)> set,
+            std::vector<EditorAction*> implicit_actions = {});
 
         // we either make everything public or declare every
         // single derived action as a friend class, pick

@@ -34,6 +34,12 @@
 
 namespace gooforge {
 
+EditorAction::~EditorAction() {
+    for (auto action : this->implicit_actions) {
+        delete action;
+    }
+}
+
 std::expected<void, Error> SelectEditorAction::execute(Editor* editor) {
     for (auto entity : this->entities) {
         entity->setSelected(true);
@@ -87,6 +93,10 @@ std::expected<void, Error> DeselectEditorAction::revert(Editor* editor) {
 }
 
 DeleteEditorAction::~DeleteEditorAction() {
+    for (auto action : this->implicit_actions) {
+        delete action;
+    }
+
     if (reverted)
         return; // we don't want to run this if the delete was reverted and is
                 // getting cleared in the redo stack
@@ -119,9 +129,10 @@ std::expected<void, Error> DeleteEditorAction::revert(Editor* editor) {
 }
 
 template <>
-void Editor::registerPropertiesField(const char* label,
-                                     std::function<Vector2f()> get,
-                                     std::function<void(Vector2f)> set) {
+void Editor::registerPropertiesField(
+    const char* label, std::function<Vector2f()> get,
+    std::function<void(Vector2f)> set,
+    std::vector<EditorAction*> implicit_actions) {
     Vector2f value = get();
     bool modified = false;
 
@@ -144,15 +155,16 @@ void Editor::registerPropertiesField(const char* label,
                           0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
 
     if (modified) {
-        this->doAction(
-            new ModifyPropertyEditorAction<Vector2f>(get, set, value));
+        this->doAction(new ModifyPropertyEditorAction<Vector2f>(
+            get, set, value, implicit_actions));
     }
 }
 
 template <>
-void Editor::registerPropertiesField(const char* label,
-                                     std::function<GooBallType()> get,
-                                     std::function<void(GooBallType)> set) {
+void Editor::registerPropertiesField(
+    const char* label, std::function<GooBallType()> get,
+    std::function<void(GooBallType)> set,
+    std::vector<EditorAction*> implicit_actions) {
     GooBallType value = get();
     bool modified = false;
 
@@ -181,15 +193,16 @@ void Editor::registerPropertiesField(const char* label,
     }
 
     if (modified) {
-        this->doAction(
-            new ModifyPropertyEditorAction<GooBallType>(get, set, value));
+        this->doAction(new ModifyPropertyEditorAction<GooBallType>(
+            get, set, value, implicit_actions));
     }
 }
 
 template <>
-void Editor::registerPropertiesField(const char* label,
-                                     std::function<float()> get,
-                                     std::function<void(float)> set) {
+void Editor::registerPropertiesField(
+    const char* label, std::function<float()> get,
+    std::function<void(float)> set,
+    std::vector<EditorAction*> implicit_actions) {
     float value = get();
     bool modified = false;
 
@@ -202,14 +215,15 @@ void Editor::registerPropertiesField(const char* label,
                           0.0f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
 
     if (modified) {
-        this->doAction(new ModifyPropertyEditorAction<float>(get, set, value));
+        this->doAction(new ModifyPropertyEditorAction<float>(get, set, value,
+                                                             implicit_actions));
     }
 }
 
 template <>
-void Editor::registerPropertiesField(const char* label,
-                                     std::function<bool()> get,
-                                     std::function<void(bool)> set) {
+void Editor::registerPropertiesField(
+    const char* label, std::function<bool()> get, std::function<void(bool)> set,
+    std::vector<EditorAction*> implicit_actions) {
     bool value = get();
     bool modified = false;
 
@@ -220,14 +234,16 @@ void Editor::registerPropertiesField(const char* label,
     modified |= ImGui::Checkbox(std::format("##{}", label).c_str(), &value);
 
     if (modified) {
-        this->doAction(new ModifyPropertyEditorAction<bool>(get, set, value));
+        this->doAction(new ModifyPropertyEditorAction<bool>(get, set, value,
+                                                            implicit_actions));
     }
 }
 
 template <>
 void Editor::registerPropertiesField<std::string, ItemTemplatePropertyTag>(
     const char* label, std::function<std::string()> get,
-    std::function<void(std::string)> set) {
+    std::function<void(std::string)> set,
+    std::vector<EditorAction*> implicit_actions) {
     std::string value = get();
     bool modified = false;
 
@@ -290,8 +306,8 @@ void Editor::registerPropertiesField<std::string, ItemTemplatePropertyTag>(
     }
 
     if (modified) {
-        this->doAction(
-            new ModifyPropertyEditorAction<std::string>(get, set, value));
+        this->doAction(new ModifyPropertyEditorAction<std::string>(
+            get, set, value, implicit_actions));
     }
 }
 
@@ -851,13 +867,23 @@ void Editor::registerPropertiesWindow() {
                                       ImGuiTableFlags_SizingStretchProp)) {
                     this->registerPropertiesField<std::string,
                                                   ItemTemplatePropertyTag>(
-                        "Type",
+                        "Template",
                         [item_instance] {
                             return item_instance->getItemTemplateUUID();
                         },
                         [item_instance](std::string type) {
                             item_instance->setItemTemplateUUID(type);
-                        });
+                        },
+                        {new ModifyPropertyEditorAction<int>(
+                            [item_instance] {
+                                return item_instance
+                                    ->getForcedRandomizationIndex();
+                            },
+                            [item_instance](int index) {
+                                item_instance->setForcedRandomizationIndex(
+                                    index);
+                            },
+                            -1)});
 
                     this->registerPropertiesField<Vector2f>(
                         "Position",
