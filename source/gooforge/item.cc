@@ -225,11 +225,6 @@ std::vector<ItemUserVariableInfo> ItemInstance::getUserVariableInfo() {
     return this->info_file->items[0].userVariables; // NOT SAFE!!! todo: fix
 }
 
-std::vector<ItemInstanceUserVariableInfo>&
-ItemInstance::getInstanceUserVariableInfo() {
-    return this->info.userVariables;
-}
-
 std::string ItemInstance::getItemTemplateUUID() { return this->info.type; }
 
 void ItemInstance::setItemTemplateUUID(std::string uuid) {

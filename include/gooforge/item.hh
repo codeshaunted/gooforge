@@ -196,6 +196,13 @@ struct ItemAlternateInfo {
         int integerValue;
 };
 
+// custom, not found in ghidra
+enum class ItemUserVariableType {
+    UNKNOWN1 = 0,
+    UNKNOWN2,
+    BOOL,
+};
+
 struct ItemUserVariableInfo {
         std::string name;
         float defaultValue;
@@ -203,7 +210,7 @@ struct ItemUserVariableInfo {
         float maxValue;
         int orderIndex;
         bool enabled;
-        int type;
+        ItemUserVariableType type;
         std::string stringValue;
 };
 
@@ -281,9 +288,6 @@ class ItemInstance : public Entity {
         ItemInstanceInfo& getInfo();
         ItemType getItemType();
         std::vector<ItemUserVariableInfo> getUserVariableInfo();
-        std::vector<ItemInstanceUserVariableInfo>&
-        getInstanceUserVariableInfo();
-
     private:
         ItemInstanceInfo info;
         ItemInfoFile* info_file;

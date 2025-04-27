@@ -831,8 +831,8 @@ void Editor::registerPropertiesWindow() {
                 bool modified = false;
                 bool refresh = false;
 
-                ImGui::SeparatorText("General Properties");
-                if (ImGui::BeginTable("General Properties", 3,
+                ImGui::SeparatorText("General");
+                if (ImGui::BeginTable("General", 3,
                                       ImGuiTableFlags_SizingStretchProp)) {
                     this->registerPropertiesField<GooBallType>(
                         "Template",
@@ -862,8 +862,8 @@ void Editor::registerPropertiesWindow() {
                     static_cast<ItemInstance*>(entity);
                 ItemInstanceInfo& info = item_instance->getInfo();
 
-                ImGui::SeparatorText("General Properties");
-                if (ImGui::BeginTable("General Properties", 3,
+                ImGui::SeparatorText("General");
+                if (ImGui::BeginTable("General", 3,
                                       ImGuiTableFlags_SizingStretchProp)) {
                     this->registerPropertiesField<std::string,
                                                   ItemTemplatePropertyTag>(
@@ -920,33 +920,25 @@ void Editor::registerPropertiesWindow() {
                     ImGui::EndTable();
                 }
 
-                /*
-                std::string type_properties_table_name =
-                    ItemInstance::item_type_to_name[item_instance
-                                                        ->getItemType()] +
-                    " Properties";
-
-                ImGui::SeparatorText(type_properties_table_name.c_str());
-                if (ImGui::BeginTable(type_properties_table_name.c_str(), 3,
+                ImGui::SeparatorText("User Variables");
+                if (ImGui::BeginTable("User Variables", 3,
                                       ImGuiTableFlags_SizingStretchProp)) {
-                    std::vector<ItemInstanceUserVariableInfo>& var_data =
-                        item_instance->getInstanceUserVariableInfo();
-                    size_t i = 0;
-                    for (ItemUserVariableInfo var :
-                         item_instance->getUserVariableInfo()) {
-                        ImGui::TableNextRow();
-                        ImGui::TableSetColumnIndex(0);
-                        ImGui::Text(var.name.c_str());
-                        ImGui::TableSetColumnIndex(2);
-                        ImGui::InputFloat(("##" + var.name).c_str(),
-                                          &var_data[i].value);
-                        ++i;
+                    size_t var_i = 0;
+                    for (auto var : item_instance->getUserVariableInfo()) {
+                        if (var.enabled) {
+                            if (var.type == ItemUserVariableType::BOOL) {
+                                this->registerPropertiesField<bool>(
+                                    var.name.c_str(),
+                                    [var] { return bool(var.defaultValue); },
+                                    [var](bool) {});
+                            }
+                        }
+
+                        ++var_i;
                     }
 
                     ImGui::EndTable();
                 }
-
-                */
             }
         }
     }
