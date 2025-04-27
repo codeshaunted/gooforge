@@ -55,6 +55,18 @@ std::expected<void, Error> ItemInstance::refresh() {
                        : 0;
     this->object_info = &this->info_file->items[0].objects[index];
 
+    if (this->info.userVariables.size() !=
+        this->info_file->items[0].userVariables.size()) {
+        // this is most likely the result of an item template being changed
+        // this is a bit hacky but to avoid OOB access we just create an entire
+        // new user var data vector
+        this->info.userVariables.clear();
+        for (auto var : this->info_file->items[0].userVariables) {
+            this->info.userVariables.push_back(
+                ItemInstanceUserVariableInfo{var.defaultValue});
+        }
+    }
+
     auto sprite_resource =
         ResourceManager::getInstance()->getResource<SpriteResource>(
             this->object_info->name);
@@ -191,12 +203,6 @@ std::unordered_map<ItemType, std::string> ItemInstance::item_type_to_name = {
     {ItemType::LEVEL_EXIT, "Level Exit"},
     {ItemType::TIMED_FADE, "Timed Fade"},
     {ItemType::SIGN_PAINTER_SIGN, "Sign Painter Sign"},
-    {ItemType::TERRAIN_HIDE, "Terrain Hide"},
-    {ItemType::TIMED_ANIMATION, "Timed Animation"},
-    {ItemType::SELECT_ANIMATION, "Select Animation"},
-    {ItemType::BUTTON, "Button"},
-    {ItemType::DRAIN, "Drain"},
-    {ItemType::WINCH, "Winch"},
     {ItemType::SQUIDDY, "Squiddy"},
     {ItemType::PIN_TO_JELLY, "Pin To Jelly"},
     {ItemType::BALL_DEBRIS, "Ball Debris"},
@@ -251,6 +257,16 @@ int ItemInstance::getForcedRandomizationIndex() {
 
 void ItemInstance::setForcedRandomizationIndex(int index) {
     this->info.forcedRandomizationIndex = index;
+}
+
+std::vector<ItemInstanceUserVariableInfo>
+ItemInstance::getUserVariableValues() {
+    return this->info.userVariables;
+}
+
+void ItemInstance::setUserVariableValues(
+    std::vector<ItemInstanceUserVariableInfo> values) {
+    this->info.userVariables = values;
 }
 
 } // namespace gooforge

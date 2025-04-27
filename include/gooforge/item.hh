@@ -198,8 +198,8 @@ struct ItemAlternateInfo {
 
 // custom, not found in ghidra
 enum class ItemUserVariableType {
-    UNKNOWN1 = 0,
-    UNKNOWN2,
+    FLOAT = 0,
+    INT,
     BOOL,
 };
 
@@ -288,12 +288,30 @@ class ItemInstance : public Entity {
         ItemInstanceInfo& getInfo();
         ItemType getItemType();
         std::vector<ItemUserVariableInfo> getUserVariableInfo();
+        template <typename T>
+        T getUserVariableValue(size_t index);
+        template <typename T>
+        void setUserVariableValue(size_t index, T value);
+        std::vector<ItemInstanceUserVariableInfo> getUserVariableValues();
+        void setUserVariableValues(std::vector<ItemInstanceUserVariableInfo> values);
+
     private:
         ItemInstanceInfo info;
         ItemInfoFile* info_file;
         ItemObjectInfo* object_info;
         sf::Sprite display_sprite;
 };
+
+// todo: error checking?
+template <typename T>
+T ItemInstance::getUserVariableValue(size_t index) {
+    return T(this->info.userVariables[index].value);
+}
+
+template <typename T>
+void ItemInstance::setUserVariableValue(size_t index, T value) {
+    this->info.userVariables[index].value = float(value);
+}
 
 } // namespace gooforge
 

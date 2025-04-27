@@ -222,6 +222,26 @@ void Editor::registerPropertiesField(
 
 template <>
 void Editor::registerPropertiesField(
+    const char* label, std::function<int()> get, std::function<void(int)> set,
+    std::vector<EditorAction*> implicit_actions) {
+    int value = get();
+    bool modified = false;
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text(label);
+    ImGui::TableSetColumnIndex(2);
+    modified |= ImGui::InputInt(std::format("##{}", label).c_str(), &value, 0,
+                                0, ImGuiInputTextFlags_EnterReturnsTrue);
+
+    if (modified) {
+        this->doAction(new ModifyPropertyEditorAction<int>(get, set, value,
+                                                           implicit_actions));
+    }
+}
+
+template <>
+void Editor::registerPropertiesField(
     const char* label, std::function<bool()> get, std::function<void(bool)> set,
     std::vector<EditorAction*> implicit_actions) {
     bool value = get();
@@ -252,6 +272,10 @@ void Editor::registerPropertiesField<std::string, ItemTemplatePropertyTag>(
     ImGui::Text(label);
     ImGui::TableSetColumnIndex(2);
 
+    // calling this every frame is not ideal
+    // but premature optimization is the root of all evil or whatever that guy
+    // said
+    // ;)
     auto value_resource =
         ResourceManager::getInstance()->getResource<ItemResource>(
             std::format("GOOFORGE_ITEM_RESOURCE_{}", value));
@@ -875,15 +899,26 @@ void Editor::registerPropertiesWindow() {
                             item_instance->setItemTemplateUUID(type);
                         },
                         {new ModifyPropertyEditorAction<int>(
-                            [item_instance] {
-                                return item_instance
-                                    ->getForcedRandomizationIndex();
-                            },
-                            [item_instance](int index) {
-                                item_instance->setForcedRandomizationIndex(
-                                    index);
-                            },
-                            -1)});
+                             [item_instance] {
+                                 return item_instance
+                                     ->getForcedRandomizationIndex();
+                             },
+                             [item_instance](int index) {
+                                 item_instance->setForcedRandomizationIndex(
+                                     index);
+                             },
+                             -1),
+                         new ModifyPropertyEditorAction<
+                             std::vector<ItemInstanceUserVariableInfo>>(
+                             {[item_instance] {
+                                  return item_instance->getUserVariableValues();
+                              },
+                              [item_instance](
+                                  std::vector<ItemInstanceUserVariableInfo>
+                                      values) {
+                                  item_instance->setUserVariableValues(values);
+                              },
+                              {}})});
 
                     this->registerPropertiesField<Vector2f>(
                         "Position",
@@ -926,11 +961,43 @@ void Editor::registerPropertiesWindow() {
                     size_t var_i = 0;
                     for (auto var : item_instance->getUserVariableInfo()) {
                         if (var.enabled) {
-                            if (var.type == ItemUserVariableType::BOOL) {
+                            if (var.type == ItemUserVariableType::FLOAT) {
+                                this->registerPropertiesField<float>(
+                                    var.name.c_str(),
+                                    [item_instance, var_i] {
+                                        return item_instance
+                                            ->getUserVariableValue<float>(
+                                                var_i);
+                                    },
+                                    [item_instance, var_i](float value) {
+                                        item_instance
+                                            ->setUserVariableValue<float>(
+                                                var_i, value);
+                                    });
+                            } else if (var.type == ItemUserVariableType::INT) {
+                                this->registerPropertiesField<int>(
+                                    var.name.c_str(),
+                                    [item_instance, var_i] {
+                                        return item_instance
+                                            ->getUserVariableValue<int>(var_i);
+                                    },
+                                    [item_instance, var_i](int value) {
+                                        item_instance
+                                            ->setUserVariableValue<int>(var_i,
+                                                                        value);
+                                    });
+                            } else if (var.type == ItemUserVariableType::BOOL) {
                                 this->registerPropertiesField<bool>(
                                     var.name.c_str(),
-                                    [var] { return bool(var.defaultValue); },
-                                    [var](bool) {});
+                                    [item_instance, var_i] {
+                                        return item_instance
+                                            ->getUserVariableValue<bool>(var_i);
+                                    },
+                                    [item_instance, var_i](bool value) {
+                                        item_instance
+                                            ->setUserVariableValue<bool>(var_i,
+                                                                         value);
+                                    });
                             }
                         }
 
