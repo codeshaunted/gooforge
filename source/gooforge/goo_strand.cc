@@ -30,8 +30,7 @@ namespace gooforge {
 
 GooStrand::~GooStrand() { delete this->click_bounds; }
 
-std::expected<void, Error> GooStrand::setup(GooStrandInfo info,
-                                            GooBall* ball1,
+std::expected<void, Error> GooStrand::setup(GooStrandInfo info, GooBall* ball1,
                                             GooBall* ball2) {
     this->info = info;
     this->ball1 = ball1;
@@ -72,11 +71,10 @@ std::expected<void, Error> GooStrand::refresh() {
     this->display_sprite = *sprite;
 
     if (this->click_bounds) delete this->click_bounds;
-    this->click_bounds =
-        static_cast<EntityClickBoundShape*>(new EntityClickBoundRectangle(
-            Vector2f(this->ball1->getPosition().distance(
-                         this->ball2->getPosition()),
-                     0.25f)));
+    this->click_bounds = static_cast<EntityClickBoundShape*>(
+        new EntityClickBoundRectangle(Vector2f(
+            this->ball1->getPosition().distance(this->ball2->getPosition()),
+            0.25f)));
 
     return std::expected<void, Error>{};
 }
@@ -144,14 +142,11 @@ std::string GooStrand::getDisplayName() {
 }
 
 Vector2f GooStrand::getPosition() {
-    return (this->ball1->getPosition() +
-            this->ball2->getPosition()) *
-           0.5f;
+    return (this->ball1->getPosition() + this->ball2->getPosition()) * 0.5f;
 }
 
 float GooStrand::getRotation() {
-    Vector2f delta =
-        this->ball1->getPosition() - this->ball2->getPosition();
+    Vector2f delta = this->ball1->getPosition() - this->ball2->getPosition();
 
     return std::atan2f(delta.y, delta.x);
 }

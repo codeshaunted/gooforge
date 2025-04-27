@@ -122,6 +122,8 @@ class Level {
         void removeBall(GooBall* ball);
         void addStrand(GooStrand* strand);
         void removeStrand(GooStrand* strand);
+        void updateBall(GooBall* ball);
+        void updateStrand(GooStrand* strand);
 
     private:
         LevelInfo info;

@@ -31,8 +31,9 @@ namespace gooforge {
 
 GooBall::~GooBall() { delete this->click_bounds; }
 
-std::expected<void, Error> GooBall::setup(
-    GooBallInfo info, TerrainGroup* terrain_group) {
+std::expected<void, Error> GooBall::setup(Level* level, GooBallInfo info,
+                                          TerrainGroup* terrain_group) {
+    this->level = level;
     this->info = info;
     this->terrain_group = terrain_group;
     return this->refresh();
@@ -236,17 +237,22 @@ GooBallInfo& GooBall::getInfo() { return this->info; }
 
 BallTemplateInfo* GooBall::getTemplate() { return this->ball_template; }
 
-TerrainGroup* GooBall::getTerrainGroup() {
-    return this->terrain_group;
+TerrainGroup* GooBall::getTerrainGroup() { return this->terrain_group; }
+
+void GooBall::setTerrainGroup(TerrainGroup* terrain_group) {
+    this->terrain_group = terrain_group;
+
+    this->level->updateBall(this);
+
+    for (auto strand : this->strands) {
+        this->level->updateStrand(strand);
+    }
 }
 
-std::unordered_set<GooStrand*> GooBall::getStrands() {
-    return this->strands;
-}
+std::unordered_set<GooStrand*> GooBall::getStrands() { return this->strands; }
 
 void GooBall::notifyAddStrand(GooStrand* strand) {
-    if (strand->getBall1() == this ||
-        strand->getBall2() == this) {
+    if (strand->getBall1() == this || strand->getBall2() == this) {
         this->strands.insert(strand);
     }
 }
@@ -255,17 +261,13 @@ void GooBall::notifyRemoveStrand(GooStrand* strand) {
     this->strands.erase(strand);
 }
 
-GooBallType GooBall::getBallType() {
-    return this->info.typeEnum;
-}
+GooBallType GooBall::getBallType() { return this->info.typeEnum; }
 
 void GooBall::setBallType(GooBallType type) {
     this->info.typeEnum = type;
     this->refresh();
 }
 
-void GooBall::setRotation(float rotation) {
-    this->info.angle = rotation;
-}
+void GooBall::setRotation(float rotation) { this->info.angle = rotation; }
 
 } // namespace gooforge

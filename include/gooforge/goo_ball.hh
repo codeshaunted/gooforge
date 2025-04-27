@@ -31,6 +31,7 @@
 namespace gooforge {
 
 class GooStrand;
+class Level;
 
 enum class GooBallType {
     INVALID = 0,
@@ -365,7 +366,8 @@ class GooBall : public Entity {
     public:
         GooBall() : Entity(EntityType::GOO_BALL) {}
         ~GooBall() override;
-        std::expected<void, Error> setup(GooBallInfo info, TerrainGroup* terrain_group);
+        std::expected<void, Error> setup(Level* level, GooBallInfo info,
+                                         TerrainGroup* terrain_group);
         std::expected<void, Error> refresh() override;
         void update() override;
         void draw(sf::RenderWindow* window) override;
@@ -381,6 +383,7 @@ class GooBall : public Entity {
         GooBallInfo& getInfo();
         BallTemplateInfo* getTemplate();
         TerrainGroup* getTerrainGroup();
+        void setTerrainGroup(TerrainGroup* terrain_group);
         static std::unordered_map<std::string, GooBallType> ball_name_to_type;
         static std::unordered_map<GooBallType, std::string> ball_type_to_name;
         std::unordered_set<GooStrand*> getStrands();
@@ -388,6 +391,7 @@ class GooBall : public Entity {
         void notifyRemoveStrand(GooStrand* strand) override;
 
     private:
+        Level* level;
         TerrainGroup* terrain_group;
         GooBallInfo info;
         BallTemplateInfo* ball_template = nullptr;

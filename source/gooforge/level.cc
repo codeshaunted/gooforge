@@ -67,7 +67,7 @@ std::expected<void, Error> Level::setup(LevelInfo info) {
         auto terrain_group = terrain_group_index == -1
                                  ? nullptr
                                  : terrain_groups_indexed[terrain_group_index];
-        auto result = goo_ball->setup(ball_info, terrain_group);
+        auto result = goo_ball->setup(this, ball_info, terrain_group);
         if (!result) {
             return std::unexpected(result.error());
         }
@@ -270,6 +270,18 @@ void Level::removeStrand(GooStrand* strand) {
     }
 
     this->entities.erase(strand);
+}
+
+void Level::updateBall(GooBall* ball) {
+    for (auto entity : this->entities) {
+        entity->notifyUpdateBall(ball);
+    }
+}
+
+void Level::updateStrand(GooStrand* strand) {
+    for (auto entity : this->entities) {
+        entity->notifyUpdateStrand(strand);
+    }
 }
 
 } // namespace gooforge

@@ -70,7 +70,7 @@ struct DeselectEditorAction : public EditorAction {
 };
 
 struct DeleteEditorAction : public EditorAction {
-        ~DeleteEditorAction();
+        ~DeleteEditorAction() override;
         DeleteEditorAction(std::vector<Entity*> entities,
                            std::vector<EditorAction*> implicit_actions = {})
             : EditorAction(implicit_actions), entities(entities) {}
@@ -82,10 +82,13 @@ struct DeleteEditorAction : public EditorAction {
 
 template <typename T>
 struct ModifyPropertyEditorAction : public EditorAction {
-        ModifyPropertyEditorAction(std::function<T()> get,
-                                   std::function<void(T)> set, T new_value,
-                                   std::vector<EditorAction*> implicit_actions = {})
-            : EditorAction(implicit_actions), get(get), set(set), new_value(new_value) {}
+        ModifyPropertyEditorAction(
+            std::function<T()> get, std::function<void(T)> set, T new_value,
+            std::vector<EditorAction*> implicit_actions = {})
+            : EditorAction(implicit_actions),
+              get(get),
+              set(set),
+              new_value(new_value) {}
         std::expected<void, Error> execute(Editor* editor) override {
             this->original_value = this->get();
             this->set(this->new_value);
@@ -157,7 +160,8 @@ class Editor {
         void registerToolbarWindow();
         bool registerGooBallTypeCombo(const char* label, GooBallType* type);
         template <typename T, typename Tag = DefaultPropertyTag>
-        void registerPropertiesField(const char* label, std::function<T()> get,
+        void registerPropertiesField(
+            const char* label, std::function<T()> get,
             std::function<void(T)> set,
             std::vector<EditorAction*> implicit_actions = {});
 

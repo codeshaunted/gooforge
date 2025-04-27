@@ -97,6 +97,8 @@ class Entity {
         virtual void notifyRemoveBall(GooBall* ball) {}
         virtual void notifyAddStrand(GooStrand* strand) {}
         virtual void notifyRemoveStrand(GooStrand* strand) {}
+        virtual void notifyUpdateBall(GooBall* ball) {}
+        virtual void notifyUpdateStrand(GooStrand* strand) {}
 
     protected:
         EntityType type;

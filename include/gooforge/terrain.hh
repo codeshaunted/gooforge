@@ -72,6 +72,7 @@ class TerrainGroup : public Entity {
         TerrainGroupInfo& getInfo();
         void notifyAddStrand(GooStrand* strand) override;
         void notifyRemoveStrand(GooStrand* strand) override;
+        void notifyUpdateStrand(GooStrand* strand) override;
 
     private:
         TerrainGroupInfo info;

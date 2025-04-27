@@ -93,10 +93,6 @@ std::expected<void, Error> DeselectEditorAction::revert(Editor* editor) {
 }
 
 DeleteEditorAction::~DeleteEditorAction() {
-    for (auto action : this->implicit_actions) {
-        delete action;
-    }
-
     if (reverted)
         return; // we don't want to run this if the delete was reverted and is
                 // getting cleared in the redo stack
@@ -335,6 +331,49 @@ void Editor::registerPropertiesField<std::string, ItemTemplatePropertyTag>(
     }
 }
 
+template <>
+void Editor::registerPropertiesField<TerrainGroup*>(
+    const char* label, std::function<TerrainGroup*()> get,
+    std::function<void(TerrainGroup*)> set,
+    std::vector<EditorAction*> implicit_actions) {
+    TerrainGroup* value = get();
+    bool modified = false;
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text(label);
+    ImGui::TableSetColumnIndex(2);
+
+    if (ImGui::BeginCombo(std::format("##{}", label).c_str(),
+                          value->getDisplayName().c_str())) {
+        for (auto entity : this->level->entities) {
+            if (entity->getType() != EntityType::TERRAIN_GROUP) {
+                continue;
+            }
+
+            TerrainGroup* terrain_group = static_cast<TerrainGroup*>(entity);
+
+            bool selected = terrain_group == value;
+            if (ImGui::Selectable(terrain_group->getDisplayName().c_str(),
+                                  selected)) {
+                value = terrain_group;
+                modified = true;
+            }
+
+            if (selected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+
+        ImGui::EndCombo();
+    }
+
+    if (modified) {
+        this->doAction(new ModifyPropertyEditorAction<TerrainGroup*>(
+            get, set, value, implicit_actions));
+    }
+}
+
 Editor::~Editor() { delete this->level; }
 
 void Editor::initialize() {
@@ -373,34 +412,58 @@ void Editor::update(sf::Clock& delta_clock) {
     this->registerResourcesWindow();
     this->registerToolbarWindow();
 
+    // this is horrid, todo: fix
     static bool dragging = false;
+    sf::Vector2i mouse_pos = sf::Mouse::getPosition();
     static sf::Vector2i drag_start;
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
-        sf::Vector2i mouse_pos = sf::Mouse::getPosition();
+    static std::unordered_map<Entity*, Vector2f> pre_drag_positions;
+    ImGuiIO& io = ImGui::GetIO();
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && !io.WantCaptureMouse && !io.AppFocusLost) {
         if (!dragging) {
             dragging = true;
             drag_start = mouse_pos;
+
+            for (Entity* entity : this->selected_entities) {
+                pre_drag_positions.insert({entity, entity->getPosition()});
+            }
         } else {
             sf::Vector2i drag_delta = drag_start - mouse_pos;
             drag_start = mouse_pos;
 
-            /*
             if (this->selected_tool == EditorToolType::MOVE) {
                 Vector2f world_drag_delta =
                     Level::screenToWorld(sf::Vector2f(drag_delta)) * this->zoom;
 
                 for (Entity* entity : this->selected_entities) {
-                    this->doAction(ModifyPropertyEditorAction<Vector2f>(
-                        [entity] { return entity->getPosition(); },
-                        [entity](Vector2f new_position) {
-                            entity->setPosition(new_position);
-                        },
-                        entity->getPosition() - world_drag_delta));
+                    entity->setPosition(entity->getPosition() -
+                                        world_drag_delta);
                 }
-            }*/
+            }
         }
     } else if (dragging) {
         dragging = false;
+
+        sf::Vector2i drag_delta = drag_start - mouse_pos;
+        drag_start = mouse_pos;
+
+        if (this->selected_tool == EditorToolType::MOVE) {
+            Vector2f world_drag_delta =
+                Level::screenToWorld(sf::Vector2f(drag_delta)) * this->zoom;
+
+            for (auto entity : this->selected_entities) {
+                Vector2f pre_drag_position =
+                    pre_drag_positions[entity];
+
+                this->doAction(new ModifyPropertyEditorAction<Vector2f>(
+                    [pre_drag_position]() { return pre_drag_position; },
+                    [entity](Vector2f value) {
+                        entity->setPosition(value);
+                    },
+                    entity->getPosition() - world_drag_delta, {}));
+            }
+        }
+
+        pre_drag_positions.clear();
     }
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
@@ -464,7 +527,7 @@ void Editor::processEvents() {
             this->view = sf::View(visible_area);
         }
 
-        if (io.WantCaptureMouse) {
+        if (io.WantCaptureMouse || io.AppFocusLost) {
             continue;
         }
 
@@ -864,6 +927,15 @@ void Editor::registerPropertiesWindow() {
                         [goo_ball](GooBallType type) {
                             goo_ball->setBallType(type);
                         });
+
+                    if (goo_ball->getBallType() == GooBallType::TERRAIN) {
+                        this->registerPropertiesField<TerrainGroup*>(
+                            "Terrain Group",
+                            [goo_ball] { return goo_ball->getTerrainGroup(); },
+                            [goo_ball](TerrainGroup* group) {
+                                goo_ball->setTerrainGroup(group);
+                            });
+                    }
 
                     this->registerPropertiesField<Vector2f>(
                         "Position",

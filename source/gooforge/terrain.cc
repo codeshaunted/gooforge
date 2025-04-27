@@ -106,6 +106,8 @@ void TerrainGroup::draw(sf::RenderWindow* window) {
             auto w = locked_w1 == u ? locked_w2 : locked_w1;
 
             if (w != v && v_neighbors.contains(w)) {
+                if (w->getTerrainGroup() != this) continue;
+
                 sf::VertexArray tri(sf::PrimitiveType::Triangles, 3);
 
                 // Set positions
@@ -154,7 +156,7 @@ float TerrainGroup::getDepth() const { return this->info.depth; }
 TerrainGroupInfo& TerrainGroup::getInfo() { return this->info; }
 
 void TerrainGroup::notifyAddStrand(GooStrand* strand) {
-    if (strand->getBall1()->getTerrainGroup() == this ||
+    if (strand->getBall1()->getTerrainGroup() == this &&
         strand->getBall2()->getTerrainGroup() == this) {
         this->terrain_strands.insert(strand);
     }
@@ -162,6 +164,20 @@ void TerrainGroup::notifyAddStrand(GooStrand* strand) {
 
 void TerrainGroup::notifyRemoveStrand(GooStrand* strand) {
     this->terrain_strands.erase(strand);
+}
+
+void TerrainGroup::notifyUpdateStrand(GooStrand* strand) {
+    if (this->terrain_strands.contains(strand)) {
+        if (strand->getBall1()->getTerrainGroup() != this ||
+            strand->getBall2()->getTerrainGroup() != this) {
+            this->terrain_strands.erase(strand);
+        }
+    } else {
+        if (strand->getBall1()->getTerrainGroup() == this &&
+            strand->getBall2()->getTerrainGroup() == this) {
+            this->terrain_strands.insert(strand);
+        }
+    }
 }
 
 } // namespace gooforge
