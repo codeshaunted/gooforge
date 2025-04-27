@@ -29,16 +29,16 @@ class GooBall;
 class GooStrand;
 
 struct TerrainGroupInfo {
-        Vector2f textureOffset;
-        std::string typeUuid;
-        int typeIndex;
-        int sortOffset;
-        float depth;
-        bool foreground;
-        bool collision;
-        bool destructable;
-        bool buildable;
-        bool occluder;
+        Vector2f textureOffset = Vector2f(0.0f, 0.0f);
+        std::string typeUuid = "177636a8-b061-465a-8cbb-a2241fa429d8";
+        int typeIndex = 6;
+        int sortOffset = 0;
+        float depth = 0.0f;
+        bool foreground = true;
+        bool collision = true;
+        bool destructable = false;
+        bool buildable = false;
+        bool occluder = true;
 };
 
 struct TerrainTemplateImageIdInfo {
@@ -69,7 +69,12 @@ class TerrainGroup : public Entity {
         std::string getDisplayName() override;
         sf::Sprite getThumbnail() override;
         float getDepth() const override;
+        void setDepth(float depth) override;
         TerrainGroupInfo& getInfo();
+        std::string getTerrainTemplateUUID();
+        void setTerrainTemplateUUID(std::string uuid);
+        int getSortOffset() const;
+        void setSortOffset(int offset);
         void notifyAddStrand(GooStrand* strand) override;
         void notifyRemoveStrand(GooStrand* strand) override;
         void notifyUpdateStrand(GooStrand* strand) override;

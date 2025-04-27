@@ -28,10 +28,10 @@
 namespace gooforge {
 
 struct GooStrandInfo {
-        unsigned int ball1UID;
-        unsigned int ball2UID;
-        GooBallType type;
-        bool filled;
+        unsigned int ball1UID = 0;
+        unsigned int ball2UID = 0;
+        GooBallType type = GooBallType::COMMON;
+        bool filled = true;
 };
 
 class GooStrand : public Entity {

@@ -51,6 +51,18 @@ struct EditorAction {
         std::vector<EditorAction*> implicit_actions;
 };
 
+enum class EditorToolType { MOVE = 0, STRAND };
+
+struct SwitchToolEditorAction : public EditorAction {
+    SwitchToolEditorAction(EditorToolType tool,
+                       std::vector<EditorAction*> implicit_actions = {})
+        : EditorAction(implicit_actions), tool(tool) {}
+    std::expected<void, Error> execute(Editor* editor) override;
+    std::expected<void, Error> revert(Editor* editor) override;
+    EditorToolType tool;
+    EditorToolType old_tool;
+};
+
 struct SelectEditorAction : public EditorAction {
         SelectEditorAction(std::vector<Entity*> entities,
                            std::vector<EditorAction*> implicit_actions = {})
@@ -69,8 +81,19 @@ struct DeselectEditorAction : public EditorAction {
         std::vector<Entity*> entities;
 };
 
+struct CreateEditorAction : public EditorAction {
+        ~CreateEditorAction();
+        CreateEditorAction(Entity* entity,
+                           std::vector<EditorAction*> implicit_actions = {})
+            : EditorAction(implicit_actions), entity(entity) {}
+        std::expected<void, Error> execute(Editor* editor) override;
+        std::expected<void, Error> revert(Editor* editor) override;
+        Entity* entity;
+        bool reverted = false;
+};
+
 struct DeleteEditorAction : public EditorAction {
-        ~DeleteEditorAction() override;
+        ~DeleteEditorAction();
         DeleteEditorAction(std::vector<Entity*> entities,
                            std::vector<EditorAction*> implicit_actions = {})
             : EditorAction(implicit_actions), entities(entities) {}
@@ -106,10 +129,9 @@ struct ModifyPropertyEditorAction : public EditorAction {
         T original_value;
 };
 
-enum class EditorToolType { MOVE = 0, SCALE };
-
 struct DefaultPropertyTag {};
 struct ItemTemplatePropertyTag {};
+struct TerrainTemplatePropertyTag {};
 
 class Editor {
     public:
@@ -134,6 +156,7 @@ class Editor {
         sf::Time undo_cooldown = sf::milliseconds(200);
         std::deque<EditorAction*> redo_stack;
         EditorToolType selected_tool = EditorToolType::MOVE;
+        GooBall* strand_start_ball = nullptr; // this is cursed
         int undo_depth = 50;
         void update(sf::Clock& delta_clock);
         void draw();
@@ -168,9 +191,11 @@ class Editor {
         // we either make everything public or declare every
         // single derived action as a friend class, pick
         // your poison, or maybe just structure it better? :P
+        friend struct SwitchToolEditorAction;
         friend struct SelectEditorAction;
         friend struct DeselectEditorAction;
         friend struct DeleteEditorAction;
+        friend struct CreateEditorAction;
 };
 
 } // namespace gooforge

@@ -31,26 +31,26 @@ struct ItemInstanceUserVariableInfo {
 };
 
 struct ItemInstanceInfo {
-        std::string id;
-        std::string type;
-        std::string localizedStringId;
-        unsigned int uid;
-        Vector2f pos;
-        Vector2f scale;
-        float rotation;
-        float depth;
-        bool flipHorizontal;
-        bool flipVertical;
-        float rotSpeed;
-        int seed;
-        int liquidType;
-        unsigned int adapterBallId;
-        bool invisible;
-        int forcedRandomizationIndex;
-        std::string particleEffectName;
-        int uid1;
-        int uid2;
-        std::vector<ItemInstanceUserVariableInfo> userVariables;
+        std::string id = "";
+        std::string type = "61af9274-1ca4-4599-afa4-aa21e3b02580";
+        std::string localizedStringId = "";
+        unsigned int uid = 0;
+        Vector2f pos = Vector2f(0.0f, 0.0f);
+        Vector2f scale = Vector2f(1.0f, 1.0f);
+        float rotation = 0.0f;
+        float depth = 0.0f;
+        bool flipHorizontal = false;
+        bool flipVertical = false;
+        float rotSpeed = 1.0f;
+        int seed = 0;
+        int liquidType = 0;
+        unsigned int adapterBallId = 0;
+        bool invisible = false;
+        int forcedRandomizationIndex = -1;
+        std::string particleEffectName = "";
+        int uid1 = 0;
+        int uid2 = 0;
+        std::vector<ItemInstanceUserVariableInfo> userVariables = {};
 };
 
 enum ItemType {
@@ -197,11 +197,7 @@ struct ItemAlternateInfo {
 };
 
 // custom, not found in ghidra
-enum class ItemUserVariableType {
-    FLOAT = 0,
-    INT,
-    BOOL,
-};
+enum class ItemUserVariableType { FLOAT = 0, INT, BOOL, LIQUID_TYPE, BALL_TYPE };
 
 struct ItemUserVariableInfo {
         std::string name;
@@ -262,6 +258,25 @@ struct ItemInfoFile {
         std::vector<ItemInfo> items;
 };
 
+enum class LiquidType {
+    GOO = 0,
+    WATER,
+    COOLED_LAVA,
+    LAVA,
+    JELLY_BLOCK_HARD,
+    JELLY_BLOCK_SOFT
+};
+
+static std::unordered_map<LiquidType, std::string> liquid_type_to_name =
+    {
+        {LiquidType::GOO, "Goo"},
+        {LiquidType::WATER, "Water"},
+        {LiquidType::COOLED_LAVA, "Cooled Lava"},
+        {LiquidType::LAVA, "Lava"},
+        {LiquidType::JELLY_BLOCK_HARD, "Jelly Block Hard"},
+        {LiquidType::JELLY_BLOCK_SOFT, "Jelly Block Soft"},
+};
+
 class ItemInstance : public Entity {
     public:
         ItemInstance() : Entity(EntityType::ITEM_INSTANCE) {}
@@ -293,7 +308,8 @@ class ItemInstance : public Entity {
         template <typename T>
         void setUserVariableValue(size_t index, T value);
         std::vector<ItemInstanceUserVariableInfo> getUserVariableValues();
-        void setUserVariableValues(std::vector<ItemInstanceUserVariableInfo> values);
+        void setUserVariableValues(
+            std::vector<ItemInstanceUserVariableInfo> values);
 
     private:
         ItemInstanceInfo info;

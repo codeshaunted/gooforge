@@ -48,11 +48,15 @@ std::expected<void, Error> TerrainGroup::refresh() {
     }
 
     // TODO: handle not found case
+    size_t index = 0;
     for (auto& terrain_template : (*template_info_file)->terrainTypes) {
         if (terrain_template.uuid == this->info.typeUuid) {
             this->template_info = &terrain_template;
+            this->info.typeIndex = index; // this is kinda cursed
             break;
         }
+
+        ++index;
     }
 
     auto sprite_resource =
@@ -135,11 +139,11 @@ void TerrainGroup::draw(sf::RenderWindow* window) {
     for (auto strand : this->terrain_strands) {
         auto locked_strand = strand;
         sf::VertexArray line(sf::Lines, 2);
-        line[0].position = Level::worldToScreen(
-            locked_strand->getBall1()->getPosition());
+        line[0].position =
+            Level::worldToScreen(locked_strand->getBall1()->getPosition());
         line[0].color = sf::Color::Green;
-        line[1].position = Level::worldToScreen(
-            locked_strand->getBall2()->getPosition());
+        line[1].position =
+            Level::worldToScreen(locked_strand->getBall2()->getPosition());
         line[1].color = sf::Color::Green;
         window->draw(line);
     }
@@ -152,6 +156,10 @@ std::string TerrainGroup::getDisplayName() {
 sf::Sprite TerrainGroup::getThumbnail() { return this->display_sprite; }
 
 float TerrainGroup::getDepth() const { return this->info.depth; }
+
+void TerrainGroup::setDepth(float depth) {
+    this->info.depth = depth;
+}
 
 TerrainGroupInfo& TerrainGroup::getInfo() { return this->info; }
 
@@ -179,5 +187,19 @@ void TerrainGroup::notifyUpdateStrand(GooStrand* strand) {
         }
     }
 }
+
+std::string TerrainGroup::getTerrainTemplateUUID() {
+    return this->info.typeUuid;
+}
+
+void TerrainGroup::setTerrainTemplateUUID(std::string uuid) {
+    this->info.typeUuid = uuid;
+
+    this->refresh();
+}
+
+int TerrainGroup::getSortOffset() const { return this->info.sortOffset; }
+
+void TerrainGroup::setSortOffset(int offset) { this->info.sortOffset = offset; }
 
 } // namespace gooforge

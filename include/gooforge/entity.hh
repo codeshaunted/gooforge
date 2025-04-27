@@ -86,7 +86,7 @@ class Entity {
         bool getSelected();
         void setSelected(bool selected);
         void drawSelection(sf::RenderWindow* window);
-        EntityType getType();
+        virtual EntityType getType() const;
         virtual Vector2f getPosition() { return Vector2f(0.0f, 0.0f); }
         virtual float getRotation() { return 0.0f; }
         virtual float getDepth() const { return 0.0f; }

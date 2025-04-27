@@ -337,29 +337,29 @@ struct BallTemplateInfo {
 };
 
 struct GooBallInfo {
-        GooBallType typeEnum;
-        int uid;
-        Vector2f pos;
-        float angle;
-        bool discovered;
-        bool floatingWhileAsleep;
-        bool interactive;
-        bool wakeWithLiquid;
-        bool exitPipeAlert;
-        bool affectsAutoBounds;
-        float launcherLifespanMin;
-        float launcherLifespanMax;
-        float launcherForceFactor;
-        bool launcherCanUseBalls;
-        float launcherKnockbackFactor;
-        int launcherMaxActive;
-        GooBallType launcherBallTypeToGenerate;
-        float thrustForce;
-        float maxVelocity;
-        float stiffness;
-        bool filled;
-        float detonationRadius;
-        float detonationForce;
+        GooBallType typeEnum = GooBallType::COMMON;
+        int uid = 0;
+        Vector2f pos = Vector2f(0.0f, 0.0f);
+        float angle = 0.0f;
+        bool discovered = true;
+        bool floatingWhileAsleep = false;
+        bool interactive = true;
+        bool wakeWithLiquid = true;
+        bool exitPipeAlert = true;
+        bool affectsAutoBounds = true;
+        float launcherLifespanMin = 0.0f;
+        float launcherLifespanMax = 0.0f;
+        float launcherForceFactor = 0.7f;
+        bool launcherCanUseBalls = true;
+        float launcherKnockbackFactor = 1.0f;
+        int launcherMaxActive = 50;
+        GooBallType launcherBallTypeToGenerate = GooBallType::GOO_PRODUCT;
+        float thrustForce = 25.0f;
+        float maxVelocity = 0.0f;
+        float stiffness = 1.0f;
+        bool filled = true;
+        float detonationRadius = -1.0f;
+        float detonationForce = -1.0f;
 };
 
 class GooBall : public Entity {

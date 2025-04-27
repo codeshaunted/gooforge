@@ -93,8 +93,7 @@ struct LevelInfo {
 
 struct EntityDepthComparator {
         // sort by depth for drawing
-        bool operator()(const Entity* x,
-                        const Entity* y) const {
+        bool operator()(const Entity* x, const Entity* y) const {
             if (x->getDepth() != y->getDepth()) {
                 return x->getDepth() < y->getDepth();
             }
@@ -117,7 +116,7 @@ class Level {
         static float degreesToRadians(float degrees);
         LevelInfo& getInfo();
         void removeEntity(Entity* entity);
-		void addEntity(Entity* entity);
+        void addEntity(Entity* entity);
         void addBall(GooBall* ball);
         void removeBall(GooBall* ball);
         void addStrand(GooStrand* strand);

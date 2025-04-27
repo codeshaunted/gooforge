@@ -40,6 +40,19 @@ EditorAction::~EditorAction() {
     }
 }
 
+std::expected<void, Error> SwitchToolEditorAction::execute(Editor* editor) {
+    this->old_tool = editor->selected_tool;
+    editor->selected_tool = this->tool;
+
+    return std::expected<void, Error>{};
+}
+
+std::expected<void, Error> SwitchToolEditorAction::revert(Editor* editor) {
+    editor->selected_tool = this->old_tool;
+
+    return std::expected<void, Error>{};
+}
+
 std::expected<void, Error> SelectEditorAction::execute(Editor* editor) {
     for (auto entity : this->entities) {
         entity->setSelected(true);
@@ -88,6 +101,28 @@ std::expected<void, Error> DeselectEditorAction::revert(Editor* editor) {
         entity->setSelected(true);
         editor->selected_entities.push_back(entity);
     }
+
+    return std::expected<void, Error>{};
+}
+
+CreateEditorAction::~CreateEditorAction() {
+    if (!reverted) return; // if the creation was reverted, delete the entity
+
+    delete this->entity;
+}
+
+std::expected<void, Error> CreateEditorAction::execute(Editor* editor) {
+    this->reverted = false;
+
+    editor->level->addEntity(this->entity);
+
+    return std::expected<void, Error>{};
+}
+
+std::expected<void, Error> CreateEditorAction::revert(Editor* editor) {
+    this->reverted = true;
+
+    editor->level->removeEntity(this->entity);
 
     return std::expected<void, Error>{};
 }
@@ -332,6 +367,69 @@ void Editor::registerPropertiesField<std::string, ItemTemplatePropertyTag>(
 }
 
 template <>
+void Editor::registerPropertiesField<std::string, TerrainTemplatePropertyTag>(
+    const char* label, std::function<std::string()> get,
+    std::function<void(std::string)> set,
+    std::vector<EditorAction*> implicit_actions) {
+    std::string value = get();
+    bool modified = false;
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text(label);
+    ImGui::TableSetColumnIndex(2);
+
+    auto terrains_resource =
+        ResourceManager::getInstance()->getResource<TerrainTemplatesResource>(
+            "GOOFORGE_TERRAIN_TEMPLATES_RESOURCE");
+    if (!terrains_resource) {
+        return; // todo: actually handle this error
+    }
+
+    auto terrains_result = (*terrains_resource)->get();
+    if (!terrains_result) {
+        return; // todo: actually handle this error
+    }
+
+    auto terrains = *terrains_result;
+
+    // this is horribly inefficient, todo: fix
+    std::string selected_name = "";
+
+    for (auto terrain : terrains->terrainTypes) {
+        if (terrain.uuid == value) {
+            selected_name = terrain.name;
+            break;
+        }
+    }
+
+    if (ImGui::BeginCombo(
+            std::format("##{}", label).c_str(),
+            std::format("{} ({})", selected_name, value).c_str())) {
+        for (auto terrain : terrains->terrainTypes) {
+            bool selected = terrain.uuid == value;
+            if (ImGui::Selectable(
+                    std::format("{} ({})", terrain.name, terrain.uuid).c_str(),
+                    selected)) {
+                value = terrain.uuid;
+                modified = true;
+            }
+
+            if (selected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+
+        ImGui::EndCombo();
+    }
+
+    if (modified) {
+        this->doAction(new ModifyPropertyEditorAction<std::string>(
+            get, set, value, implicit_actions));
+    }
+}
+
+template <>
 void Editor::registerPropertiesField<TerrainGroup*>(
     const char* label, std::function<TerrainGroup*()> get,
     std::function<void(TerrainGroup*)> set,
@@ -345,7 +443,12 @@ void Editor::registerPropertiesField<TerrainGroup*>(
     ImGui::TableSetColumnIndex(2);
 
     if (ImGui::BeginCombo(std::format("##{}", label).c_str(),
-                          value->getDisplayName().c_str())) {
+                          value ? value->getDisplayName().c_str() : "None")) {
+        if (ImGui::Selectable("None", value == nullptr)) {
+            value = nullptr;
+            modified = true;
+        }
+
         for (auto entity : this->level->entities) {
             if (entity->getType() != EntityType::TERRAIN_GROUP) {
                 continue;
@@ -370,6 +473,43 @@ void Editor::registerPropertiesField<TerrainGroup*>(
 
     if (modified) {
         this->doAction(new ModifyPropertyEditorAction<TerrainGroup*>(
+            get, set, value, implicit_actions));
+    }
+}
+
+template <>
+void Editor::registerPropertiesField<LiquidType>(
+    const char* label, std::function<LiquidType()> get,
+    std::function<void(LiquidType)> set,
+    std::vector<EditorAction*> implicit_actions) {
+    LiquidType value = get();
+    bool modified = false;
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text(label);
+    ImGui::TableSetColumnIndex(2);
+
+    if (ImGui::BeginCombo(std::format("##{}", label).c_str(),
+                          liquid_type_to_name[value].c_str())) {
+        for (auto type : liquid_type_to_name) {
+            bool selected = type.first == value;
+            if (ImGui::Selectable(liquid_type_to_name[type.first].c_str(),
+                                  selected)) {
+                value = type.first;
+                modified = true;
+            }
+
+            if (selected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+
+        ImGui::EndCombo();
+    }
+
+    if (modified) {
+        this->doAction(new ModifyPropertyEditorAction<LiquidType>(
             get, set, value, implicit_actions));
     }
 }
@@ -412,13 +552,50 @@ void Editor::update(sf::Clock& delta_clock) {
     this->registerResourcesWindow();
     this->registerToolbarWindow();
 
+    if (this->selected_tool == EditorToolType::STRAND) {
+        if (this->selected_entities.size() == 1 &&
+            this->selected_entities[0]->getType() == EntityType::GOO_BALL) {
+            this->strand_start_ball =
+                static_cast<GooBall*>(this->selected_entities[0]);
+        } else if (this->strand_start_ball &&
+                   this->selected_entities.size() == 2 &&
+                   this->selected_entities[0]->getType() ==
+                       EntityType::GOO_BALL &&
+                   this->selected_entities[1]->getType() ==
+                       EntityType::GOO_BALL) {
+            GooStrandInfo strand_info;
+            strand_info.type = this->strand_start_ball->getBallType();
+            GooStrand* strand = new GooStrand();
+            strand->setup(strand_info,
+                          static_cast<GooBall*>(this->selected_entities[0]),
+                          static_cast<GooBall*>(
+                              this->selected_entities[1])); // ignore errors for
+                                                            // now, todo: handle
+
+            // we are faux-selecting both of them when we create the strand here
+            // very cursed, should be replaced at some point
+            for (auto entity : this->selected_entities) {
+                entity->setSelected(false);
+            }
+            this->selected_entities.clear();
+
+            this->doAction(new CreateEditorAction(
+                strand, {new DeselectEditorAction({this->strand_start_ball})}));
+
+            this->strand_start_ball = nullptr;
+        } else {
+            this->strand_start_ball = nullptr;
+        }
+    }
+
     // this is horrid, todo: fix
     static bool dragging = false;
     sf::Vector2i mouse_pos = sf::Mouse::getPosition();
     static sf::Vector2i drag_start;
     static std::unordered_map<Entity*, Vector2f> pre_drag_positions;
     ImGuiIO& io = ImGui::GetIO();
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && !io.WantCaptureMouse && !io.AppFocusLost) {
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && !io.WantCaptureMouse &&
+        !io.AppFocusLost) {
         if (!dragging) {
             dragging = true;
             drag_start = mouse_pos;
@@ -451,14 +628,11 @@ void Editor::update(sf::Clock& delta_clock) {
                 Level::screenToWorld(sf::Vector2f(drag_delta)) * this->zoom;
 
             for (auto entity : this->selected_entities) {
-                Vector2f pre_drag_position =
-                    pre_drag_positions[entity];
+                Vector2f pre_drag_position = pre_drag_positions[entity];
 
                 this->doAction(new ModifyPropertyEditorAction<Vector2f>(
                     [pre_drag_position]() { return pre_drag_position; },
-                    [entity](Vector2f value) {
-                        entity->setPosition(value);
-                    },
+                    [entity](Vector2f value) { entity->setPosition(value); },
                     entity->getPosition() - world_drag_delta, {}));
             }
         }
@@ -507,6 +681,23 @@ void Editor::draw() {
     if (this->level) {
         this->level->draw(&this->window);
     }
+
+    // todo: move this abomination elsewhere
+    if (this->selected_tool == EditorToolType::STRAND &&
+        this->strand_start_ball) {
+        auto mouse_pos = sf::Mouse::getPosition(this->window);
+        auto ball_pos =
+            Level::worldToScreen(this->strand_start_ball->getPosition());
+
+        sf::Vertex line[] = {
+            sf::Vertex(ball_pos, sf::Color::Blue),
+            sf::Vertex(this->window.mapPixelToCoords(mouse_pos),
+                       sf::Color::Blue),
+        };
+
+        window.draw(line, 2, sf::Lines);
+    }
+
     ImGui::SFML::Render(this->window);
     this->window.display();
 }
@@ -685,7 +876,16 @@ void Editor::clearRedos() {
 }
 
 void Editor::doEntitySelection(Entity* entity) {
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
+    // strand tool hacks
+    if (this->selected_tool == EditorToolType::STRAND &&
+        entity->getType() != EntityType::GOO_BALL)
+        return;
+
+    if (this->selected_tool == EditorToolType::STRAND &&
+        this->strand_start_ball) {
+        entity->setSelected(true);
+        this->selected_entities.push_back(entity);
+    } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::LControl)) {
         if (entity->getSelected()) {
             this->doAction(new DeselectEditorAction({entity}));
         } else {
@@ -794,6 +994,47 @@ void Editor::registerMainMenuBar() {
                 this->redoLastUndo();
             }
             ImGui::EndDisabled();
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Add")) {
+            Vector2f center =
+                Level::screenToWorld(this->window.getView().getCenter());
+
+            if (ImGui::BeginMenu("GooBall")) {
+                for (auto type : GooBall::ball_type_to_name) {
+                    if (ImGui::MenuItem(type.second.c_str())) {
+                        GooBall* goo_ball = new GooBall();
+                        GooBallInfo info;
+                        info.typeEnum = type.first;
+                        goo_ball->setup(
+                            this->level, info,
+                            nullptr); // errors be damned, todo: handle
+                        goo_ball->setPosition(center);
+
+                        this->doAction(new CreateEditorAction(goo_ball));
+                    }
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::MenuItem("ItemInstance")) {
+                ItemInstance* item_instance = new ItemInstance();
+                item_instance->setup(ItemInstanceInfo{});
+                item_instance->setPosition(center);
+
+                this->doAction(new CreateEditorAction(item_instance));
+            }
+
+            if (ImGui::MenuItem("TerrainGroup")) {
+                TerrainGroup* terrain_group = new TerrainGroup();
+                terrain_group->setup(TerrainGroupInfo{});
+                terrain_group->setPosition(center);
+
+                this->doAction(new CreateEditorAction(terrain_group));
+            }
 
             ImGui::EndMenu();
         }
@@ -1070,11 +1311,74 @@ void Editor::registerPropertiesWindow() {
                                             ->setUserVariableValue<bool>(var_i,
                                                                          value);
                                     });
+                            } else if (var.type ==
+                                       ItemUserVariableType::LIQUID_TYPE) {
+                                this->registerPropertiesField<LiquidType>(
+                                    var.name.c_str(),
+                                    [item_instance, var_i] {
+                                        return item_instance
+                                            ->getUserVariableValue<LiquidType>(
+                                                var_i);
+                                    },
+                                    [item_instance, var_i](LiquidType value) {
+                                        item_instance
+                                            ->setUserVariableValue<LiquidType>(
+                                                var_i, value);
+                                    });
+                            } else if (var.type ==
+                                       ItemUserVariableType::BALL_TYPE) {
+                                this->registerPropertiesField<GooBallType>(
+                                    var.name.c_str(),
+                                    [item_instance, var_i] {
+                                        return item_instance
+                                            ->getUserVariableValue<GooBallType>(
+                                                var_i);
+                                    },
+                                    [item_instance, var_i](GooBallType value) {
+                                        item_instance
+                                            ->setUserVariableValue<GooBallType>(
+                                                var_i, value);
+                                    });
                             }
                         }
 
                         ++var_i;
                     }
+
+                    ImGui::EndTable();
+                }
+            } else if (entity->getType() == EntityType::TERRAIN_GROUP) {
+                TerrainGroup* terrain_group =
+                    static_cast<TerrainGroup*>(entity);
+
+                ImGui::SeparatorText("General");
+                if (ImGui::BeginTable("General", 3,
+                                      ImGuiTableFlags_SizingStretchProp)) {
+                    this->registerPropertiesField<std::string,
+                                                  TerrainTemplatePropertyTag>(
+                        "Template",
+                        [terrain_group] {
+                            return terrain_group->getTerrainTemplateUUID();
+                        },
+                        [terrain_group](std::string type) {
+                            terrain_group->setTerrainTemplateUUID(type);
+                        });
+
+                    this->registerPropertiesField<float>(
+                        "Depth",
+                        [terrain_group] { return terrain_group->getDepth(); },
+                        [terrain_group](float depth) {
+                            terrain_group->setDepth(depth);
+                        });
+
+                    this->registerPropertiesField<int>(
+                        "Sort Offset",
+                        [terrain_group] {
+                            return terrain_group->getSortOffset();
+                        },
+                        [terrain_group](int offset) {
+                            terrain_group->setSortOffset(offset);
+                        });
 
                     ImGui::EndTable();
                 }
@@ -1106,8 +1410,10 @@ void Editor::registerToolbarWindow() {
                                   ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
         }
 
-        if (ImGui::Button(Editor::tool_type_to_name[tool]))
-            this->selected_tool = tool;
+        if (ImGui::Button(Editor::tool_type_to_name[tool])) {
+            this->doAction(new SwitchToolEditorAction(
+                tool, {new DeselectEditorAction(this->selected_entities)}));
+        }
 
         ImGui::PopStyleColor();
 
@@ -1172,6 +1478,6 @@ void Editor::doEntitiesDeletion(std::vector<Entity*> entities) {
 }
 
 std::unordered_map<EditorToolType, const char*> Editor::tool_type_to_name = {
-    {EditorToolType::MOVE, "Move"}, {EditorToolType::SCALE, "Scale"}};
+    {EditorToolType::MOVE, "Move"}, {EditorToolType::STRAND, "Strand"}};
 
 } // namespace gooforge
